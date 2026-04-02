@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body {
+  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+  background:transparent;
+  overflow:hidden;
+}
+.card {
+  width:100vw; height:100vh;
+  background:linear-gradient(180deg, rgba(27,32,44,.98), rgba(17,20,28,.98));
+  color:#eef2ff;
+  border:1px solid rgba(245,158,11,.34);
+  border-radius:18px;
+  box-shadow:0 16px 44px rgba(0,0,0,.45);
+  padding:16px 16px 14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.hdr { display:flex; align-items:center; gap:10px; }
+.icon {
+  width:36px; height:36px; border-radius:12px;
+  background:rgba(245,158,11,.16); border:1px solid rgba(245,158,11,.32);
+  display:flex; align-items:center; justify-content:center; font-size:18px;
+}
+.title { font-size:13px; font-weight:800; }
+.from { font-size:11px; color:#a5b4cc; margin-top:2px; }
+.close {
+  margin-left:auto; width:28px; height:28px; border:none; border-radius:8px;
+  background:transparent; color:#94a3b8; cursor:pointer; font-size:16px;
+}
+.close:hover { background:rgba(255,255,255,.06); color:#fff; }
+.msg {
+  flex:1; font-size:14px; line-height:1.5; color:#f8fafc;
+  background:rgba(255,255,255,.03); border-radius:12px; padding:12px 13px;
+}
+.reply { display:flex; gap:8px; }
+.reply input {
+  flex:1; border:none; outline:none; border-radius:10px;
+  padding:10px 12px; font-size:12px; color:#e5e7eb;
+  background:#101521; border:1px solid #283043;
+}
+.reply button {
+  min-width:76px; border:none; border-radius:10px; cursor:pointer;
+  background:#f59e0b; color:#111827; font-weight:800; font-size:12px;
+}
+.timer { font-size:11px; color:#94a3b8; text-align:right; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="hdr">
+      <div class="icon">📢</div>
+      <div>
+        <div class="title">Broadcast Message</div>
+        <div class="from" id="from">From admin</div>
+      </div>
+      <button class="close" onclick="dismiss()">×</button>
+    </div>
+    <div class="msg" id="msg">Loading…</div>
+    <div class="reply">
+      <input id="reply" placeholder="Reply to admin (optional)">
+      <button onclick="sendReply()">Reply</button>
+    </div>
+    <div class="timer" id="timer"></div>
+  </div>
+
+<script>
+let payload = null;
+let closeAt = 0;
+let timerId = null;
+
+function dismiss() {
+  window.OpsLynk?.dismissBroadcastPopup();
+}
+
+async function sendReply() {
+  if (!payload) return;
+  const text = document.getElementById('reply').value.trim();
+  if (!text) return;
+  await window.OpsLynk?.sendBroadcastReply({
+    peerId: payload.fromId,
+    text,
+    broadcastId: payload.broadcastId
+  });
+  dismiss();
+}
+
+function updateTimer() {
+  const leftMs = Math.max(0, closeAt - Date.now());
+  const left = Math.ceil(leftMs / 1000);
+  document.getElementById('timer').textContent = left > 0 ? `Closing in ${left}s` : '';
+  if (leftMs <= 0 && timerId) {
+    clearInterval(timerId);
+    timerId = null;
+    dismiss();
+  }
+}
+
+window.OpsLynk?.on('broadcast-popup-data', (data) => {
+  payload = data;
+  document.getElementById('from').textContent = `From ${data.fromName || 'Admin'}`;
+  document.getElementById('msg').textContent = data.text || '';
+  const durationMs = Math.max(3000, (Number(data.durationSeconds || 10) || 10) * 1000);
+  closeAt = Date.now() + durationMs;
+  updateTimer();
+  timerId = setInterval(updateTimer, 250);
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') dismiss();
+  if (e.key === 'Enter' && !e.shiftKey) sendReply();
+});
+</script>
+</body>
+</html>

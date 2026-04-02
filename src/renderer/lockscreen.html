@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline';" />
+<title>OpsLynk – Screen Locked</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+  html, body {
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+    background: #05070d;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: #e2e8f0;
+  }
+
+  /* animated gradient background */
+  .bg {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(239,68,68,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 30%, rgba(79,62,247,0.10) 0%, transparent 60%),
+                #05070d;
+    animation: pulse-bg 6s ease-in-out infinite alternate;
+  }
+  @keyframes pulse-bg {
+    from { opacity: 0.85; }
+    to   { opacity: 1; }
+  }
+
+  .content {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    width: 100vw; height: 100vh;
+    gap: 0;
+  }
+
+  /* Lock icon */
+  .lock-icon {
+    width: 88px; height: 88px;
+    background: rgba(239,68,68,0.12);
+    border: 2px solid rgba(239,68,68,0.35);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 28px;
+    animation: lock-pulse 3s ease-in-out infinite;
+  }
+  @keyframes lock-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.25), 0 0 30px rgba(239,68,68,0.12); }
+    50%       { box-shadow: 0 0 0 14px rgba(239,68,68,0), 0 0 50px rgba(239,68,68,0.22); }
+  }
+  .lock-icon svg { width: 40px; height: 40px; }
+
+  .title {
+    font-size: 13px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: rgba(239,68,68,0.8);
+    margin-bottom: 14px;
+  }
+
+  .headline {
+    font-size: 28px; font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  .sub {
+    font-size: 14px; color: rgba(148,163,184,0.75);
+    margin-bottom: 36px;
+    text-align: center;
+  }
+
+  /* Message card */
+  .msg-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(239,68,68,0.18);
+    border-radius: 12px;
+    padding: 20px 32px;
+    max-width: 560px; width: 90%;
+    text-align: center;
+  }
+  .msg-label {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: rgba(239,68,68,0.6);
+    margin-bottom: 8px;
+  }
+  .msg-text {
+    font-size: 16px; color: #e2e8f0;
+    line-height: 1.55;
+    word-break: break-word;
+    min-height: 24px;
+  }
+
+  /* timestamp */
+  .ts {
+    margin-top: 28px;
+    font-size: 12px; color: rgba(148,163,184,0.4);
+    letter-spacing: 0.05em;
+  }
+
+  /* bottom badge */
+  .badge {
+    position: fixed; bottom: 28px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; color: rgba(148,163,184,0.35);
+    letter-spacing: 0.08em;
+  }
+  .badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(239,68,68,0.5);
+    animation: dot-blink 2s ease-in-out infinite;
+  }
+  @keyframes dot-blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.2; }
+  }
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="content">
+
+  <div class="lock-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+    </svg>
+  </div>
+
+  <div class="title">OpsLynk — Admin Lock</div>
+  <div class="headline">This screen has been locked</div>
+  <div class="sub">Please wait for your administrator to unlock your workstation.</div>
+
+  <div class="msg-card">
+    <div class="msg-label">Message from Admin</div>
+    <div class="msg-text" id="adminMsg">Your screen has been locked by the administrator.</div>
+  </div>
+
+  <div class="ts" id="lockTime"></div>
+</div>
+
+<div class="badge">
+  <div class="badge-dot"></div>
+  LOCKED BY OPSLYNK ADMIN
+</div>
+
+<script>
+  // Block all keyboard shortcuts
+  window.addEventListener('keydown', e => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+
+  // Block right-click context menu
+  window.addEventListener('contextmenu', e => e.preventDefault(), true);
+
+  // Block mouse wheel (just in case)
+  window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+
+  // Receive lock data from main process
+  window.OpsLynk?.on('lockscreen-data', (data) => {
+    if (data?.message) {
+      document.getElementById('adminMsg').textContent = data.message;
+    }
+    const ts = data?.lockedAt ? new Date(data.lockedAt) : new Date();
+    document.getElementById('lockTime').textContent =
+      'Locked at ' + ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  });
+</script>
+</body>
+</html>
