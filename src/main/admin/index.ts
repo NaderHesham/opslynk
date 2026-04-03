@@ -5,13 +5,14 @@ import { createAdminPolicies } from './adminPolicies';
 import { createAdminCommands } from './adminCommands';
 import { createAdminController } from './adminController';
 import { createAuthorizationBoundary } from '../auth/authorizationBoundary';
-import { createCommandValidation } from './commandValidation';
+import { createAdminCommandValidators, createCommandValidation } from './commandValidation';
 import { createAuditLogger } from '../audit/auditLogger';
 
 interface AdminDeps {
   state: AdminRuntimeState;
   hasAdminAccess: (role: string | undefined) => boolean;
   isSuperAdmin: (role: string | undefined) => boolean;
+  onAuditEntry?: (entry: Record<string, unknown>) => void;
   [key: string]: unknown;
 }
 
@@ -24,10 +25,10 @@ export function createAdminModule(deps: AdminDeps): AdminModuleApi {
 
   const commands = createAdminCommands(deps as never);
   const authorization = createAuthorizationBoundary({
-    checkPolicy: (command) => policies.check(command)
+    checkPolicy: (command, payload) => policies.check(command, payload)
   });
-  const validation = createCommandValidation({});
-  const auditLogger = createAuditLogger();
+  const validation = createCommandValidation({ validators: createAdminCommandValidators() });
+  const auditLogger = createAuditLogger({ onEntry: deps.onAuditEntry });
 
   const controller = createAdminController({
     commands,
