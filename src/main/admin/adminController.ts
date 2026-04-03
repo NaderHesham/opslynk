@@ -70,10 +70,20 @@ export function createAdminController({
 
     onBeforeExecute({ command, payload: normalizedPayload });
     auditLogger.logBeforeExecute({ command, payload: normalizedPayload });
-    const result = await commands.execute(command, normalizedPayload);
-    onAfterExecute({ command, payload: normalizedPayload, result });
-    auditLogger.logAfterExecute({ command, payload: normalizedPayload, result });
-    return result;
+    try {
+      const result = await commands.execute(command, normalizedPayload);
+      onAfterExecute({ command, payload: normalizedPayload, result });
+      auditLogger.logAfterExecute({ command, payload: normalizedPayload, result });
+      return result;
+    } catch (error) {
+      const failure = {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown admin command execution error.'
+      };
+      onAfterExecute({ command, payload: normalizedPayload, result: failure });
+      auditLogger.logAfterExecute({ command, payload: normalizedPayload, result: failure });
+      throw error;
+    }
   }
 
   return { run };

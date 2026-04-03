@@ -28,6 +28,10 @@ const SENSITIVE_COMMANDS = new Set<AdminCommand>([
   ADMIN_COMMANDS.DELETE_USER_GROUP
 ]);
 
+function isSensitiveCommand(command: AdminCommand): boolean {
+  return SENSITIVE_COMMANDS.has(command);
+}
+
 function asStringArrayOrNull(value: unknown): string[] | null | undefined {
   if (value == null) return null;
   if (!Array.isArray(value)) return undefined;
@@ -133,9 +137,10 @@ export function createCommandValidation({ validators = {} }: ValidationDeps): {
   function validate(request: ValidationRequest): ValidationDecision {
     const validator = validators[request.command];
     if (!validator) {
-      if (SENSITIVE_COMMANDS.has(request.command)) {
+      if (isSensitiveCommand(request.command)) {
         return { valid: false, error: 'Validation rules are not configured.', mode: 'hard-deny' };
       }
+      // Transitional behavior for non-sensitive commands only.
       return { valid: true, mode: 'legacy-trust' };
     }
     const result = validator(request.payload);

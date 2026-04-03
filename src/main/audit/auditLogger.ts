@@ -76,6 +76,18 @@ function summarizePayload(command: AdminCommand, payload: Record<string, unknown
   return { keys: Object.keys(payload) };
 }
 
+function summarizeResult(result: unknown): Record<string, unknown> {
+  if (typeof result !== 'object' || result == null) {
+    return { value: result };
+  }
+  const obj = result as Record<string, unknown>;
+  return {
+    success: typeof obj.success === 'boolean' ? obj.success : undefined,
+    error: typeof obj.error === 'string' ? obj.error : undefined,
+    canceled: typeof obj.canceled === 'boolean' ? obj.canceled : undefined
+  };
+}
+
 export function createAuditLogger({ maxEntries = 500, onEntry }: AuditLoggerDeps = {}): AuditLogger {
   const entries: Record<string, unknown>[] = [];
   const append = (entry: Record<string, unknown>): void => {
@@ -127,9 +139,7 @@ export function createAuditLogger({ maxEntries = 500, onEntry }: AuditLoggerDeps
         timestamp: new Date().toISOString(),
         type: 'admin-after-execute',
         command: entry.command,
-        result: typeof entry.result === 'object' && entry.result !== null
-          ? { ...(entry.result as Record<string, unknown>) }
-          : { value: entry.result },
+        result: summarizeResult(entry.result),
         payload: summarizePayload(entry.command, entry.payload)
       });
     },

@@ -24,8 +24,10 @@ export function createAdminModule(deps: AdminDeps): AdminModuleApi {
   });
 
   const commands = createAdminCommands(deps as never);
+  const checkPolicy = (command: AdminCommand, payload: Record<string, unknown>): { allowed: boolean; error?: string } =>
+    policies.check(command, payload);
   const authorization = createAuthorizationBoundary({
-    checkPolicy: (command, payload) => policies.check(command, payload)
+    checkPolicy
   });
   const validation = createCommandValidation({ validators: createAdminCommandValidators() });
   const auditLogger = createAuditLogger({ onEntry: deps.onAuditEntry });

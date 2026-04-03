@@ -164,3 +164,81 @@ test('admin module rejects invalid sensitive payload before execute', async () =
   assert.equal(result.success, false);
   assert.equal(result.error, 'Broadcast text is required.');
 });
+
+test('controller denies sensitive command execution when authorization policy is unavailable', async () => {
+  let executed = false;
+  const { createAuthorizationBoundary } = require('../../src/main/auth/authorizationBoundary');
+  const boundary = createAuthorizationBoundary({});
+
+  const controller = createAdminController({
+    policies: { check: () => ({ allowed: true }) },
+    commands: { execute: async () => { executed = true; return { success: true }; } },
+    validation: {
+      validate: () => ({ valid: true })
+    },
+    authorization: {
+      authorize: boundary.authorize
+    }
+  });
+
+  const result = await controller.run(ADMIN_COMMANDS.LOCK_ALL_SCREENS, { message: 'lock now' });
+  assert.equal(result.success, false);
+  assert.equal(result.error, 'Authorization policy is not configured.');
+  assert.equal(executed, false);
+});
+
+test('controller + audit logger capture validation, authorization, deny, and execution outcomes', async () => {
+  const logger = createAuditLogger();
+  const executed = [];
+
+  const allowController = createAdminController({
+    policies: { check: () => ({ allowed: true }) },
+    commands: { execute: async () => { executed.push('allow'); return { success: true }; } },
+    validation: { validate: () => ({ valid: true }) },
+    authorization: { authorize: () => ({ allowed: true }) },
+    auditLogger: logger
+  });
+
+  const denyController = createAdminController({
+    policies: { check: () => ({ allowed: true }) },
+    commands: { execute: async () => { executed.push('deny'); return { success: true }; } },
+    validation: { validate: () => ({ valid: true }) },
+    authorization: { authorize: () => ({ allowed: false, error: 'blocked' }) },
+    auditLogger: logger
+  });
+
+  await allowController.run(ADMIN_COMMANDS.SEND_BROADCAST, { text: 'go', urgency: 'urgent', durationSeconds: 5, peerIds: ['peer-1'] });
+  const denied = await denyController.run(ADMIN_COMMANDS.SEND_BROADCAST, { text: 'go', urgency: 'urgent', durationSeconds: 5, peerIds: ['peer-1'] });
+
+  assert.equal(denied.success, false);
+  assert.equal(executed.length, 1);
+
+  const types = logger.getEntries().map((x) => x.type);
+  assert.ok(types.includes('admin-validation'));
+  assert.ok(types.includes('admin-authorization'));
+  assert.ok(types.includes('admin-denied'));
+  assert.ok(types.includes('admin-after-execute'));
+});
+
+test('controller logs execution outcome even when command throws', async () => {
+  const logger = createAuditLogger();
+  const controller = createAdminController({
+    policies: { check: () => ({ allowed: true }) },
+    commands: { execute: async () => { throw new Error('boom'); } },
+    validation: { validate: () => ({ valid: true }) },
+    authorization: { authorize: () => ({ allowed: true }) },
+    auditLogger: logger
+  });
+
+  await assert.rejects(() => controller.run(ADMIN_COMMANDS.SEND_BROADCAST, {
+    text: 'go',
+    urgency: 'urgent',
+    durationSeconds: 5,
+    peerIds: ['peer-1']
+  }), /boom/);
+
+  const entries = logger.getEntries();
+  const after = entries.find((x) => x.type === 'admin-after-execute');
+  assert.ok(after);
+  assert.equal(after.result.success, false);
+});

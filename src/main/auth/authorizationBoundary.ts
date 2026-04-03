@@ -28,14 +28,19 @@ const SENSITIVE_COMMANDS = new Set<AdminCommand>([
   ADMIN_COMMANDS.DELETE_USER_GROUP
 ]);
 
+function isSensitiveCommand(command: AdminCommand): boolean {
+  return SENSITIVE_COMMANDS.has(command);
+}
+
 export function createAuthorizationBoundary({ checkPolicy }: AuthorizationBoundaryDeps): {
   authorize: (request: AuthorizationRequest) => AuthorizationDecision;
 } {
   function authorize(request: AuthorizationRequest): AuthorizationDecision {
     if (!checkPolicy) {
-      if (SENSITIVE_COMMANDS.has(request.command)) {
+      if (isSensitiveCommand(request.command)) {
         return { allowed: false, error: 'Authorization policy is not configured.', mode: 'hard-deny' };
       }
+      // Transitional behavior for non-sensitive commands only.
       return { allowed: true, mode: 'legacy-trust' };
     }
     const result = checkPolicy(request.command, request.payload);
