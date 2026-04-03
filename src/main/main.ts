@@ -49,6 +49,7 @@ const { createPeerSession } = require('../../src/main/network/peerSession');
 const { registerLifecycle } = require('../../src/main/bootstrap/lifecycle');
 const { registerIpcHandlers } = require('./ipc/registerIpcHandlers') as typeof import('./ipc/registerIpcHandlers');
 const { createAdminModule } = require('./admin') as typeof import('./admin');
+const { createFileAuditSink } = require('./audit/fileAuditSink') as typeof import('./audit/fileAuditSink');
 
 const state: AppRuntimeState = createAppState(wsNet.CHAT_PORT_BASE);
 const owners = createStateOwners(state);
@@ -170,7 +171,8 @@ const adminModule = createAdminModule({
   app,
   dialog,
   fs,
-  path
+  path,
+  onAuditEntry: createFileAuditSink({ app, fs, path }).onAuditEntry
 });
 
 registerIpcHandlers({

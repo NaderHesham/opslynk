@@ -104,6 +104,22 @@ test('audit logger records lightweight metadata for sensitive command flow', () 
   assert.equal(entries[1].payload.hasVideo, true);
 });
 
+test('audit logger invokes onEntry asynchronously', async () => {
+  let observed = null;
+  const logger = createAuditLogger({
+    onEntry: (entry) => { observed = entry; }
+  });
+  logger.logDenied({
+    command: ADMIN_COMMANDS.LOCK_ALL_SCREENS,
+    payload: { message: 'x' },
+    reason: 'denied'
+  });
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.ok(observed);
+  assert.equal(observed.type, 'admin-denied');
+});
+
 test('admin module rejects invalid sensitive payload before execute', async () => {
   const deps = {
     state: {
