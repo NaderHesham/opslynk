@@ -53,6 +53,7 @@ test('controller runs through validation/authorization/audit boundaries before e
     auditLogger: {
       logDenied: () => calls.push('audit-denied'),
       logValidation: () => calls.push('audit-validation'),
+      logAuthorization: () => calls.push('audit-authorization'),
       logBeforeExecute: () => calls.push('audit-before'),
       logAfterExecute: () => calls.push('audit-after')
     }
@@ -60,7 +61,7 @@ test('controller runs through validation/authorization/audit boundaries before e
 
   const result = await controller.run(ADMIN_COMMANDS.SEND_BROADCAST, { text: 'hello' });
   assert.deepEqual(result, { success: true });
-  assert.deepEqual(calls, ['validate', 'audit-validation', 'authorize', 'audit-before', 'audit-after']);
+  assert.deepEqual(calls, ['validate', 'audit-validation', 'authorize', 'audit-authorization', 'audit-before', 'audit-after']);
 });
 
 test('command validation hard-denies sensitive commands when validators are missing', () => {
@@ -97,11 +98,18 @@ test('audit logger records lightweight metadata for sensitive command flow', () 
     command: ADMIN_COMMANDS.SEND_FORCED_VIDEO_BROADCAST,
     payload: { videoB64: 'abc', peerIds: ['p1'] }
   });
+  logger.logAuthorization({
+    command: ADMIN_COMMANDS.SEND_BROADCAST,
+    payload: { text: 'hello', urgency: 'urgent', durationSeconds: 10, peerIds: ['p1', 'p2'] },
+    allowed: true
+  });
   const entries = logger.getEntries();
-  assert.equal(entries.length, 2);
+  assert.equal(entries.length, 3);
   assert.equal(entries[0].type, 'admin-validation');
   assert.equal(entries[0].payload.textLength, 5);
   assert.equal(entries[1].payload.hasVideo, true);
+  assert.equal(entries[2].type, 'admin-authorization');
+  assert.equal(entries[2].allowed, true);
 });
 
 test('audit logger invokes onEntry asynchronously', async () => {

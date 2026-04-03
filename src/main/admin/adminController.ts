@@ -19,6 +19,7 @@ interface ControllerDeps {
   auditLogger?: {
     logDenied: (entry: { command: AdminCommand; payload: Record<string, unknown>; reason?: string }) => void;
     logValidation: (entry: { command: AdminCommand; payload: Record<string, unknown>; valid: boolean; error?: string }) => void;
+    logAuthorization: (entry: { command: AdminCommand; payload: Record<string, unknown>; allowed: boolean; error?: string }) => void;
     logBeforeExecute: (entry: { command: AdminCommand; payload: Record<string, unknown> }) => void;
     logAfterExecute: (entry: { command: AdminCommand; payload: Record<string, unknown>; result: unknown }) => void;
   };
@@ -38,6 +39,7 @@ export function createAdminController({
   auditLogger = {
     logDenied: () => {},
     logValidation: () => {},
+    logAuthorization: () => {},
     logBeforeExecute: () => {},
     logAfterExecute: () => {}
   }
@@ -59,6 +61,7 @@ export function createAdminController({
     }
 
     const policy = authorization.authorize({ command, payload: normalizedPayload });
+    auditLogger.logAuthorization({ command, payload: normalizedPayload, allowed: policy.allowed, error: policy.error });
     if (!policy.allowed) {
       onDenied({ command, payload: normalizedPayload, reason: policy.error });
       auditLogger.logDenied({ command, payload: normalizedPayload, reason: policy.error });

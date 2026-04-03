@@ -23,6 +23,7 @@ export interface AuditExecutionEntry {
 export interface AuditLogger {
   logDenied: (entry: AuditDeniedEntry) => void;
   logValidation: (entry: AuditValidatedEntry) => void;
+  logAuthorization: (entry: { command: AdminCommand; payload: Record<string, unknown>; allowed: boolean; error?: string }) => void;
   logBeforeExecute: (entry: { command: AdminCommand; payload: Record<string, unknown> }) => void;
   logAfterExecute: (entry: AuditExecutionEntry) => void;
   getEntries: () => ReadonlyArray<Record<string, unknown>>;
@@ -99,6 +100,16 @@ export function createAuditLogger({ maxEntries = 500, onEntry }: AuditLoggerDeps
         type: 'admin-validation',
         command: entry.command,
         valid: entry.valid,
+        error: entry.error || null,
+        payload: summarizePayload(entry.command, entry.payload)
+      });
+    },
+    logAuthorization: (entry) => {
+      append({
+        timestamp: new Date().toISOString(),
+        type: 'admin-authorization',
+        command: entry.command,
+        allowed: entry.allowed,
         error: entry.error || null,
         payload: summarizePayload(entry.command, entry.payload)
       });
