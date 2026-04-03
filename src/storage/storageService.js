@@ -5,11 +5,11 @@ const path = require('path');
 const fs   = require('fs');
 const { app } = require('electron');
 
-const DATA_DIR       = path.join(app.getPath('userData'), 'opslynk');
-const HISTORY_FILE   = path.join(DATA_DIR, 'history.json');
-const PROFILE_FILE   = path.join(DATA_DIR, 'profile.json');
-const STATE_FILE     = path.join(DATA_DIR, 'state.json');
-const DEVICES_FILE   = path.join(DATA_DIR, 'devices.json');
+const DATA_DIR        = path.join(app.getPath('userData'), 'opslynk');
+const HISTORY_FILE    = path.join(DATA_DIR, 'history.json');
+const PROFILE_FILE    = path.join(DATA_DIR, 'profile.json');
+const STATE_FILE      = path.join(DATA_DIR, 'state.json');
+const DEVICES_FILE    = path.join(DATA_DIR, 'devices.json');
 const SCREENSHOTS_DIR = path.join(DATA_DIR, 'screenshots');
 
 function ensureDirs() {

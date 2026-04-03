@@ -97,99 +97,6 @@
       border-color: #321620
     }
 
-    .super-topbtn {
-      height: 28px;
-      padding: 0 12px;
-      border: none;
-      border-radius: 999px;
-      background:
-        linear-gradient(135deg, rgba(88, 166, 255, .16), rgba(139, 125, 255, .22));
-      color: #e8f2ff;
-      border: 1px solid rgba(116, 151, 255, .28);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      -webkit-app-region: no-drag;
-      transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease
-    }
-
-    .super-topbtn:hover {
-      transform: translateY(-1px);
-      border-color: rgba(150, 185, 255, .42);
-      box-shadow: 0 10px 22px rgba(88, 166, 255, .16)
-    }
-
-    .super-topbtn .pulse {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #9dc2ff;
-      box-shadow: 0 0 12px rgba(157, 194, 255, .45)
-    }
-
-    .super-topbtn.live {
-      background: linear-gradient(135deg, rgba(88, 166, 255, .2), rgba(25, 195, 125, .18));
-      border-color: rgba(25, 195, 125, .34)
-    }
-
-    .super-topbtn.live .pulse {
-      background: #19c37d;
-      box-shadow: 0 0 12px rgba(25, 195, 125, .45)
-    }
-
-    .logout-topbtn {
-      height: 30px;
-      padding: 0 16px 0 13px;
-      border: none;
-      border-radius: 999px;
-      background: linear-gradient(135deg, #f5c842 0%, #e7a816 40%, #c97f0a 70%, #e7a816 100%);
-      color: #180d00;
-      border: 1px solid rgba(245, 200, 66, .45);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      -webkit-app-region: no-drag;
-      transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
-      box-shadow: 0 8px 24px rgba(201, 127, 10, .28);
-      animation: logoutFloat 3.2s ease-in-out infinite;
-    }
-
-    .logout-topbtn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 14px 30px rgba(231, 168, 22, .35);
-      filter: brightness(1.04)
-    }
-
-    .logout-topbtn:active {
-      transform: translateY(0)
-    }
-
-    .logout-topbtn svg {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0
-    }
-
-    @keyframes logoutFloat {
-      0%, 100% {
-        transform: translateY(-1px)
-      }
-
-      50% {
-        transform: translateY(3px)
-      }
-    }
-
     .spacer {
       flex: 1
     }
@@ -3108,49 +3015,6 @@
       box-shadow: 0 0 12px rgba(88, 166, 255, .35)
     }
 
-    .super-auth .mfield {
-      margin-bottom: 0
-    }
-
-    .super-auth .mfield input {
-      height: 42px;
-      border-radius: 12px;
-      padding: 10px 12px
-    }
-
-    .super-hint {
-      font-size: 10px;
-      color: var(--txt2);
-      margin-top: 8px;
-      line-height: 1.5
-    }
-
-    .super-auth .mactions {
-      display: flex;
-      gap: 8px;
-      justify-content: flex-end;
-      align-items: center
-    }
-
-    #super-admin-submit {
-      min-height: 40px;
-      justify-content: center;
-      white-space: nowrap;
-      padding: 0 18px;
-      font-size: 13px;
-      border-radius: 9px
-    }
-
-    @media (max-width: 760px) {
-      .super-grid {
-        grid-template-columns: 1fr
-      }
-
-      .super-auth .mactions {
-        flex-direction: column
-      }
-    }
-
     /* TOAST */
     #tc {
       position: fixed;
@@ -5049,17 +4913,6 @@
     <div class="logo"><img src="../../assets/logo.png" alt="OpsLynk"><sub>LAN</sub></div>
     <div class="spacer"></div>
     <span id="conn-pill" class="off">● Searching…</span>
-    <button id="logout-topbtn" class="logout-topbtn" onclick="logoutToLogin()">
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path fill="currentColor"
-          d="M10 2a1 1 0 0 1 1 1v2.05a7 7 0 1 1-4.95 2.05A1 1 0 1 1 7.46 8.5 5 5 0 1 0 11 7.05V9a1 1 0 0 1-1.71.7L5.58 6l3.71-3.7A1 1 0 0 1 10 2Z" />
-      </svg>
-      <span>Logout</span>
-    </button>
-    <button id="super-topbtn" class="super-topbtn" onclick="openSuperAdminModal()">
-      <span class="pulse"></span>
-      <span id="super-topbtn-text">Super Admin</span>
-    </button>
     <div class="wbtns">
       <button class="wb" onclick="OpsLynk.minimize()">─</button>
       <button class="wb" onclick="OpsLynk.maximize()">□</button>
@@ -5500,6 +5353,7 @@
             </div>
           </div>
           <div id="userslist"></div>
+
         </div>
       </div>
 
@@ -5688,14 +5542,10 @@
       </div>
       <div class="admin-note">
         <div>
-          <strong id="admin-note-title">Admin Access</strong>
-          <span id="admin-note-text">Unlock the admin panel for broadcasts and help requests.</span>
+          <strong id="admin-note-title">Control Mode</strong>
+          <span id="admin-note-text">This workstation opens directly in control mode while account features are paused.</span>
         </div>
-        <div style="display:flex;gap:8px;" id="admin-open-actions">
-          <button class="btng" id="admin-open-btn" onclick="openAdminModal('admin')">Admin Sign In</button>
-        </div>
-        <button class="btng" id="admin-signout-btn" onclick="signOutAdmin()" style="display:none;">Sign Out</button>
-        <span class="admin-state" id="admin-badge" style="display:none;">ADMIN</span>
+        <span class="admin-state super" id="admin-badge">CONTROL</span>
       </div>
       <div
         style="margin-top:10px;padding:8px 10px;background:var(--input);border-radius:8px;border:1px solid var(--border);">
@@ -5707,94 +5557,6 @@
       <div class="mactions">
         <button class="btng" onclick="closeProfileModal()">Cancel</button>
         <button class="btnp" onclick="saveProfile()">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="moverlay" id="adminmodal">
-    <div class="mbox">
-      <h3 id="admin-modal-title">Admin Access</h3>
-      <div class="mfield">
-        <label id="admin-modal-label">Admin Password</label>
-        <div class="pw-wrap">
-          <input id="adminpass" type="password" placeholder="Enter admin password" onkeydown="adminPassKey(event)">
-          <button class="pw-toggle" id="admin-pw-toggle" type="button" onclick="toggleAdminPassword()"
-            aria-label="Show password">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-          </button>
-        </div>
-        <div class="admin-error" id="admin-error"></div>
-      </div>
-      <div class="mactions">
-        <button class="btng" onclick="closeAdminModal()">Cancel</button>
-        <button class="btnp" id="admin-submit" onclick="submitAdminAccess()">Unlock</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="moverlay" id="superadminmodal">
-    <div class="mbox super-modal">
-      <div class="super-hero">
-        <div class="super-kicker">Executive Control</div>
-        <div class="super-title">Super Admin Access</div>
-        <div class="super-copy">Enter the elevated access layer for top-level operational control, device-wide emergency
-          actions, and privileged oversight.</div>
-        <div class="super-badges">
-          <span class="super-badge">Separate Login</span>
-          <span class="super-badge">Critical Actions</span>
-          <span class="super-badge">Enterprise Control</span>
-        </div>
-      </div>
-      <div class="super-body">
-        <div class="super-grid">
-          <div class="super-card">
-            <h4>Exclusive Powers</h4>
-            <div class="super-perms">
-              <div class="super-perm">
-                <div class="super-dot"></div>
-                <div><strong>Screen Lock Control</strong><span>Lock and unlock every connected workstation during
-                    incidents.</span></div>
-              </div>
-              <div class="super-perm">
-                <div class="super-dot"></div>
-                <div><strong>Role Oversight</strong><span>Own the highest access level above normal admins.</span></div>
-              </div>
-              <div class="super-perm">
-                <div class="super-dot"></div>
-                <div><strong>Security Gate</strong><span>Reserved for restricted or emergency-only actions.</span></div>
-              </div>
-            </div>
-          </div>
-          <div class="super-card super-auth">
-            <h4>Authenticate</h4>
-            <div class="mfield">
-              <label>Super Admin Password</label>
-              <div class="pw-wrap">
-                <input id="superadminpass" type="password" placeholder="Enter super admin password"
-                  onkeydown="superAdminPassKey(event)">
-                <button class="pw-toggle" id="super-pw-toggle" type="button" onclick="toggleSuperAdminPassword()"
-                  aria-label="Show password">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"
-                    stroke-linejoin="round">
-                    <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                </button>
-              </div>
-              <div class="admin-error" id="super-admin-error"></div>
-            </div>
-            <div class="super-hint">Use this only for elevated authority. Normal daily work should stay under the
-              regular admin role.</div>
-            <div class="mactions" style="margin-top:16px;">
-              <button class="btng" onclick="closeSuperAdminModal()">Cancel</button>
-              <button class="btnp" id="super-admin-submit" onclick="submitSuperAdminAccess()">Unlock</button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -5817,22 +5579,6 @@
     </div>
   </div>
 
-  <div class="moverlay" id="logoutmodal" onclick="logoutOverlayClick(event)">
-    <div class="mbox" style="width:360px;max-width:calc(100vw - 28px);">
-      <h3>Confirm Logout</h3>
-      <div style="font-size:12px;color:var(--txt2);line-height:1.65;margin-bottom:16px;">
-        Do you want to leave the workspace and return to the login page?
-      </div>
-      <div style="padding:10px 12px;background:var(--input);border:1px solid var(--border);border-radius:10px;font-size:11px;color:var(--txt3);margin-bottom:16px;">
-        Any unsent draft in the current screen may be lost.
-      </div>
-      <div class="mactions">
-        <button class="btng" onclick="closeLogoutModal()">Cancel</button>
-        <button class="btnp" id="logout-confirm-btn" onclick="confirmLogout()">Logout</button>
-      </div>
-    </div>
-  </div>
-
   <script>
     window.OpsLynk?.setMainWindow?.();
 
@@ -5847,14 +5593,12 @@
     let networkOnline = false;
     let modalAvatar = null;
     let selectedSpecPeerId = null;
-    let wrongAdminAttempts = 0;
     let userGroups = [];
     let dashboardActivity = [];
     let dashboardSeries = { presence: [], pressure: [] };
     let counterAnimations = new Map();
     let userFilter = 'all';
     let helpFilter = 'open';
-    let loginMode = 'admin';
 
     const COLORS = ['#4f8ef7', '#7c3aed', '#ec4899', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#84cc16'];
     const esc = s => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -6198,32 +5942,19 @@
       applyAvatar(av, me);
       document.getElementById('myname').innerHTML = `${esc(me.username)} ${roleBadgeHTML(me.role)}`;
       document.getElementById('mytitle').textContent = me.title || (me.role === 'super_admin' ? 'Super Administrator' : hasAdminAccess(me.role) ? 'Administrator' : 'Team Member');
-      const isAdmin = hasAdminAccess(me.role);
       const isSuper = isSuperAdminRole(me.role);
-      const superTopBtn = document.getElementById('super-topbtn');
-      const superTopBtnText = document.getElementById('super-topbtn-text');
-      document.getElementById('admin-badge').style.display = isAdmin ? 'inline-flex' : 'none';
-      document.getElementById('admin-badge').textContent = isSuper ? 'SUPER ADMIN' : 'ADMIN';
-      document.getElementById('admin-badge').classList.toggle('super', isSuper);
-      document.getElementById('admin-open-actions').style.display = isAdmin ? 'none' : 'flex';
-      document.getElementById('admin-signout-btn').style.display = isAdmin ? 'inline-flex' : 'none';
-      document.getElementById('admin-note-title').textContent = isSuper ? 'Super Admin Enabled' : isAdmin ? 'Admin Enabled' : 'Admin Access';
-      document.getElementById('admin-note-text').textContent = isAdmin
-        ? isSuper ? 'You are signed in as super admin on this device.' : 'You are signed in as admin on this device.'
-        : 'Sign in as admin to access broadcasts and help requests.';
+      document.getElementById('admin-badge').textContent = isSuper ? 'CONTROL' : 'READY';
       const lockCard = document.querySelector('.lock-card');
       const lockNote = document.getElementById('lockCardNote');
-      if (lockCard) lockCard.classList.toggle('disabled', isAdmin && !isSuper);
-      if (lockNote) lockNote.textContent = isSuper ? 'Full device control enabled.' : isAdmin ? 'Super Admin only.' : 'Sign in as Super Admin to use screen lock.';
-      if (superTopBtn) {
-        superTopBtn.classList.toggle('live', isSuper);
-        superTopBtnText.textContent = isSuper ? 'Super Admin Live' : 'Super Admin';
-      }
+      if (lockCard) lockCard.classList.toggle('disabled', !isSuper);
+      if (lockNote) lockNote.textContent = isSuper ? 'Full device control enabled.' : 'Screen lock requires control mode.';
     }
     function applyRoleState() {
       const isAdmin = hasAdminAccess(me.role);
+      const isSuper = me.role === 'super_admin';
       document.body.classList.toggle('is-admin', isAdmin);
       document.body.classList.toggle('is-user', !isAdmin);
+      document.body.classList.toggle('is-super', isSuper);
       if (isAdmin && document.querySelector('.tb.active')?.dataset.tab === 'ask') switchTab('chat');
     }
     function renderPeerList() {
@@ -6806,175 +6537,6 @@
       modalAvatar = null;
       applyAvatar(document.getElementById('profprev'), { ...me, avatar: null });
     }
-    function openAdminModal(mode = 'admin') {
-      loginMode = mode;
-      const isSuper = loginMode === 'super_admin';
-      document.getElementById('adminpass').value = '';
-      document.getElementById('adminpass').type = 'password';
-      document.getElementById('admin-pw-toggle')?.classList.remove('is-visible');
-      document.getElementById('admin-pw-toggle')?.setAttribute('aria-label', 'Show password');
-      document.getElementById('admin-modal-title').textContent = isSuper ? 'Super Admin Access' : 'Admin Access';
-      document.getElementById('admin-modal-label').textContent = isSuper ? 'Super Admin Password' : 'Admin Password';
-      document.getElementById('adminpass').placeholder = isSuper ? 'Enter super admin password' : 'Enter admin password';
-      document.getElementById('admin-submit').textContent = 'Unlock';
-      hideAdminError();
-      document.getElementById('adminmodal').classList.add('show');
-      setTimeout(() => document.getElementById('adminpass').focus(), 40);
-    }
-    function closeAdminModal() { document.getElementById('adminmodal').classList.remove('show'); }
-    function adminPassKey(e) { if (e.key === 'Enter') submitAdminAccess(); }
-    function openSuperAdminModal() {
-      document.getElementById('superadminpass').value = '';
-      document.getElementById('superadminpass').type = 'password';
-      document.getElementById('super-pw-toggle')?.classList.remove('is-visible');
-      document.getElementById('super-pw-toggle')?.setAttribute('aria-label', 'Show password');
-      hideSuperAdminError();
-      document.getElementById('superadminmodal').classList.add('show');
-      setTimeout(() => document.getElementById('superadminpass').focus(), 40);
-    }
-    function closeSuperAdminModal() { document.getElementById('superadminmodal').classList.remove('show'); }
-    function superAdminPassKey(e) { if (e.key === 'Enter') submitSuperAdminAccess(); }
-    function toggleAdminPassword() {
-      const input = document.getElementById('adminpass');
-      const visible = input.type === 'password';
-      input.type = visible ? 'text' : 'password';
-      document.getElementById('admin-pw-toggle')?.classList.toggle('is-visible', visible);
-      document.getElementById('admin-pw-toggle')?.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
-    }
-    function toggleSuperAdminPassword() {
-      const input = document.getElementById('superadminpass');
-      const visible = input.type === 'password';
-      input.type = visible ? 'text' : 'password';
-      document.getElementById('super-pw-toggle')?.classList.toggle('is-visible', visible);
-      document.getElementById('super-pw-toggle')?.setAttribute('aria-label', visible ? 'Hide password' : 'Show password');
-    }
-    function showAdminError(msg) {
-      const err = document.getElementById('admin-error');
-      err.textContent = msg;
-      err.classList.add('show');
-    }
-    function hideAdminError() {
-      const err = document.getElementById('admin-error');
-      err.textContent = '';
-      err.classList.remove('show');
-    }
-    function showSuperAdminError(msg) {
-      const err = document.getElementById('super-admin-error');
-      err.textContent = msg;
-      err.classList.add('show');
-    }
-    function hideSuperAdminError() {
-      const err = document.getElementById('super-admin-error');
-      err.textContent = '';
-      err.classList.remove('show');
-    }
-    function randomAdminError() {
-      const lines = [
-        'Nice try. The admin door only opens for VIP passwords.',
-        'That password is as wrong as fixing Wi‑Fi with a spoon.',
-        'Nope. The admin panel just looked away awkwardly.',
-        'Close. If close means somewhere on another planet.',
-        'Security appreciates the effort, but still says no.',
-        'That password did not pass the vibe check.',
-        'The admin badge is hiding from that password.',
-        'Denied. Dramatically, but politely.',
-        'The admin panel saw that guess and pretended to be busy.',
-        'Secret tunnel not found. Try the real password.'
-      ];
-      const extra = wrongAdminAttempts >= 3 ? ' Persistent detective energy detected.' : '';
-      return lines[Math.floor(Math.random() * lines.length)] + extra;
-    }
-    async function submitAdminAccess() {
-      const btn = document.getElementById('admin-submit');
-      const password = document.getElementById('adminpass').value;
-      hideAdminError();
-      btn.disabled = true;
-      const result = loginMode === 'super_admin'
-        ? await OpsLynk.unlockSuperAdmin(password)
-        : await OpsLynk.unlockAdmin(password);
-      btn.disabled = false;
-      if (!result.success) {
-        wrongAdminAttempts++;
-        showAdminError(randomAdminError());
-        document.getElementById('adminpass').focus();
-        document.getElementById('adminpass').select();
-        return;
-      }
-      wrongAdminAttempts = 0;
-      me = result.profile;
-      applyRoleState();
-      renderMyProfile();
-      closeAdminModal();
-      closeProfileModal();
-      addDashboardActivity('system', me.role === 'super_admin' ? 'Super Admin signed in' : 'Admin signed in', 'Advanced control dashboard unlocked on this workstation.', me.username || 'Current device');
-      switchTab('dashboard');
-      showToast(me.role === 'super_admin' ? 'Super Admin signed in' : 'Admin signed in', me.role === 'super_admin' ? 'This device now has super admin access.' : 'This device now has access to the admin panel.');
-    }
-
-    async function submitSuperAdminAccess() {
-      const btn = document.getElementById('super-admin-submit');
-      const password = document.getElementById('superadminpass').value;
-      hideSuperAdminError();
-      btn.disabled = true;
-      const result = await OpsLynk.unlockSuperAdmin(password);
-      btn.disabled = false;
-      if (!result.success) {
-        wrongAdminAttempts++;
-        showSuperAdminError('Incorrect super admin password.');
-        document.getElementById('superadminpass').focus();
-        document.getElementById('superadminpass').select();
-        return;
-      }
-      wrongAdminAttempts = 0;
-      me = result.profile;
-      applyRoleState();
-      renderMyProfile();
-      closeSuperAdminModal();
-      closeProfileModal();
-      addDashboardActivity('system', 'Super Admin signed in', 'Elevated control layer unlocked on this workstation.', me.username || 'Current device');
-      switchTab('dashboard');
-      showToast('Super Admin signed in', 'This device now has super admin access.');
-    }
-
-    async function signOutAdmin() {
-      const result = await OpsLynk.signoutAdmin();
-      if (!result?.success) return;
-      me = result.profile;
-      applyRoleState();
-      renderMyProfile();
-      switchTab('chat');
-      closeProfileModal();
-      showToast('Admin signed out', 'This device returned to user mode.');
-    }
-    function logoutToLogin() {
-      closeProfileModal();
-      document.getElementById('logoutmodal').classList.add('show');
-    }
-    function closeLogoutModal() {
-      document.getElementById('logoutmodal').classList.remove('show');
-      document.getElementById('logout-confirm-btn').disabled = false;
-    }
-    function logoutOverlayClick(event) {
-      if (event.target.id === 'logoutmodal') closeLogoutModal();
-    }
-    async function confirmLogout() {
-      const btn = document.getElementById('logout-confirm-btn');
-      btn.disabled = true;
-      try {
-        if (hasAdminAccess(me?.role)) {
-          const result = await OpsLynk.signoutAdmin();
-          if (result?.success) {
-            me = result.profile;
-            applyRoleState();
-            renderMyProfile();
-          }
-        }
-      } catch (error) {
-        console.error('confirmLogout failed:', error);
-      }
-      closeLogoutModal();
-      window.location.replace('./login.html');
-    }
     // TOAST
     function showToast(title, body, type = '') {
       const t = document.createElement('div'); t.className = 'toast' + (type ? ' ' + type : '');
@@ -7166,13 +6728,6 @@
 
       OpsLynk.on('network:broadcast', data => { if (data.urgency !== 'urgent') { beep(520, 0.18); } });
       OpsLynk.on('network:status', ({ online }) => { networkOnline = !!online; updateConnPill(); });
-      OpsLynk.on('admin:signedOut', ({ profile }) => {
-        me = profile;
-        applyRoleState();
-        renderMyProfile();
-        switchTab('chat');
-        showToast('Admin signed out', 'This device returned to user mode.');
-      });
 
       OpsLynk.on('network:ack', ({ fromId, broadcastId, username }) => {
         ackCount++;
@@ -7412,14 +6967,9 @@
       });
     }
 
+
     window.addEventListener('online', syncNetworkStatus);
     window.addEventListener('offline', syncNetworkStatus);
-    window.addEventListener('keydown', (event) => {
-      const logoutModal = document.getElementById('logoutmodal');
-      if (!logoutModal?.classList.contains('show')) return;
-      if (event.key === 'Escape') closeLogoutModal();
-      if (event.key === 'Enter') confirmLogout();
-    });
     document.addEventListener('visibilitychange', syncNetworkStatus);
     updateBroadcastCharCount();
     setBroadcastAckCount(0);

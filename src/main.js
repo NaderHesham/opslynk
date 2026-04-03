@@ -13,7 +13,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // ── SERVICES ──────────────────────────────────────────────────────────────────
 const storage       = require('./storage/storageService');
-const { getOrCreateDeviceIdentity, buildDefaultProfile, pickColor } = require('./services/deviceIdentity');
+const { getOrCreateDeviceIdentity, buildDefaultProfile } = require('./services/deviceIdentity');
 const { getSystemInfo, getPrimaryNetworkInfo }                      = require('./system/systemInfo');
 const { captureScreenshot }                                         = require('./system/screenshotService');
 const wsNet         = require('./network/wsServer');
@@ -22,8 +22,8 @@ const helpSvc       = require('./services/helpService');
 const { bus, EVENTS }  = require('./services/eventBus');
 
 // ── CONFIG ────────────────────────────────────────────────────────────────────
-const ADMIN_PASSWORD       = 'admin123';
-const SUPER_ADMIN_PASSWORD = 'superadmin123';
+const CONTROL_ROLE = 'super_admin';
+const CONTROL_USERNAME = 'Local Operator';
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let myProfile    = null;
@@ -52,26 +52,11 @@ const normalBroadcastWindows = new Set();
 const helpPopupWindows       = new Map();
 
 const WINDOW_MODES = {
-  login: { width: 1268, height: 888, minWidth: 1268, minHeight: 888, resizable: false },
   main:  { width: 1180, height: 740, minWidth: 920, minHeight: 600, resizable: true }
 };
 
 function getWindowModeConfig(modeName) {
-  const mode = WINDOW_MODES[modeName];
-  if (!mode) return null;
-  if (modeName !== 'login') return mode;
-
-  const { workAreaSize } = screen.getPrimaryDisplay();
-  const margin = 48;
-  const width = Math.min(mode.width, Math.max(960, workAreaSize.width - margin));
-  const height = Math.min(mode.height, Math.max(720, workAreaSize.height - margin));
-  return {
-    ...mode,
-    width,
-    height,
-    minWidth: Math.min(mode.minWidth, width),
-    minHeight: Math.min(mode.minHeight, height)
-  };
+  return WINDOW_MODES[modeName] || null;
 }
 
 // ── ROLE HELPERS ──────────────────────────────────────────────────────────────
@@ -79,18 +64,18 @@ function hasAdminAccess(role) { return role === 'admin' || role === 'super_admin
 function isSuperAdmin(role)   { return role === 'super_admin'; }
 function getRoleRank(role)    { return role === 'super_admin' ? 2 : role === 'admin' ? 1 : 0; }
 
-function sortPeersForUi(list) {
-  return [...list].sort((a, b) =>
-    getRoleRank(b.role)  - getRoleRank(a.role)  ||
-    Number(b.online)     - Number(a.online)      ||
-    String(a.username || '').localeCompare(String(b.username || ''))
-  );
-}
-
 function peerToSafe(p) {
   return { id: p.id, username: p.username, role: p.role, color: p.color,
            title: p.title, online: p.online, avatar: p.avatar || null,
            systemInfo: p.systemInfo || null };
+}
+
+function ensureControlProfile() {
+  if (!myProfile) return;
+  myProfile.role = CONTROL_ROLE;
+  if (!myProfile.username || /^device-/i.test(myProfile.username)) {
+    myProfile.username = CONTROL_USERNAME;
+  }
 }
 
 // ── RENDERER BRIDGE ───────────────────────────────────────────────────────────
@@ -339,7 +324,7 @@ function updateTrayMenu() {
 
 // ── WINDOWS ───────────────────────────────────────────────────────────────────
 function createMainWindow() {
-  const mode = getWindowModeConfig('login');
+  const mode = getWindowModeConfig('main');
   mainWindow = new BrowserWindow({
     width: mode.width, height: mode.height, minWidth: mode.minWidth, minHeight: mode.minHeight,
     frame: false, transparent: false, backgroundColor: '#0b0d12',
@@ -349,7 +334,7 @@ function createMainWindow() {
     icon: path.join(__dirname, '..', 'assets', 'icon.ico'),
     webPreferences: { nodeIntegration: false, contextIsolation: true, preload: path.join(__dirname, 'preload.js') }
   });
-  mainWindow.loadFile(path.join(__dirname, 'renderer', 'login.html'));
+  mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   mainWindow.once('ready-to-show', () => { mainWindow.center(); mainWindow.show(); });
   mainWindow.on('close', e => { if (isQuitting) return; e.preventDefault(); mainWindow.hide(); });
 }
@@ -580,6 +565,7 @@ ipcMain.handle('send-file-offer', async (e, { peerId }) => {
 });
 
 ipcMain.handle('send-broadcast', (e, { text, urgency, durationSeconds, peerIds = null }) => {
+  if (!hasAdminAccess(myProfile.role)) return { success: false, error: 'Admin only.' };
   const broadcastId = uuidv4();
   const timestamp   = new Date().toISOString();
   const targetPeers = helpSvc.getTargetPeers(peers, peerIds);
@@ -678,6 +664,7 @@ ipcMain.handle('send-help-request', async (e, { description, priority, includeSc
 });
 
 ipcMain.handle('capture-screenshot-preview', async () => {
+  if (!hasAdminAccess(myProfile.role)) return null;
   const ss = await captureScreenshot(mainWindow);
   return ss ? { base64: ss.base64, name: ss.name, size: ss.size } : null;
 });
@@ -699,6 +686,7 @@ ipcMain.handle('select-avatar', async () => {
 });
 
 ipcMain.handle('ack-help', (e, { peerId, reqId }) => {
+  if (!hasAdminAccess(myProfile.role)) return { success: false, error: 'Admin only.' };
   sendToPeer(peerId, { type: 'help-ack', fromId: myProfile.id, reqId });
   const req = helpRequests.find(r => r.reqId === reqId);
   if (req) req.status = 'acked';
@@ -712,6 +700,7 @@ ipcMain.handle('ack-help', (e, { peerId, reqId }) => {
 });
 
 ipcMain.handle('export-peer-specs', async (e, { peerId, format = 'txt' }) => {
+  if (!hasAdminAccess(myProfile.role)) return { success: false, error: 'Admin only.' };
   const peer = peers.get(peerId);
   if (!peer) return { success: false, error: 'Peer not found.' };
   const safeFormat  = format === 'json' ? 'json' : 'txt';
@@ -729,6 +718,7 @@ ipcMain.handle('export-peer-specs', async (e, { peerId, format = 'txt' }) => {
 });
 
 ipcMain.handle('save-user-group', (e, group) => {
+  if (!hasAdminAccess(myProfile.role)) return { success: false, error: 'Admin only.' };
   const name      = String(group?.name || '').trim();
   const memberIds = [...new Set(Array.isArray(group?.memberIds) ? group.memberIds.filter(Boolean) : [])];
   if (!name) return { success: false, error: 'Group name is required.' };
@@ -744,6 +734,7 @@ ipcMain.handle('save-user-group', (e, group) => {
 });
 
 ipcMain.handle('delete-user-group', (e, { id }) => {
+  if (!hasAdminAccess(myProfile.role)) return { success: false, error: 'Admin only.' };
   userGroups = userGroups.filter(g => g.id !== id);
   doSaveState();
   return { success: true, groups: userGroups };
@@ -757,40 +748,6 @@ ipcMain.handle('update-profile', (e, updates) => {
   return myProfile;
 });
 
-ipcMain.handle('unlock-admin', (e, password) => {
-  if (password !== ADMIN_PASSWORD) return { success: false, error: 'Incorrect admin password.' };
-  if (myProfile.role !== 'admin') {
-    myProfile.role = 'admin';
-    storage.saveProfile(myProfile);
-    broadcastToPeers({ type: 'profile-update', id: myProfile.id, role: myProfile.role });
-    updateTrayMenu();
-  }
-  return { success: true, profile: myProfile };
-});
-
-ipcMain.handle('unlock-super-admin', (e, password) => {
-  if (password !== SUPER_ADMIN_PASSWORD) return { success: false, error: 'Incorrect super admin password.' };
-  if (myProfile.role !== 'super_admin') {
-    myProfile.role = 'super_admin';
-    storage.saveProfile(myProfile);
-    broadcastToPeers({ type: 'profile-update', id: myProfile.id, role: myProfile.role });
-    updateTrayMenu();
-  }
-  return { success: true, profile: myProfile };
-});
-
-ipcMain.handle('signout-admin', () => {
-  if (hasAdminAccess(myProfile.role)) {
-    myProfile.role = 'user';
-    storage.saveProfile(myProfile);
-    broadcastToPeers({ type: 'profile-update', id: myProfile.id, role: myProfile.role });
-    updateTrayMenu();
-    // notify renderer so UI switches back to user mode immediately
-    bus.emit(EVENTS.ADMIN_SIGNED_OUT, { profile: myProfile });
-  }
-  return { success: true, profile: myProfile };
-});
-
 ipcMain.handle('get-device-id', () => {
   const devices = storage.loadDevices();
   return devices['self']?.deviceId || myProfile.id;
@@ -799,10 +756,6 @@ ipcMain.handle('get-device-id', () => {
 ipcMain.handle('window-minimize', () => mainWindow?.minimize());
 ipcMain.handle('window-maximize', () => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow?.maximize());
 ipcMain.handle('window-close',    () => mainWindow?.hide());
-ipcMain.handle('window-set-login-mode', () => {
-  applyWindowMode('login');
-  return { success: true };
-});
 ipcMain.handle('window-set-main-mode', () => {
   applyWindowMode('main');
   return { success: true };
@@ -853,6 +806,7 @@ app.whenReady().then(async () => {
     myProfile = buildDefaultProfile(deviceRecord);
   }
   myProfile.systemInfo = getSystemInfo();
+  ensureControlProfile();
   storage.saveProfile(myProfile);
 
   // 3. State
@@ -900,6 +854,7 @@ app.whenReady().then(async () => {
   // Wire event bus → renderer bridge now that mainWindow exists
   bus.setRendererBridge((event, data) => broadcastToRenderer(event, data));
   createTray();
+
   app.setLoginItemSettings({ openAtLogin: true, path: process.execPath });
 });
 

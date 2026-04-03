@@ -1,65 +1,63 @@
 // preload.js — Secure IPC bridge between main and renderer
+'use strict';
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('OpsLynk', {
-  // Init
+
+  // ── INIT ───────────────────────────────────────────────────────────────────
   getInitData: () => ipcRenderer.invoke('get-init-data'),
 
-  // Chat
-  sendChat: (data) => ipcRenderer.invoke('send-chat', data),
+  // ── CHAT ───────────────────────────────────────────────────────────────────
+  sendChat:      (data) => ipcRenderer.invoke('send-chat', data),
+  sendFileOffer: (data) => ipcRenderer.invoke('send-file-offer', data),
 
-  // Broadcast
-  sendBroadcast: (data) => ipcRenderer.invoke('send-broadcast', data),
-  sendAck: (data) => ipcRenderer.invoke('send-ack', data),
-  sendBroadcastReply: (data) => ipcRenderer.invoke('send-broadcast-reply', data),
+  // ── BROADCAST ──────────────────────────────────────────────────────────────
+  sendBroadcast:       (data) => ipcRenderer.invoke('send-broadcast', data),
+  sendAck:             (data) => ipcRenderer.invoke('send-ack', data),
+  sendBroadcastReply:  (data) => ipcRenderer.invoke('send-broadcast-reply', data),
 
-  // Help
-  sendHelpRequest: (data) => ipcRenderer.invoke('send-help-request', data),
-  ackHelp: (data) => ipcRenderer.invoke('ack-help', data),
-  exportPeerSpecs: (data) => ipcRenderer.invoke('export-peer-specs', data),
-  saveUserGroup: (data) => ipcRenderer.invoke('save-user-group', data),
-  deleteUserGroup: (data) => ipcRenderer.invoke('delete-user-group', data),
-
-  // Profile
-  updateProfile: (data) => ipcRenderer.invoke('update-profile', data),
-  unlockAdmin: (password) => ipcRenderer.invoke('unlock-admin', password),
-  unlockSuperAdmin: (password) => ipcRenderer.invoke('unlock-super-admin', password),
-  signoutAdmin: () => ipcRenderer.invoke('signout-admin'),
-  selectAvatar: () => ipcRenderer.invoke('select-avatar'),
-
-  // Screen Lock (admin only)
-  lockAllScreens:   (data) => ipcRenderer.invoke('lock-all-screens', data),
-  unlockAllScreens: ()     => ipcRenderer.invoke('unlock-all-screens'),
-
-  // Device identity
-  getDeviceId: () => ipcRenderer.invoke('get-device-id'),
-
-  // Forced video broadcast
-  selectVideoBroadcastFile: () => ipcRenderer.invoke('select-video-broadcast-file'),
+  // ── FORCED VIDEO ───────────────────────────────────────────────────────────
+  selectVideoBroadcastFile: ()     => ipcRenderer.invoke('select-video-broadcast-file'),
   sendForcedVideoBroadcast: (data) => ipcRenderer.invoke('send-forced-video-broadcast', data),
   stopForcedVideoBroadcast: (data) => ipcRenderer.invoke('stop-forced-video-broadcast', data),
 
-  // Files
-  sendFileOffer: (data) => ipcRenderer.invoke('send-file-offer', data),
+  // ── HELP ───────────────────────────────────────────────────────────────────
+  sendHelpRequest: (data) => ipcRenderer.invoke('send-help-request', data),
+  ackHelp:         (data) => ipcRenderer.invoke('ack-help', data),
+  exportPeerSpecs: (data) => ipcRenderer.invoke('export-peer-specs', data),
 
-  // Screenshot
+  // ── GROUPS ─────────────────────────────────────────────────────────────────
+  saveUserGroup:   (data) => ipcRenderer.invoke('save-user-group', data),
+  deleteUserGroup: (data) => ipcRenderer.invoke('delete-user-group', data),
+
+  // ── PROFILE ────────────────────────────────────────────────────────────────
+  updateProfile: (data) => ipcRenderer.invoke('update-profile', data),
+  selectAvatar:  ()     => ipcRenderer.invoke('select-avatar'),
+
+  // ── SCREEN LOCK ────────────────────────────────────────────────────────────
+  lockAllScreens:   (data) => ipcRenderer.invoke('lock-all-screens', data),
+  unlockAllScreens: ()     => ipcRenderer.invoke('unlock-all-screens'),
+
+  // ── SCREENSHOT ─────────────────────────────────────────────────────────────
   captureScreenshotPreview: () => ipcRenderer.invoke('capture-screenshot-preview'),
 
-  // Window
-  minimize: () => ipcRenderer.invoke('window-minimize'),
-  maximize: () => ipcRenderer.invoke('window-maximize'),
-  close:    () => ipcRenderer.invoke('window-close'),
-  setLoginWindow: () => ipcRenderer.invoke('window-set-login-mode'),
-  setMainWindow: () => ipcRenderer.invoke('window-set-main-mode'),
-  setSound: (val) => ipcRenderer.invoke('set-sound', val),
-  dismissBroadcastPopup: () => ipcRenderer.invoke('broadcast-popup-close'),
+  // ── DEVICE ─────────────────────────────────────────────────────────────────
+  getDeviceId: () => ipcRenderer.invoke('get-device-id'),
 
-  // Urgent overlay
+  // ── WINDOW ─────────────────────────────────────────────────────────────────
+  minimize:             ()    => ipcRenderer.invoke('window-minimize'),
+  maximize:             ()    => ipcRenderer.invoke('window-maximize'),
+  close:                ()    => ipcRenderer.invoke('window-close'),
+  setMainWindow:        ()    => ipcRenderer.invoke('window-set-main-mode'),
+  setSound:             (val) => ipcRenderer.invoke('set-sound', val),
+  dismissBroadcastPopup:()    => ipcRenderer.invoke('broadcast-popup-close'),
+
+  // ── URGENT OVERLAY ─────────────────────────────────────────────────────────
   urgentAck:   (data) => ipcRenderer.send('urgent-ack', data),
   urgentReply: (data) => ipcRenderer.send('urgent-reply', data),
 
-  // Events from main
-  on: (event, cb) => {
+  // ── EVENTS FROM MAIN ───────────────────────────────────────────────────────
+  on:   (event, cb) => {
     ipcRenderer.on(event, (_, data) => cb(data));
     return () => ipcRenderer.removeAllListeners(event);
   },

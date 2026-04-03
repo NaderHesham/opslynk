@@ -34,8 +34,6 @@ const EVENTS = {
   // Admin actions
   SCREEN_LOCKED    : 'admin:screenLocked',
   SCREEN_UNLOCKED  : 'admin:screenUnlocked',
-  ADMIN_SIGNED_IN  : 'admin:signedIn',
-  ADMIN_SIGNED_OUT : 'admin:signedOut',
 
   // UI navigation
   GOTO_TAB         : 'ui:gotoTab',
