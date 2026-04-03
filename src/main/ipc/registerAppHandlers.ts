@@ -5,9 +5,7 @@ export function registerAppHandlers({
   handle,
   os,
   udp,
-  state,
-  storage,
-  updateTrayMenu
+  state
 }: AppRegistrarDeps): void {
   handle(IPC_CHANNELS.app.GET_INIT_DATA, () => ({
     profile: state.myProfile,
@@ -23,15 +21,4 @@ export function registerAppHandlers({
     networkOnline: state.networkOnline
   }));
 
-  handle(IPC_CHANNELS.app.GET_DEVICE_ID, () => {
-    const devices = storage.loadDevices();
-    return devices.self?.deviceId || state.myProfile?.id;
-  });
-
-  handle(IPC_CHANNELS.app.SET_SOUND, (value) => {
-    state.soundEnabled = !!value;
-    if (state.myProfile) state.myProfile.soundEnabled = state.soundEnabled;
-    storage.saveProfile(state.myProfile);
-    updateTrayMenu();
-  });
 }

@@ -49,7 +49,7 @@ export type HandleFn = <C extends keyof IpcChannelMap>(
 
 export type OnFn = <C extends keyof IpcEventMap>(channel: C, fn: (payload: IpcEventMap[C]) => void) => void;
 
-export interface AppRegistrarDeps extends Pick<RegisterDeps, 'os' | 'udp' | 'state' | 'storage' | 'updateTrayMenu'> {
+export interface AppRegistrarDeps extends Pick<RegisterDeps, 'os' | 'udp' | 'state'> {
   handle: HandleFn;
 }
 
@@ -82,6 +82,14 @@ export interface LockScreenRegistrarDeps extends Pick<RegisterDeps, 'adminModule
   handle: HandleFn;
 }
 
-export interface PeerRegistrarDeps extends Pick<RegisterDeps, 'state' | 'storage' | 'broadcastToPeers' | 'updateTrayMenu'> {
+export interface ProfileRegistrarDeps extends Pick<RegisterDeps, 'state' | 'storage' | 'broadcastToPeers' | 'updateTrayMenu'> {
+  handle: HandleFn;
+}
+
+export interface StorageRegistrarDeps extends Pick<RegisterDeps, 'state' | 'storage'> {
+  handle: HandleFn;
+}
+
+export interface GroupRegistrarDeps extends Pick<RegisterDeps, 'adminModule'> {
   handle: HandleFn;
 }

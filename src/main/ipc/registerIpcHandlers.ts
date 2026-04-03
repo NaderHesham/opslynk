@@ -5,9 +5,11 @@ import { registerAppHandlers } from './registerAppHandlers';
 import { registerBroadcastHandlers } from './registerBroadcastHandlers';
 import { registerChatHandlers } from './registerChatHandlers';
 import { registerForcedVideoHandlers } from './registerForcedVideoHandlers';
+import { registerGroupHandlers } from './registerGroupHandlers';
 import { registerHelpHandlers } from './registerHelpHandlers';
 import { registerLockScreenHandlers } from './registerLockScreenHandlers';
-import { registerPeerHandlers } from './registerPeerHandlers';
+import { registerProfileHandlers } from './registerProfileHandlers';
+import { registerStorageHandlers } from './registerStorageHandlers';
 import { registerWindowHandlers } from './registerWindowHandlers';
 
 export function registerIpcHandlers(deps: RegisterDeps): void {
@@ -28,9 +30,7 @@ export function registerIpcHandlers(deps: RegisterDeps): void {
     handle,
     os: deps.os,
     udp: deps.udp,
-    state: deps.state,
-    storage: deps.storage,
-    updateTrayMenu: deps.updateTrayMenu
+    state: deps.state
   });
 
   registerWindowHandlers({
@@ -87,16 +87,27 @@ export function registerIpcHandlers(deps: RegisterDeps): void {
     adminModule: deps.adminModule
   });
 
+  registerGroupHandlers({
+    handle,
+    adminModule: deps.adminModule
+  });
+
   registerLockScreenHandlers({
     handle,
     adminModule: deps.adminModule
   });
 
-  registerPeerHandlers({
+  registerProfileHandlers({
     handle,
     state: deps.state,
     storage: deps.storage,
     broadcastToPeers: deps.broadcastToPeers,
     updateTrayMenu: deps.updateTrayMenu
+  });
+
+  registerStorageHandlers({
+    handle,
+    state: deps.state,
+    storage: deps.storage
   });
 }
