@@ -4,6 +4,9 @@ import { ADMIN_COMMANDS } from './adminTypes';
 import { createAdminPolicies } from './adminPolicies';
 import { createAdminCommands } from './adminCommands';
 import { createAdminController } from './adminController';
+import { createAuthorizationBoundary } from '../auth/authorizationBoundary';
+import { createCommandValidation } from './commandValidation';
+import { createAuditLogger } from '../audit/auditLogger';
 
 interface AdminDeps {
   state: AdminRuntimeState;
@@ -20,10 +23,18 @@ export function createAdminModule(deps: AdminDeps): AdminModuleApi {
   });
 
   const commands = createAdminCommands(deps as never);
+  const authorization = createAuthorizationBoundary({
+    checkPolicy: (command) => policies.check(command)
+  });
+  const validation = createCommandValidation({});
+  const auditLogger = createAuditLogger();
 
   const controller = createAdminController({
     commands,
     policies: policies as { check: (command: AdminCommand, payload?: Record<string, unknown>) => { allowed: boolean; error?: string } },
+    authorization,
+    validation,
+    auditLogger,
     hooks: {
       onDenied: () => {},
       onBeforeExecute: () => {},
