@@ -49,8 +49,39 @@ export type HandleFn = <C extends keyof IpcChannelMap>(
 
 export type OnFn = <C extends keyof IpcEventMap>(channel: C, fn: (payload: IpcEventMap[C]) => void) => void;
 
-export interface RegistrarContext extends RegisterDeps {
+export interface AppRegistrarDeps extends Pick<RegisterDeps, 'os' | 'udp' | 'state' | 'storage' | 'updateTrayMenu'> {
+  handle: HandleFn;
+}
+
+export interface WindowRegistrarDeps extends Pick<RegisterDeps, 'state' | 'applyWindowMode'> {
+  handle: HandleFn;
+}
+
+export interface ChatRegistrarDeps extends Pick<RegisterDeps, 'state' | 'uuidv4' | 'sendToPeer' | 'doSaveHistory' | 'dialog' | 'fs' | 'path'> {
+  handle: HandleFn;
+}
+
+export interface BroadcastRegistrarDeps extends Pick<RegisterDeps, 'ipcMain' | 'BrowserWindow' | 'state' | 'adminModule' | 'sendToPeer' | 'closeOverlayWindow'> {
   handle: HandleFn;
   on: OnFn;
 }
 
+export interface ForcedVideoRegistrarDeps extends Pick<RegisterDeps, 'adminModule' | 'dialog' | 'fs' | 'path'> {
+  handle: HandleFn;
+}
+
+export interface HelpRegistrarDeps extends Pick<RegisterDeps, 'os' | 'uuidv4' | 'captureScreenshot' | 'state' | 'hasAdminAccess' | 'helpSvc' | 'sendToPeer' | 'doSaveState' | 'adminModule'> {
+  handle: HandleFn;
+}
+
+export interface AdminRegistrarDeps extends Pick<RegisterDeps, 'adminModule'> {
+  handle: HandleFn;
+}
+
+export interface LockScreenRegistrarDeps extends Pick<RegisterDeps, 'adminModule'> {
+  handle: HandleFn;
+}
+
+export interface PeerRegistrarDeps extends Pick<RegisterDeps, 'state' | 'storage' | 'broadcastToPeers' | 'updateTrayMenu'> {
+  handle: HandleFn;
+}

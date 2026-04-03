@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from '../../shared/contracts/ipc';
-import type { RegistrarContext } from './types';
+import type { AppRegistrarDeps } from './types';
 
 export function registerAppHandlers({
   handle,
@@ -8,7 +8,7 @@ export function registerAppHandlers({
   state,
   storage,
   updateTrayMenu
-}: RegistrarContext): void {
+}: AppRegistrarDeps): void {
   handle(IPC_CHANNELS.app.GET_INIT_DATA, () => ({
     profile: state.myProfile,
     peers: [...state.peers.values()].map((p) => ({
@@ -35,4 +35,3 @@ export function registerAppHandlers({
     updateTrayMenu();
   });
 }
-

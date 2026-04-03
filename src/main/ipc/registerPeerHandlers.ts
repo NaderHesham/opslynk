@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from '../../shared/contracts/ipc';
-import type { RegistrarContext } from './types';
+import type { PeerRegistrarDeps } from './types';
 
 export function registerPeerHandlers({
   handle,
@@ -7,7 +7,7 @@ export function registerPeerHandlers({
   storage,
   broadcastToPeers,
   updateTrayMenu
-}: RegistrarContext): void {
+}: PeerRegistrarDeps): void {
   handle(IPC_CHANNELS.peer.UPDATE_PROFILE, (updates) => {
     Object.assign(state.myProfile || {}, updates);
     storage.saveProfile(state.myProfile);

@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from '../../shared/contracts/ipc';
-import type { RegistrarContext } from './types';
+import type { ForcedVideoRegistrarDeps } from './types';
 
 export function registerForcedVideoHandlers({
   handle,
@@ -7,7 +7,7 @@ export function registerForcedVideoHandlers({
   dialog,
   fs,
   path
-}: RegistrarContext): void {
+}: ForcedVideoRegistrarDeps): void {
   handle(IPC_CHANNELS.forcedVideo.SELECT_FILE, async () => {
     const result = await dialog.showOpenDialog({
       title: 'Choose video for forced playback',

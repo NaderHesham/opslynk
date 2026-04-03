@@ -1,11 +1,12 @@
 import type { IpcChannelMap, IpcEventMap } from '../../shared/contracts/ipc';
-import type { HandleFn, OnFn, RegisterDeps, RegistrarContext } from './types';
+import type { HandleFn, OnFn, RegisterDeps } from './types';
 import { registerAdminHandlers } from './registerAdminHandlers';
 import { registerAppHandlers } from './registerAppHandlers';
 import { registerBroadcastHandlers } from './registerBroadcastHandlers';
 import { registerChatHandlers } from './registerChatHandlers';
 import { registerForcedVideoHandlers } from './registerForcedVideoHandlers';
 import { registerHelpHandlers } from './registerHelpHandlers';
+import { registerLockScreenHandlers } from './registerLockScreenHandlers';
 import { registerPeerHandlers } from './registerPeerHandlers';
 import { registerWindowHandlers } from './registerWindowHandlers';
 
@@ -23,14 +24,79 @@ export function registerIpcHandlers(deps: RegisterDeps): void {
     ipcMain.on(channel, (_e, payload) => fn(payload as IpcEventMap[C]));
   };
 
-  const context: RegistrarContext = { ...deps, handle, on };
+  registerAppHandlers({
+    handle,
+    os: deps.os,
+    udp: deps.udp,
+    state: deps.state,
+    storage: deps.storage,
+    updateTrayMenu: deps.updateTrayMenu
+  });
 
-  registerAppHandlers(context);
-  registerWindowHandlers(context);
-  registerChatHandlers(context);
-  registerBroadcastHandlers(context);
-  registerForcedVideoHandlers(context);
-  registerHelpHandlers(context);
-  registerAdminHandlers(context);
-  registerPeerHandlers(context);
+  registerWindowHandlers({
+    handle,
+    state: deps.state,
+    applyWindowMode: deps.applyWindowMode
+  });
+
+  registerChatHandlers({
+    handle,
+    state: deps.state,
+    uuidv4: deps.uuidv4,
+    sendToPeer: deps.sendToPeer,
+    doSaveHistory: deps.doSaveHistory,
+    dialog: deps.dialog,
+    fs: deps.fs,
+    path: deps.path
+  });
+
+  registerBroadcastHandlers({
+    handle,
+    on,
+    ipcMain: deps.ipcMain,
+    BrowserWindow: deps.BrowserWindow,
+    state: deps.state,
+    adminModule: deps.adminModule,
+    sendToPeer: deps.sendToPeer,
+    closeOverlayWindow: deps.closeOverlayWindow
+  });
+
+  registerForcedVideoHandlers({
+    handle,
+    adminModule: deps.adminModule,
+    dialog: deps.dialog,
+    fs: deps.fs,
+    path: deps.path
+  });
+
+  registerHelpHandlers({
+    handle,
+    os: deps.os,
+    uuidv4: deps.uuidv4,
+    captureScreenshot: deps.captureScreenshot,
+    state: deps.state,
+    hasAdminAccess: deps.hasAdminAccess,
+    helpSvc: deps.helpSvc,
+    sendToPeer: deps.sendToPeer,
+    doSaveState: deps.doSaveState,
+    adminModule: deps.adminModule
+  });
+
+  registerAdminHandlers({
+    handle,
+    adminModule: deps.adminModule
+  });
+
+  registerLockScreenHandlers({
+    handle,
+    adminModule: deps.adminModule
+  });
+
+  registerPeerHandlers({
+    handle,
+    state: deps.state,
+    storage: deps.storage,
+    broadcastToPeers: deps.broadcastToPeers,
+    updateTrayMenu: deps.updateTrayMenu
+  });
 }

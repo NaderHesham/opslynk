@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from '../../shared/contracts/ipc';
-import type { RegistrarContext } from './types';
+import type { ChatRegistrarDeps } from './types';
 
 export function registerChatHandlers({
   handle,
@@ -10,7 +10,7 @@ export function registerChatHandlers({
   dialog,
   fs,
   path
-}: RegistrarContext): void {
+}: ChatRegistrarDeps): void {
   handle(IPC_CHANNELS.chat.SEND_CHAT, ({ peerId, text, emoji }) => {
     const msgId = uuidv4();
     const timestamp = new Date().toISOString();
@@ -60,4 +60,3 @@ export function registerChatHandlers({
     return { success: true, avatar: `data:${mime};base64,${fs.readFileSync(filePath).toString('base64')}` };
   });
 }
-

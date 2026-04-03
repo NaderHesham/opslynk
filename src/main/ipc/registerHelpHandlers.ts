@@ -1,5 +1,5 @@
 import { IPC_CHANNELS } from '../../shared/contracts/ipc';
-import type { RegistrarContext } from './types';
+import type { HelpRegistrarDeps } from './types';
 
 export function registerHelpHandlers({
   handle,
@@ -12,7 +12,7 @@ export function registerHelpHandlers({
   sendToPeer,
   doSaveState,
   adminModule
-}: RegistrarContext): void {
+}: HelpRegistrarDeps): void {
   handle(IPC_CHANNELS.help.SEND_HELP_REQUEST, async ({ description, priority, includeScreenshot }) => {
     const reqId = uuidv4();
     const timestamp = new Date().toISOString();

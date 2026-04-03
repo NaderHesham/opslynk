@@ -1,11 +1,11 @@
 import { IPC_CHANNELS } from '../../shared/contracts/ipc';
-import type { RegistrarContext } from './types';
+import type { WindowRegistrarDeps } from './types';
 
 export function registerWindowHandlers({
   handle,
   state,
   applyWindowMode
-}: RegistrarContext): void {
+}: WindowRegistrarDeps): void {
   handle(IPC_CHANNELS.window.MINIMIZE, () => state.mainWindow?.minimize());
   handle(IPC_CHANNELS.window.MAXIMIZE, () => state.mainWindow?.isMaximized() ? state.mainWindow.unmaximize() : state.mainWindow?.maximize());
   handle(IPC_CHANNELS.window.CLOSE, () => state.mainWindow?.hide());
@@ -14,4 +14,3 @@ export function registerWindowHandlers({
     return { success: true };
   });
 }
-

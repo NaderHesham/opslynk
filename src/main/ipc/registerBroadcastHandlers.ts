@@ -1,5 +1,5 @@
 import { IPC_CHANNELS, IPC_EVENTS } from '../../shared/contracts/ipc';
-import type { RegistrarContext } from './types';
+import type { BroadcastRegistrarDeps } from './types';
 
 export function registerBroadcastHandlers({
   handle,
@@ -10,7 +10,7 @@ export function registerBroadcastHandlers({
   adminModule,
   sendToPeer,
   closeOverlayWindow
-}: RegistrarContext): void {
+}: BroadcastRegistrarDeps): void {
   handle(IPC_CHANNELS.broadcast.SEND_BROADCAST, ({ text, urgency, durationSeconds, peerIds = null }) =>
     adminModule.run(adminModule.COMMANDS.SEND_BROADCAST, { text, urgency, durationSeconds, peerIds }));
 
