@@ -65,8 +65,8 @@ function createHarness() {
       if (origin && origin.issuerId === fromId && origin.commandType === commandType) {
         return { trusted: true, reason: 'trusted-origin', mode: 'trusted' };
       }
-      if (sender.id === 'admin-1') return { trusted: true, reason: 'trusted-legacy-origin-missing', mode: 'legacy-trusted' };
-      return { trusted: false, reason: 'sender-not-trusted', mode: 'denied' };
+      if (!origin) return { trusted: false, reason: 'origin-missing', mode: 'denied' };
+      return { trusted: false, reason: 'origin-invalid', mode: 'denied' };
     },
     rememberTrustedPeer: () => {},
     onTrustDecision: (entry) => trustEvents.push(entry)
@@ -82,7 +82,14 @@ test('urgent broadcast uses urgent overlay path', () => {
     fromId: 'admin-1',
     text: 'urgent message',
     urgency: 'urgent',
-    broadcastId: 'b1'
+    broadcastId: 'b1',
+    origin: {
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType: 'broadcast'
+    }
   });
   assert.equal(calls.urgentOverlay, 1);
   assert.equal(calls.normalPopup, 0);
@@ -91,8 +98,29 @@ test('urgent broadcast uses urgent overlay path', () => {
 test('forced video start/stop routes remain intact', () => {
   const { router, calls } = createHarness();
 
-  router.handleP2PMessage(null, { type: 'forced-video-broadcast', fromId: 'admin-1', videoB64: 'abc' });
-  router.handleP2PMessage(null, { type: 'forced-video-broadcast-stop', fromId: 'admin-1' });
+  router.handleP2PMessage(null, {
+    type: 'forced-video-broadcast',
+    fromId: 'admin-1',
+    videoB64: 'abc',
+    origin: {
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType: 'forced-video-broadcast'
+    }
+  });
+  router.handleP2PMessage(null, {
+    type: 'forced-video-broadcast-stop',
+    fromId: 'admin-1',
+    origin: {
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType: 'forced-video-broadcast-stop'
+    }
+  });
 
   assert.equal(calls.forcedVideo, 1);
   assert.equal(calls.forcedVideoStop, 1);
@@ -104,11 +132,32 @@ test('screen lock/unlock only accept admin sender role', () => {
   router.handleP2PMessage(null, { type: 'screen-lock', fromId: 'user-1', message: 'x' });
   assert.equal(calls.lockScreen, 0);
 
-  router.handleP2PMessage(null, { type: 'screen-lock', fromId: 'admin-1', message: 'locked' });
+  router.handleP2PMessage(null, {
+    type: 'screen-lock',
+    fromId: 'admin-1',
+    message: 'locked',
+    origin: {
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType: 'screen-lock'
+    }
+  });
   assert.equal(calls.lockScreen, 1);
   assert.equal(emitted.find((x) => x.event === 'SCREEN_LOCKED').payload.message, 'locked');
 
-  router.handleP2PMessage(null, { type: 'screen-unlock', fromId: 'admin-1' });
+  router.handleP2PMessage(null, {
+    type: 'screen-unlock',
+    fromId: 'admin-1',
+    origin: {
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType: 'screen-unlock'
+    }
+  });
   assert.equal(calls.unlockScreen, 1);
   assert.ok(emitted.find((x) => x.event === 'SCREEN_UNLOCKED'));
 });
@@ -149,4 +198,34 @@ test('trusted command origin is audited in trust decision stream', () => {
   const entry = trustEvents.find((x) => x.commandType === 'broadcast');
   assert.ok(entry);
   assert.equal(entry.trusted, true);
+});
+
+test('missing origin metadata rejects sensitive control message', () => {
+  const { router, calls } = createHarness();
+  router.handleP2PMessage(null, {
+    type: 'forced-video-broadcast',
+    fromId: 'admin-1',
+    videoB64: 'abc'
+  });
+  assert.equal(calls.forcedVideo, 0);
+});
+
+test('invalid origin metadata rejects sensitive control message', () => {
+  const { router, calls } = createHarness();
+  router.handleP2PMessage(null, {
+    type: 'broadcast',
+    fromId: 'admin-1',
+    text: 'urgent message',
+    urgency: 'urgent',
+    broadcastId: 'b1',
+    origin: {
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType: 'screen-lock'
+    }
+  });
+  assert.equal(calls.urgentOverlay, 0);
+  assert.equal(calls.normalPopup, 0);
 });

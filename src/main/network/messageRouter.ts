@@ -26,7 +26,7 @@ interface RouterDeps {
     fromId: string;
     sender?: PeerSession;
     origin?: Partial<CommandOrigin>;
-  }) => { trusted: boolean; reason: string; mode: 'trusted' | 'legacy-trusted' | 'denied' };
+  }) => { trusted: boolean; reason: string; mode: 'trusted' | 'denied' };
   rememberTrustedPeer: (peerId: string, role?: string) => void;
   onTrustDecision?: (entry: Record<string, unknown>) => void;
 }

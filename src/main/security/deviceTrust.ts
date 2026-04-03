@@ -29,7 +29,7 @@ export function createDeviceTrust({
     fromId: string;
     sender?: PeerSession;
     origin?: Partial<CommandOrigin>;
-  }) => { trusted: boolean; reason: string; mode: 'trusted' | 'legacy-trusted' | 'denied' };
+  }) => { trusted: boolean; reason: string; mode: 'trusted' | 'denied' };
 } {
   const buildOrigin = ({ issuerId, issuerRole, commandType }: { issuerId: string; issuerRole: string; commandType: string }): CommandOrigin => ({
     issuerId,
@@ -49,14 +49,14 @@ export function createDeviceTrust({
     fromId: string;
     sender?: PeerSession;
     origin?: Partial<CommandOrigin>;
-  }): { trusted: boolean; reason: string; mode: 'trusted' | 'legacy-trusted' | 'denied' } => {
+  }): { trusted: boolean; reason: string; mode: 'trusted' | 'denied' } => {
     if (!sender) return { trusted: false, reason: 'unknown-sender', mode: 'denied' };
     if (!hasAdminAccess(sender.role)) return { trusted: false, reason: 'sender-not-admin', mode: 'denied' };
     if (trustStore.isBlockedPeer(sender.id)) return { trusted: false, reason: 'sender-blocked', mode: 'denied' };
     if (!trustStore.isTrustedPeer(sender.id, sender.role)) return { trusted: false, reason: 'sender-not-trusted', mode: 'denied' };
     trustStore.rememberPeer(sender.id, sender.role);
 
-    if (!origin) return { trusted: true, reason: 'trusted-legacy-origin-missing', mode: 'legacy-trusted' };
+    if (!origin) return { trusted: false, reason: 'origin-missing', mode: 'denied' };
     if (origin.commandType !== commandType) return { trusted: false, reason: 'origin-command-mismatch', mode: 'denied' };
     if (origin.issuerId !== fromId || origin.issuerDeviceId !== fromId) return { trusted: false, reason: 'origin-issuer-mismatch', mode: 'denied' };
     if (!hasAdminAccess(origin.issuerRole)) return { trusted: false, reason: 'origin-role-not-admin', mode: 'denied' };
