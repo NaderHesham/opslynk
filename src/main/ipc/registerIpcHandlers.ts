@@ -1,8 +1,6 @@
 import type { BrowserWindow, IpcMain, OpenDialogOptions } from 'electron';
 import type { AppRuntimeState, AdminModuleApi } from '../../shared/types/runtime';
-import type { IpcChannelMap } from '../../shared/contracts/ipc';
-
-type IpcHandle = keyof IpcChannelMap | string;
+import { IPC_CHANNELS, IPC_EVENTS, type IpcChannelMap, type IpcEventMap } from '../../shared/contracts/ipc';
 
 interface RegisterDeps {
   ipcMain: IpcMain;
@@ -67,7 +65,18 @@ export function registerIpcHandlers({
   applyWindowMode,
   closeOverlayWindow
 }: RegisterDeps): void {
-  ipcMain.handle('get-init-data' as IpcHandle, () => ({
+  const handle = <C extends keyof IpcChannelMap>(
+    channel: C,
+    fn: (payload: IpcChannelMap[C]['request']) => Promise<IpcChannelMap[C]['response']> | IpcChannelMap[C]['response']
+  ): void => {
+    ipcMain.handle(channel, (_e, payload) => fn((payload as IpcChannelMap[C]['request']) ?? (undefined as IpcChannelMap[C]['request'])));
+  };
+
+  const on = <C extends keyof IpcEventMap>(channel: C, fn: (payload: IpcEventMap[C]) => void): void => {
+    ipcMain.on(channel, (_e, payload) => fn(payload as IpcEventMap[C]));
+  };
+
+  handle(IPC_CHANNELS.app.GET_INIT_DATA, () => ({
     profile: state.myProfile,
     peers: [...state.peers.values()].map((p) => ({
       id: p.id, username: p.username, role: p.role, color: p.color, title: p.title,
@@ -81,7 +90,7 @@ export function registerIpcHandlers({
     networkOnline: state.networkOnline
   }));
 
-  ipcMain.handle('send-chat' as IpcHandle, (_e, { peerId, text, emoji }) => {
+  handle(IPC_CHANNELS.chat.SEND_CHAT, ({ peerId, text, emoji }) => {
     const msgId = uuidv4();
     const timestamp = new Date().toISOString();
     sendToPeer(peerId, { type: 'chat', fromId: state.myProfile?.id, text, emoji, msgId, timestamp });
@@ -92,7 +101,7 @@ export function registerIpcHandlers({
     return { success: true, message: entry };
   });
 
-  ipcMain.handle('send-file-offer' as IpcHandle, async (_e, { peerId }) => {
+  handle(IPC_CHANNELS.chat.SEND_FILE_OFFER, async ({ peerId }) => {
     const peer = state.peers.get(peerId);
     if (!peer) return { success: false, error: 'Peer not found.' };
     const result = await dialog.showOpenDialog({ title: 'Choose a file to send', properties: ['openFile'] });
@@ -116,10 +125,10 @@ export function registerIpcHandlers({
     return { success: true, message: entry };
   });
 
-  ipcMain.handle('send-broadcast' as IpcHandle, (_e, { text, urgency, durationSeconds, peerIds = null }) =>
+  handle(IPC_CHANNELS.broadcast.SEND_BROADCAST, ({ text, urgency, durationSeconds, peerIds = null }) =>
     adminModule.run(adminModule.COMMANDS.SEND_BROADCAST, { text, urgency, durationSeconds, peerIds }));
 
-  ipcMain.handle('select-video-broadcast-file' as IpcHandle, async () => {
+  handle(IPC_CHANNELS.forcedVideo.SELECT_FILE, async () => {
     const result = await dialog.showOpenDialog({
       title: 'Choose video for forced playback',
       properties: ['openFile'],
@@ -134,23 +143,23 @@ export function registerIpcHandlers({
     return { success: true, fileName: path.basename(filePath), size: stat.size, mime, data: fs.readFileSync(filePath).toString('base64') };
   });
 
-  ipcMain.handle('send-forced-video-broadcast' as IpcHandle, (_e, payload) =>
+  handle(IPC_CHANNELS.forcedVideo.SEND, (payload) =>
     adminModule.run(adminModule.COMMANDS.SEND_FORCED_VIDEO_BROADCAST, payload));
 
-  ipcMain.handle('stop-forced-video-broadcast' as IpcHandle, (_e, payload = {}) =>
+  handle(IPC_CHANNELS.forcedVideo.STOP, (payload) =>
     adminModule.run(adminModule.COMMANDS.STOP_FORCED_VIDEO_BROADCAST, payload));
 
-  ipcMain.handle('send-ack' as IpcHandle, (_e, { peerId, broadcastId }) => {
+  handle(IPC_CHANNELS.broadcast.SEND_ACK, ({ peerId, broadcastId }) => {
     sendToPeer(peerId, { type: 'ack', fromId: state.myProfile?.id, broadcastId });
     closeOverlayWindow(true);
   });
 
-  ipcMain.handle('send-broadcast-reply' as IpcHandle, (_e, { peerId, text, broadcastId }) => {
+  handle(IPC_CHANNELS.broadcast.SEND_REPLY, ({ peerId, text, broadcastId }) => {
     sendToPeer(peerId, { type: 'broadcast-reply', fromId: state.myProfile?.id, text, broadcastId });
     closeOverlayWindow(true);
   });
 
-  ipcMain.handle('send-help-request' as IpcHandle, async (_e, { description, priority, includeScreenshot }) => {
+  handle(IPC_CHANNELS.help.SEND_HELP_REQUEST, async ({ description, priority, includeScreenshot }) => {
     const reqId = uuidv4();
     const timestamp = new Date().toISOString();
     let screenshotB64: string | null = null;
@@ -191,13 +200,13 @@ export function registerIpcHandlers({
     return { reqId, sent, queued: sent === 0, hasScreenshot: !!screenshotB64 };
   });
 
-  ipcMain.handle('capture-screenshot-preview' as IpcHandle, async () => {
+  handle(IPC_CHANNELS.help.CAPTURE_SCREENSHOT_PREVIEW, async () => {
     if (!hasAdminAccess(state.myProfile?.role)) return null;
     const ss = await captureScreenshot(state.mainWindow);
     return ss ? { base64: ss.base64, name: ss.name, size: ss.size } : null;
   });
 
-  ipcMain.handle('select-avatar' as IpcHandle, async () => {
+  handle(IPC_CHANNELS.chat.SELECT_AVATAR, async () => {
     const result = await dialog.showOpenDialog({
       title: 'Choose profile picture',
       properties: ['openFile'],
@@ -211,12 +220,12 @@ export function registerIpcHandlers({
     return { success: true, avatar: `data:${mime};base64,${fs.readFileSync(filePath).toString('base64')}` };
   });
 
-  ipcMain.handle('ack-help' as IpcHandle, (_e, payload) => adminModule.run(adminModule.COMMANDS.ACK_HELP, payload));
-  ipcMain.handle('export-peer-specs' as IpcHandle, (_e, payload) => adminModule.run(adminModule.COMMANDS.EXPORT_PEER_SPECS, payload));
-  ipcMain.handle('save-user-group' as IpcHandle, (_e, payload) => adminModule.run(adminModule.COMMANDS.SAVE_USER_GROUP, payload));
-  ipcMain.handle('delete-user-group' as IpcHandle, (_e, payload) => adminModule.run(adminModule.COMMANDS.DELETE_USER_GROUP, payload));
+  handle(IPC_CHANNELS.help.ACK_HELP, (payload) => adminModule.run(adminModule.COMMANDS.ACK_HELP, payload));
+  handle(IPC_CHANNELS.admin.EXPORT_PEER_SPECS, (payload) => adminModule.run(adminModule.COMMANDS.EXPORT_PEER_SPECS, payload));
+  handle(IPC_CHANNELS.admin.SAVE_USER_GROUP, (payload) => adminModule.run(adminModule.COMMANDS.SAVE_USER_GROUP, payload));
+  handle(IPC_CHANNELS.admin.DELETE_USER_GROUP, (payload) => adminModule.run(adminModule.COMMANDS.DELETE_USER_GROUP, payload));
 
-  ipcMain.handle('update-profile' as IpcHandle, (_e, updates) => {
+  handle(IPC_CHANNELS.peer.UPDATE_PROFILE, (updates) => {
     Object.assign(state.myProfile || {}, updates);
     storage.saveProfile(state.myProfile);
     broadcastToPeers({ type: 'profile-update', id: state.myProfile?.id, ...updates });
@@ -224,38 +233,38 @@ export function registerIpcHandlers({
     return state.myProfile;
   });
 
-  ipcMain.handle('get-device-id' as IpcHandle, () => {
+  handle(IPC_CHANNELS.app.GET_DEVICE_ID, () => {
     const devices = storage.loadDevices();
     return devices.self?.deviceId || state.myProfile?.id;
   });
 
-  ipcMain.handle('window-minimize' as IpcHandle, () => state.mainWindow?.minimize());
-  ipcMain.handle('window-maximize' as IpcHandle, () => state.mainWindow?.isMaximized() ? state.mainWindow.unmaximize() : state.mainWindow?.maximize());
-  ipcMain.handle('window-close' as IpcHandle, () => state.mainWindow?.hide());
-  ipcMain.handle('window-set-main-mode' as IpcHandle, () => { applyWindowMode('main'); return { success: true }; });
-  ipcMain.handle('set-sound' as IpcHandle, (_e, value) => {
+  handle(IPC_CHANNELS.window.MINIMIZE, () => state.mainWindow?.minimize());
+  handle(IPC_CHANNELS.window.MAXIMIZE, () => state.mainWindow?.isMaximized() ? state.mainWindow.unmaximize() : state.mainWindow?.maximize());
+  handle(IPC_CHANNELS.window.CLOSE, () => state.mainWindow?.hide());
+  handle(IPC_CHANNELS.window.SET_MAIN_MODE, () => { applyWindowMode('main'); return { success: true }; });
+  handle(IPC_CHANNELS.app.SET_SOUND, (value) => {
     state.soundEnabled = !!value;
     if (state.myProfile) state.myProfile.soundEnabled = state.soundEnabled;
     storage.saveProfile(state.myProfile);
     updateTrayMenu();
   });
 
-  ipcMain.handle('broadcast-popup-close' as IpcHandle, (e) => {
+  ipcMain.handle(IPC_CHANNELS.broadcast.POPUP_CLOSE, (e) => {
     const win = BrowserWindow.fromWebContents(e.sender);
     if (win && !win.isDestroyed()) win.close();
   });
 
-  ipcMain.on('urgent-ack', (_e, data) => {
+  on(IPC_EVENTS.URGENT_ACK, (data) => {
     sendToPeer(data.peerId, { type: 'ack', fromId: state.myProfile?.id, broadcastId: data.broadcastId });
     closeOverlayWindow(true);
   });
 
-  ipcMain.on('urgent-reply', (_e, data) => {
+  on(IPC_EVENTS.URGENT_REPLY, (data) => {
     sendToPeer(data.peerId, { type: 'broadcast-reply', fromId: state.myProfile?.id, text: data.text, broadcastId: data.broadcastId });
   });
 
-  ipcMain.handle('lock-all-screens' as IpcHandle, (_e, payload = {}) =>
+  handle(IPC_CHANNELS.lockScreen.LOCK_ALL, (payload) =>
     adminModule.run(adminModule.COMMANDS.LOCK_ALL_SCREENS, payload));
-  ipcMain.handle('unlock-all-screens' as IpcHandle, () =>
+  handle(IPC_CHANNELS.lockScreen.UNLOCK_ALL, () =>
     adminModule.run(adminModule.COMMANDS.UNLOCK_ALL_SCREENS));
 }
