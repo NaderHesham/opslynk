@@ -1,11 +1,12 @@
 {
   "name": "opslynk",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "OpsLynk - Professional LAN Chat System",
   "author": "OpsLynk Team",
   "main": "src/main.js",
   "scripts": {
     "start": "node scripts/start-electron.js",
+    "test:main-refactor": "node --test tests/main-refactor/*.test.js",
     "build": "electron-builder --win --x64",
     "build-msi": "electron-builder --win msi --x64",
     "build-portable": "electron-builder --win portable --x64"
