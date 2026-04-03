@@ -1,14 +1,20 @@
 {
   "name": "opslynk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "OpsLynk - Professional LAN Chat System",
   "author": "OpsLynk Team",
   "main": "src/main.js",
   "scripts": {
+    "build:ts-main": "tsc -p tsconfig.main.json",
+    "prestart": "npm run build:ts-main",
     "start": "node scripts/start-electron.js",
+    "pretest:main-refactor": "npm run build:ts-main",
     "test:main-refactor": "node --test tests/main-refactor/*.test.js",
+    "prebuild": "npm run build:ts-main",
     "build": "electron-builder --win --x64",
+    "prebuild-msi": "npm run build:ts-main",
     "build-msi": "electron-builder --win msi --x64",
+    "prebuild-portable": "npm run build:ts-main",
     "build-portable": "electron-builder --win portable --x64"
   },
   "build": {
@@ -54,6 +60,7 @@
     "extraResources": [],
     "files": [
       "src/**/*",
+      "dist-ts/**/*",
       "assets/**/*",
       "node_modules/**/*"
     ]
@@ -66,6 +73,9 @@
   },
   "devDependencies": {
     "electron": "^41.1.0",
-    "electron-builder": "^26.8.1"
+    "electron-builder": "^26.8.1",
+    "typescript": "^5.8.3",
+    "@types/node": "^22.15.2",
+    "@types/uuid": "^10.0.0"
   }
 }
