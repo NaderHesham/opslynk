@@ -1,5 +1,5 @@
 import type { BrowserWindow, IpcMain, OpenDialogOptions } from 'electron';
-import type { AppRuntimeState, AdminModuleApi } from '../../shared/types/runtime';
+import type { AdminModuleApi, IpcRuntimeState } from '../../shared/types/runtime';
 import { IPC_CHANNELS, IPC_EVENTS, type IpcChannelMap, type IpcEventMap } from '../../shared/contracts/ipc';
 
 interface RegisterDeps {
@@ -30,7 +30,7 @@ interface RegisterDeps {
   bus: { emit: (event: string, payload?: unknown) => void };
   EVENTS: Record<string, string>;
   captureScreenshot: (win: unknown) => Promise<{ base64: string; name: string; size: number } | null>;
-  state: AppRuntimeState;
+  state: IpcRuntimeState;
   hasAdminAccess: (role: string | undefined) => boolean;
   adminModule: AdminModuleApi;
   sendToPeer: (peerId: string, payload: Record<string, unknown>) => void;

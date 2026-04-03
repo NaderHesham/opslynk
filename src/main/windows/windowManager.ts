@@ -1,9 +1,9 @@
 import path from 'path';
 import { BrowserWindow, screen } from 'electron';
-import type { AppRuntimeState, WindowManagerApi } from '../../shared/types/runtime';
+import type { WindowManagerApi, WindowRuntimeState } from '../../shared/types/runtime';
 
 interface WindowManagerDeps {
-  state: AppRuntimeState;
+  state: WindowRuntimeState;
   getWindowModeConfig: (modeName: string) => { width: number; height: number; minWidth: number; minHeight: number; resizable: boolean } | null;
   appSourceDir: string;
 }
@@ -272,4 +272,3 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
     getMainWindow
   };
 }
-

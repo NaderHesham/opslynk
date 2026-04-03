@@ -1,7 +1,7 @@
-import type { AppRuntimeState, HelpRequest, PeerSession } from '../../shared/types/runtime';
+import type { HelpRequest, NetworkRuntimeState, PeerSession } from '../../shared/types/runtime';
 
 interface RouterDeps {
-  state: AppRuntimeState;
+  state: NetworkRuntimeState;
   wsNet: { CHAT_PORT_BASE: number; safeSend: (ws: unknown, payload: Record<string, unknown>) => void };
   helpSvc: { upsertHelpRequest: (list: HelpRequest[], req: HelpRequest, save: () => void) => void };
   bus: { emit: (event: string, payload?: unknown) => void };

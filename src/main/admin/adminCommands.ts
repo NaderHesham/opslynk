@@ -1,9 +1,9 @@
-import type { AppRuntimeState } from '../../shared/types/runtime';
+import type { AdminRuntimeState, AppRuntimeState } from '../../shared/types/runtime';
 import type { AdminCommand } from '../../shared/contracts/admin';
 import { ADMIN_COMMANDS } from './adminTypes';
 
 interface AdminCommandDeps {
-  state: AppRuntimeState;
+  state: AdminRuntimeState;
   wsNet: { broadcastToSelectedPeers: (peerIds: string[] | null | undefined, payload: Record<string, unknown>) => void };
   helpSvc: {
     getTargetPeers: (peers: AppRuntimeState['peers'], peerIds: string[] | null | undefined) => unknown[];

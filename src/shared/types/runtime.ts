@@ -68,6 +68,78 @@ export interface AppRuntimeState {
   helpPopupWindows: Map<string, BrowserWindow>;
 }
 
+export type WindowRuntimeState = Pick<
+  AppRuntimeState,
+  | 'mainWindow'
+  | 'overlayWindow'
+  | 'overlayState'
+  | 'lockWindow'
+  | 'screenLocked'
+  | 'forcedVideoWindow'
+  | 'forcedVideoActive'
+  | 'normalBroadcastWindows'
+  | 'helpPopupWindows'
+  | 'isQuitting'
+>;
+
+export type SessionRuntimeState = Pick<
+  AppRuntimeState,
+  | 'myProfile'
+  | 'peers'
+  | 'myPortRef'
+  | 'networkOnline'
+>;
+
+export type RecordsRuntimeState = Pick<
+  AppRuntimeState,
+  | 'chatHistory'
+  | 'helpRequests'
+  | 'pendingOutgoingHelpRequests'
+  | 'userGroups'
+>;
+
+export type AdminRuntimeState = Pick<
+  AppRuntimeState,
+  | 'myProfile'
+  | 'peers'
+  | 'helpRequests'
+  | 'userGroups'
+>;
+
+export type NetworkRuntimeState = Pick<
+  AppRuntimeState,
+  | 'myProfile'
+  | 'myPortRef'
+  | 'peers'
+  | 'chatHistory'
+  | 'soundEnabled'
+  | 'helpRequests'
+>;
+
+export type IpcRuntimeState = Pick<
+  AppRuntimeState,
+  | 'myProfile'
+  | 'peers'
+  | 'chatHistory'
+  | 'helpRequests'
+  | 'pendingOutgoingHelpRequests'
+  | 'userGroups'
+  | 'networkOnline'
+  | 'myPortRef'
+  | 'mainWindow'
+  | 'helpPopupWindows'
+  | 'soundEnabled'
+>;
+
+export type TrayRuntimeState = Pick<
+  AppRuntimeState,
+  | 'myProfile'
+  | 'peers'
+  | 'helpRequests'
+  | 'soundEnabled'
+  | 'tray'
+>;
+
 export interface WindowManagerApi {
   createMainWindow(): void;
   applyWindowMode(modeName: string): void;

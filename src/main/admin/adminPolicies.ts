@@ -1,8 +1,8 @@
-import type { AppRuntimeState } from '../../shared/types/runtime';
+import type { AdminRuntimeState } from '../../shared/types/runtime';
 import { ADMIN_COMMANDS } from './adminTypes';
 
 interface PolicyDeps {
-  state: AppRuntimeState;
+  state: AdminRuntimeState;
   hasAdminAccess: (role: string | undefined) => boolean;
   isSuperAdmin: (role: string | undefined) => boolean;
 }

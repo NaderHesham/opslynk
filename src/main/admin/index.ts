@@ -1,4 +1,4 @@
-import type { AdminModuleApi, AppRuntimeState } from '../../shared/types/runtime';
+import type { AdminModuleApi, AdminRuntimeState } from '../../shared/types/runtime';
 import type { AdminCommand } from '../../shared/contracts/admin';
 import { ADMIN_COMMANDS } from './adminTypes';
 import { createAdminPolicies } from './adminPolicies';
@@ -6,7 +6,7 @@ import { createAdminCommands } from './adminCommands';
 import { createAdminController } from './adminController';
 
 interface AdminDeps {
-  state: AppRuntimeState;
+  state: AdminRuntimeState;
   hasAdminAccess: (role: string | undefined) => boolean;
   isSuperAdmin: (role: string | undefined) => boolean;
   [key: string]: unknown;
@@ -36,4 +36,3 @@ export function createAdminModule(deps: AdminDeps): AdminModuleApi {
     run: controller.run
   };
 }
-

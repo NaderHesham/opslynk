@@ -38,6 +38,7 @@ const { bus, EVENTS } = require('../../src/services/eventBus') as {
 
 const { CONTROL_ROLE, CONTROL_USERNAME, getWindowModeConfig } = require('./config/constants') as typeof import('./config/constants');
 const { createAppState } = require('./state/createAppState') as typeof import('./state/createAppState');
+const { createStateOwners } = require('./state/owners') as typeof import('./state/owners');
 const { hasAdminAccess, isSuperAdmin, peerToSafe } = require('./utils/roles') as typeof import('./utils/roles');
 const { createPersistence } = require('../../src/main/storage/persistence');
 const { createWindowManager } = require('./windows/windowManager') as typeof import('./windows/windowManager');
@@ -50,7 +51,8 @@ const { registerIpcHandlers } = require('./ipc/registerIpcHandlers') as typeof i
 const { createAdminModule } = require('./admin') as typeof import('./admin');
 
 const state: AppRuntimeState = createAppState(wsNet.CHAT_PORT_BASE);
-const { doSaveState, doSaveHistory } = createPersistence({ storage, state });
+const owners = createStateOwners(state);
+const { doSaveState, doSaveHistory } = createPersistence({ storage, state: owners.recordsState });
 const appSourceDir = path.join(process.cwd(), 'src');
 
 function ensureControlProfile(): void {
@@ -85,13 +87,13 @@ function flushPendingHelpRequests(targetAdminId: string | null = null): void {
 }
 
 const windowManager = createWindowManager({
-  state,
+  state: owners.windowState,
   getWindowModeConfig,
   appSourceDir
 });
 
 const trayManager = createTrayManager({
-  state,
+  state: owners.trayState,
   bus,
   EVENTS,
   hasAdminAccess,
@@ -108,7 +110,7 @@ function showNotification(title: string, body: string): void {
 }
 
 const { handleP2PMessage } = createMessageRouter({
-  state,
+  state: owners.networkState,
   wsNet,
   helpSvc,
   bus,
@@ -129,10 +131,10 @@ const { handleP2PMessage } = createMessageRouter({
   unlockScreen: windowManager.unlockScreen
 });
 
-const { startNetworkMonitor } = createNetworkMonitor({ state, bus, EVENTS });
+const { startNetworkMonitor } = createNetworkMonitor({ state: owners.sessionState, bus, EVENTS });
 
 const peerSession = createPeerSession({
-  state,
+  state: owners.sessionState,
   wsNet,
   udp,
   bus,
@@ -147,7 +149,7 @@ const peerSession = createPeerSession({
 });
 
 const adminModule = createAdminModule({
-  state,
+  state: owners.adminState,
   wsNet,
   helpSvc,
   hasAdminAccess,
@@ -186,7 +188,7 @@ registerIpcHandlers({
   bus,
   EVENTS,
   captureScreenshot,
-  state,
+  state: owners.ipcState,
   hasAdminAccess,
   adminModule,
   sendToPeer,
@@ -202,7 +204,7 @@ registerLifecycle({
   app,
   process,
   storage,
-  state,
+  state: owners.lifecycleState,
   getPrimaryNetworkInfo,
   getOrCreateDeviceIdentity,
   buildDefaultProfile,
