@@ -49,6 +49,13 @@ function createBaseDeps() {
     dialog: { showSaveDialog: async () => ({ canceled: true }) },
     fs: { writeFileSync: () => {} },
     path: require('path'),
+    buildCommandOrigin: (commandType) => ({
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType
+    }),
     saveCount: 0,
     trayUpdates: 0,
     mainWindowShown: 0,

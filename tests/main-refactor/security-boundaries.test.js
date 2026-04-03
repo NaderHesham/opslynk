@@ -156,7 +156,14 @@ test('admin module rejects invalid sensitive payload before execute', async () =
     app: { getPath: () => 'C:\\Docs' },
     dialog: { showSaveDialog: async () => ({ canceled: true }) },
     fs: { writeFileSync: () => {} },
-    path: require('path')
+    path: require('path'),
+    buildCommandOrigin: (commandType) => ({
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType
+    })
   };
 
   const module = createAdminModule(deps);

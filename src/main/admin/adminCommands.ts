@@ -1,5 +1,6 @@
 import type { AdminRuntimeState, AppRuntimeState } from '../../shared/types/runtime';
 import type { AdminCommand } from '../../shared/contracts/admin';
+import type { CommandOrigin } from '../security/deviceTrust';
 import { ADMIN_COMMANDS } from './adminTypes';
 
 interface AdminCommandDeps {
@@ -23,6 +24,7 @@ interface AdminCommandDeps {
   dialog: { showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }> };
   fs: { writeFileSync: (path: string, content: string, enc: BufferEncoding) => void };
   path: { join: (...parts: string[]) => string };
+  buildCommandOrigin: (commandType: string) => CommandOrigin;
 }
 
 export function createAdminCommands(deps: AdminCommandDeps): {
@@ -44,7 +46,8 @@ export function createAdminCommands(deps: AdminCommandDeps): {
     app,
     dialog,
     fs,
-    path
+    path,
+    buildCommandOrigin
   } = deps;
 
   async function execute(command: AdminCommand, payload: Record<string, unknown> = {}): Promise<unknown> {
@@ -60,7 +63,8 @@ export function createAdminCommands(deps: AdminCommandDeps): {
         urgency: payload.urgency,
         durationSeconds: payload.durationSeconds,
         broadcastId,
-        timestamp
+        timestamp,
+        origin: buildCommandOrigin('broadcast')
       });
       return { broadcastId, targetCount: targetPeers.length };
     }
@@ -79,7 +83,8 @@ export function createAdminCommands(deps: AdminCommandDeps): {
         fileName: payload.fileName || 'broadcast-video',
         label: payload.label || '',
         broadcastId,
-        timestamp
+        timestamp,
+        origin: buildCommandOrigin('forced-video-broadcast')
       });
       const targetPeers = helpSvc.getTargetPeers(state.peers, peerIds);
       return { success: true, broadcastId, targetCount: targetPeers.length };
@@ -91,7 +96,8 @@ export function createAdminCommands(deps: AdminCommandDeps): {
         type: 'forced-video-broadcast-stop',
         fromId: state.myProfile?.id,
         broadcastId: payload.broadcastId || null,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        origin: buildCommandOrigin('forced-video-broadcast-stop')
       });
       return { success: true };
     }
@@ -115,12 +121,12 @@ export function createAdminCommands(deps: AdminCommandDeps): {
 
     if (command === ADMIN_COMMANDS.LOCK_ALL_SCREENS) {
       const message = String(payload.message || '').trim() || 'Your screen has been locked by the administrator.';
-      broadcastToPeers({ type: 'screen-lock', fromId: state.myProfile?.id, message });
+      broadcastToPeers({ type: 'screen-lock', fromId: state.myProfile?.id, message, origin: buildCommandOrigin('screen-lock') });
       return { success: true, targetCount: state.peers.size };
     }
 
     if (command === ADMIN_COMMANDS.UNLOCK_ALL_SCREENS) {
-      broadcastToPeers({ type: 'screen-unlock', fromId: state.myProfile?.id });
+      broadcastToPeers({ type: 'screen-unlock', fromId: state.myProfile?.id, origin: buildCommandOrigin('screen-unlock') });
       return { success: true };
     }
 

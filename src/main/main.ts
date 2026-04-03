@@ -50,11 +50,16 @@ const { registerLifecycle } = require('../../src/main/bootstrap/lifecycle');
 const { registerIpcHandlers } = require('./ipc/registerIpcHandlers') as typeof import('./ipc/registerIpcHandlers');
 const { createAdminModule } = require('./admin') as typeof import('./admin');
 const { createFileAuditSink } = require('./audit/fileAuditSink') as typeof import('./audit/fileAuditSink');
+const { createTrustStore } = require('./security/trustStore') as typeof import('./security/trustStore');
+const { createDeviceTrust } = require('./security/deviceTrust') as typeof import('./security/deviceTrust');
 
 const state: AppRuntimeState = createAppState(wsNet.CHAT_PORT_BASE);
 const owners = createStateOwners(state);
 const { doSaveState, doSaveHistory } = createPersistence({ storage, state: owners.recordsState });
 const appSourceDir = path.join(process.cwd(), 'src');
+const auditSink = createFileAuditSink({ app, fs, path });
+const trustStore = createTrustStore({ app, fs, path, hasAdminAccess });
+const deviceTrust = createDeviceTrust({ hasAdminAccess, trustStore });
 
 function ensureControlProfile(): void {
   if (!state.myProfile) return;
@@ -129,7 +134,10 @@ const { handleP2PMessage } = createMessageRouter({
   showForcedVideoWindow: windowManager.showForcedVideoWindow,
   closeForcedVideoWindow: windowManager.closeForcedVideoWindow,
   showLockScreen: windowManager.showLockScreen,
-  unlockScreen: windowManager.unlockScreen
+  unlockScreen: windowManager.unlockScreen,
+  evaluateControlMessageTrust: deviceTrust.evaluateIncomingControl,
+  rememberTrustedPeer: trustStore.rememberPeer,
+  onTrustDecision: auditSink.onAuditEntry
 });
 
 const { startNetworkMonitor } = createNetworkMonitor({ state: owners.sessionState, bus, EVENTS });
@@ -172,7 +180,12 @@ const adminModule = createAdminModule({
   dialog,
   fs,
   path,
-  onAuditEntry: createFileAuditSink({ app, fs, path }).onAuditEntry
+  onAuditEntry: auditSink.onAuditEntry,
+  buildCommandOrigin: (commandType: string) => deviceTrust.buildOrigin({
+    issuerId: String(state.myProfile?.id || ''),
+    issuerRole: String(state.myProfile?.role || ''),
+    commandType
+  })
 });
 
 registerIpcHandlers({

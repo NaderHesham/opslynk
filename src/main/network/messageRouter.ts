@@ -1,4 +1,5 @@
 import type { HelpRequest, NetworkRuntimeState, PeerSession } from '../../shared/types/runtime';
+import type { CommandOrigin } from '../security/deviceTrust';
 
 interface RouterDeps {
   state: NetworkRuntimeState;
@@ -20,6 +21,14 @@ interface RouterDeps {
   closeForcedVideoWindow: (force?: boolean) => void;
   showLockScreen: (message: string) => void;
   unlockScreen: () => void;
+  evaluateControlMessageTrust: (params: {
+    commandType: string;
+    fromId: string;
+    sender?: PeerSession;
+    origin?: Partial<CommandOrigin>;
+  }) => { trusted: boolean; reason: string; mode: 'trusted' | 'legacy-trusted' | 'denied' };
+  rememberTrustedPeer: (peerId: string, role?: string) => void;
+  onTrustDecision?: (entry: Record<string, unknown>) => void;
 }
 
 export function createMessageRouter({
@@ -41,8 +50,34 @@ export function createMessageRouter({
   showForcedVideoWindow,
   closeForcedVideoWindow,
   showLockScreen,
-  unlockScreen
+  unlockScreen,
+  evaluateControlMessageTrust,
+  rememberTrustedPeer,
+  onTrustDecision
 }: RouterDeps): { handleP2PMessage: (ws: unknown, msg: Record<string, unknown>, remoteIp: string) => void } {
+  const checkSensitiveTrust = (msg: Record<string, unknown>, commandType: string): boolean => {
+    const fromId = String(msg.fromId || '');
+    const sender = state.peers.get(fromId);
+    const decision = evaluateControlMessageTrust({
+      commandType,
+      fromId,
+      sender,
+      origin: (msg.origin as Partial<CommandOrigin> | undefined)
+    });
+    if (onTrustDecision) {
+      onTrustDecision({
+        timestamp: new Date().toISOString(),
+        type: 'incoming-control-trust',
+        commandType,
+        fromId,
+        trusted: decision.trusted,
+        mode: decision.mode,
+        reason: decision.reason
+      });
+    }
+    return decision.trusted;
+  };
+
   function handleP2PMessage(ws: unknown, msg: Record<string, unknown>, remoteIp: string): void {
     const type = String(msg.type || '');
 
@@ -70,10 +105,12 @@ export function createMessageRouter({
       if (type === 'hello') {
         wsNet.safeSend(ws, { type: 'hello-ack', from: { ...state.myProfile, port: state.myPortRef.value } });
       }
+      rememberTrustedPeer(p.id, p.role);
       return;
     }
 
     if (type === 'broadcast') {
+      if (!checkSensitiveTrust(msg, 'broadcast')) return;
       const peer = state.peers.get(String(msg.fromId || '')) || ({ username: 'Admin' } as PeerSession);
       const data = { ...msg, fromName: peer.username };
       bus.emit(EVENTS.NETWORK_BROADCAST, data);
@@ -86,6 +123,7 @@ export function createMessageRouter({
     }
 
     if (type === 'forced-video-broadcast') {
+      if (!checkSensitiveTrust(msg, 'forced-video-broadcast')) return;
       showForcedVideoWindow({
         fromId: msg.fromId,
         fromName: msg.fromName || 'Admin',
@@ -100,11 +138,13 @@ export function createMessageRouter({
     }
 
     if (type === 'forced-video-broadcast-stop') {
+      if (!checkSensitiveTrust(msg, 'forced-video-broadcast-stop')) return;
       closeForcedVideoWindow(true);
       return;
     }
 
     if (type === 'screen-lock') {
+      if (!checkSensitiveTrust(msg, 'screen-lock')) return;
       const sender = state.peers.get(String(msg.fromId || ''));
       if (!sender || !hasAdminAccess(sender.role)) return;
       showLockScreen(String(msg.message || ''));
@@ -113,6 +153,7 @@ export function createMessageRouter({
     }
 
     if (type === 'screen-unlock') {
+      if (!checkSensitiveTrust(msg, 'screen-unlock')) return;
       const sender = state.peers.get(String(msg.fromId || ''));
       if (!sender || !hasAdminAccess(sender.role)) return;
       unlockScreen();

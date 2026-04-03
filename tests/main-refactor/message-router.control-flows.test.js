@@ -15,6 +15,7 @@ function createHarness() {
     unlockScreen: 0
   };
   const emitted = [];
+  const trustEvents = [];
 
   const state = {
     myProfile: { id: 'self-1', role: 'user' },
@@ -58,10 +59,20 @@ function createHarness() {
     showForcedVideoWindow: () => { calls.forcedVideo += 1; },
     closeForcedVideoWindow: (force) => { if (force) calls.forcedVideoStop += 1; },
     showLockScreen: () => { calls.lockScreen += 1; },
-    unlockScreen: () => { calls.unlockScreen += 1; }
+    unlockScreen: () => { calls.unlockScreen += 1; },
+    evaluateControlMessageTrust: ({ fromId, sender, origin, commandType }) => {
+      if (!sender) return { trusted: false, reason: 'unknown-sender', mode: 'denied' };
+      if (origin && origin.issuerId === fromId && origin.commandType === commandType) {
+        return { trusted: true, reason: 'trusted-origin', mode: 'trusted' };
+      }
+      if (sender.id === 'admin-1') return { trusted: true, reason: 'trusted-legacy-origin-missing', mode: 'legacy-trusted' };
+      return { trusted: false, reason: 'sender-not-trusted', mode: 'denied' };
+    },
+    rememberTrustedPeer: () => {},
+    onTrustDecision: (entry) => trustEvents.push(entry)
   });
 
-  return { router, calls, emitted };
+  return { router, calls, emitted, trustEvents };
 }
 
 test('urgent broadcast uses urgent overlay path', () => {
@@ -100,4 +111,42 @@ test('screen lock/unlock only accept admin sender role', () => {
   router.handleP2PMessage(null, { type: 'screen-unlock', fromId: 'admin-1' });
   assert.equal(calls.unlockScreen, 1);
   assert.ok(emitted.find((x) => x.event === 'SCREEN_UNLOCKED'));
+});
+
+test('untrusted sensitive command is denied before control action', () => {
+  const { router, calls } = createHarness();
+  router.handleP2PMessage(null, {
+    type: 'screen-lock',
+    fromId: 'unknown-admin',
+    message: 'locked',
+    origin: {
+      issuerId: 'unknown-admin',
+      issuerDeviceId: 'unknown-admin',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType: 'screen-lock'
+    }
+  });
+  assert.equal(calls.lockScreen, 0);
+});
+
+test('trusted command origin is audited in trust decision stream', () => {
+  const { router, trustEvents } = createHarness();
+  router.handleP2PMessage(null, {
+    type: 'broadcast',
+    fromId: 'admin-1',
+    text: 'urgent message',
+    urgency: 'urgent',
+    broadcastId: 'b1',
+    origin: {
+      issuerId: 'admin-1',
+      issuerDeviceId: 'admin-1',
+      issuerRole: 'super_admin',
+      issuedAt: new Date().toISOString(),
+      commandType: 'broadcast'
+    }
+  });
+  const entry = trustEvents.find((x) => x.commandType === 'broadcast');
+  assert.ok(entry);
+  assert.equal(entry.trusted, true);
 });

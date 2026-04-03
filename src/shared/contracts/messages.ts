@@ -39,6 +39,13 @@ export interface BroadcastMessagePayload {
   durationSeconds: number;
   broadcastId: string;
   timestamp: string;
+  origin?: {
+    issuerId: string;
+    issuerDeviceId: string;
+    issuerRole: string;
+    issuedAt: string;
+    commandType: string;
+  };
 }
 
 export interface ForcedVideoMessagePayload {
@@ -51,6 +58,13 @@ export interface ForcedVideoMessagePayload {
   label: string;
   broadcastId: string;
   timestamp: string;
+  origin?: {
+    issuerId: string;
+    issuerDeviceId: string;
+    issuerRole: string;
+    issuedAt: string;
+    commandType: string;
+  };
 }
 
 export interface ForcedVideoStopPayload {
@@ -58,17 +72,38 @@ export interface ForcedVideoStopPayload {
   fromId: string;
   broadcastId: string | null;
   timestamp: string;
+  origin?: {
+    issuerId: string;
+    issuerDeviceId: string;
+    issuerRole: string;
+    issuedAt: string;
+    commandType: string;
+  };
 }
 
 export interface ScreenLockMessagePayload {
   type: 'screen-lock';
   fromId: string;
   message: string;
+  origin?: {
+    issuerId: string;
+    issuerDeviceId: string;
+    issuerRole: string;
+    issuedAt: string;
+    commandType: string;
+  };
 }
 
 export interface ScreenUnlockMessagePayload {
   type: 'screen-unlock';
   fromId: string;
+  origin?: {
+    issuerId: string;
+    issuerDeviceId: string;
+    issuerRole: string;
+    issuedAt: string;
+    commandType: string;
+  };
 }
 
 export type P2PControlMessage =
@@ -80,4 +115,3 @@ export type P2PControlMessage =
   | ForcedVideoStopPayload
   | ScreenLockMessagePayload
   | ScreenUnlockMessagePayload;
-

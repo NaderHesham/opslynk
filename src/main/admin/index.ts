@@ -1,5 +1,6 @@
 import type { AdminModuleApi, AdminRuntimeState } from '../../shared/types/runtime';
 import type { AdminCommand } from '../../shared/contracts/admin';
+import type { CommandOrigin } from '../security/deviceTrust';
 import { ADMIN_COMMANDS } from './adminTypes';
 import { createAdminPolicies } from './adminPolicies';
 import { createAdminCommands } from './adminCommands';
@@ -13,6 +14,7 @@ interface AdminDeps {
   hasAdminAccess: (role: string | undefined) => boolean;
   isSuperAdmin: (role: string | undefined) => boolean;
   onAuditEntry?: (entry: Record<string, unknown>) => void;
+  buildCommandOrigin: (commandType: string) => CommandOrigin;
   [key: string]: unknown;
 }
 
