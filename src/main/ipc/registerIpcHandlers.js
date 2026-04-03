@@ -3,7 +3,6 @@
 function registerIpcHandlers({
   ipcMain,
   BrowserWindow,
-  app,
   dialog,
   fs,
   path,
@@ -18,7 +17,7 @@ function registerIpcHandlers({
   captureScreenshot,
   state,
   hasAdminAccess,
-  adminOrchestrator,
+  adminModule,
   sendToPeer,
   broadcastToPeers,
   doSaveHistory,
@@ -89,7 +88,7 @@ function registerIpcHandlers({
   });
 
   ipcMain.handle('send-broadcast', (e, { text, urgency, durationSeconds, peerIds = null }) => {
-    return adminOrchestrator.sendBroadcast({ text, urgency, durationSeconds, peerIds });
+    return adminModule.run(adminModule.COMMANDS.SEND_BROADCAST, { text, urgency, durationSeconds, peerIds });
   });
 
   ipcMain.handle('select-video-broadcast-file', async () => {
@@ -120,11 +119,11 @@ function registerIpcHandlers({
   });
 
   ipcMain.handle('send-forced-video-broadcast', (e, { videoB64, mime, fileName, label, peerIds = null }) => {
-    return adminOrchestrator.sendForcedVideoBroadcast({ videoB64, mime, fileName, label, peerIds });
+    return adminModule.run(adminModule.COMMANDS.SEND_FORCED_VIDEO_BROADCAST, { videoB64, mime, fileName, label, peerIds });
   });
 
   ipcMain.handle('stop-forced-video-broadcast', (e, { broadcastId, peerIds = null } = {}) => {
-    return adminOrchestrator.stopForcedVideoBroadcast({ broadcastId, peerIds });
+    return adminModule.run(adminModule.COMMANDS.STOP_FORCED_VIDEO_BROADCAST, { broadcastId, peerIds });
   });
 
   ipcMain.handle('send-ack', (e, { peerId, broadcastId }) => {
@@ -207,56 +206,19 @@ function registerIpcHandlers({
   });
 
   ipcMain.handle('ack-help', (e, { peerId, reqId }) => {
-    return adminOrchestrator.ackHelp({ peerId, reqId });
+    return adminModule.run(adminModule.COMMANDS.ACK_HELP, { peerId, reqId });
   });
 
   ipcMain.handle('export-peer-specs', async (e, { peerId, format = 'txt' }) => {
-    if (!hasAdminAccess(state.myProfile.role)) return { success: false, error: 'Admin only.' };
-    const peer = state.peers.get(peerId);
-    if (!peer) return { success: false, error: 'Peer not found.' };
-
-    const safeFormat = format === 'json' ? 'json' : 'txt';
-    const defaultPath = path.join(app.getPath('documents'), `${(peer.username || 'user').replace(/[^\w.-]+/g, '_')}-specs.${safeFormat}`);
-    const result = await dialog.showSaveDialog({
-      title: 'Export user specs',
-      defaultPath,
-      filters: safeFormat === 'json' ? [{ name: 'JSON', extensions: ['json'] }] : [{ name: 'Text', extensions: ['txt'] }]
-    });
-    if (result.canceled || !result.filePath) return { success: false, canceled: true };
-
-    const content = safeFormat === 'json'
-      ? JSON.stringify(helpSvc.getPeerExportPayload(peer), null, 2)
-      : helpSvc.formatPeerSpecsText(peer);
-    fs.writeFileSync(result.filePath, content, 'utf8');
-    return { success: true, path: result.filePath };
+    return adminModule.run(adminModule.COMMANDS.EXPORT_PEER_SPECS, { peerId, format });
   });
 
   ipcMain.handle('save-user-group', (e, group) => {
-    if (!hasAdminAccess(state.myProfile.role)) return { success: false, error: 'Admin only.' };
-
-    const name = String(group?.name || '').trim();
-    const memberIds = [...new Set(Array.isArray(group?.memberIds) ? group.memberIds.filter(Boolean) : [])];
-    if (!name) return { success: false, error: 'Group name is required.' };
-
-    const duplicate = state.userGroups.find((item) => item.name.toLowerCase() === name.toLowerCase() && item.id !== group?.id);
-    if (duplicate) return { success: false, error: 'A group with this name already exists.' };
-
-    const id = group?.id || uuidv4();
-    const next = { id, name, memberIds };
-    const idx = state.userGroups.findIndex((item) => item.id === id);
-    if (idx >= 0) state.userGroups[idx] = next;
-    else state.userGroups.push(next);
-    state.userGroups.sort((a, b) => a.name.localeCompare(b.name));
-
-    doSaveState();
-    return { success: true, groups: state.userGroups };
+    return adminModule.run(adminModule.COMMANDS.SAVE_USER_GROUP, group);
   });
 
   ipcMain.handle('delete-user-group', (e, { id }) => {
-    if (!hasAdminAccess(state.myProfile.role)) return { success: false, error: 'Admin only.' };
-    state.userGroups = state.userGroups.filter((g) => g.id !== id);
-    doSaveState();
-    return { success: true, groups: state.userGroups };
+    return adminModule.run(adminModule.COMMANDS.DELETE_USER_GROUP, { id });
   });
 
   ipcMain.handle('update-profile', (e, updates) => {
@@ -302,11 +264,11 @@ function registerIpcHandlers({
   });
 
   ipcMain.handle('lock-all-screens', (e, { message } = {}) => {
-    return adminOrchestrator.lockAllScreens({ message });
+    return adminModule.run(adminModule.COMMANDS.LOCK_ALL_SCREENS, { message });
   });
 
   ipcMain.handle('unlock-all-screens', () => {
-    return adminOrchestrator.unlockAllScreens();
+    return adminModule.run(adminModule.COMMANDS.UNLOCK_ALL_SCREENS);
   });
 }
 

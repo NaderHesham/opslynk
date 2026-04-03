@@ -1,6 +1,6 @@
 {
   "name": "opslynk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "OpsLynk - Professional LAN Chat System",
   "author": "OpsLynk Team",
   "main": "src/main.js",

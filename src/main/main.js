@@ -26,7 +26,7 @@ const { createMessageRouter } = require('./network/messageRouter');
 const { createPeerSession } = require('./network/peerSession');
 const { registerLifecycle } = require('./bootstrap/lifecycle');
 const { registerIpcHandlers } = require('./ipc/registerIpcHandlers');
-const { createAdminOrchestrator } = require('./admin/adminOrchestrator');
+const { createAdminModule } = require('./admin');
 
 const state = createAppState(wsNet.CHAT_PORT_BASE);
 const { doSaveState, doSaveHistory } = createPersistence({ storage, state });
@@ -124,7 +124,7 @@ const peerSession = createPeerSession({
   flushPendingHelpRequests
 });
 
-const adminOrchestrator = createAdminOrchestrator({
+const adminModule = createAdminModule({
   state,
   wsNet,
   helpSvc,
@@ -142,13 +142,16 @@ const adminOrchestrator = createAdminOrchestrator({
   },
   bus,
   EVENTS,
-  uuidv4
+  uuidv4,
+  app,
+  dialog,
+  fs,
+  path
 });
 
 registerIpcHandlers({
   ipcMain,
   BrowserWindow,
-  app,
   dialog,
   fs,
   path,
@@ -163,7 +166,7 @@ registerIpcHandlers({
   captureScreenshot,
   state,
   hasAdminAccess,
-  adminOrchestrator,
+  adminModule,
   sendToPeer,
   broadcastToPeers,
   doSaveHistory,
