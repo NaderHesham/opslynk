@@ -4903,6 +4903,334 @@
           0 0 12px rgba(255, 107, 125, .12)
       }
     }
+
+    /* ─── THEME: DARK (default) ───────────────────────────────── */
+    :root[data-theme="dark"], :root {
+      --bg: #06070b;
+      --panel: rgba(14, 18, 27, .72);
+      --card: rgba(20, 25, 36, .78);
+      --input: rgba(25, 31, 45, .7);
+      --border: rgba(107, 125, 177, .18);
+      --hover: rgba(34, 41, 60, .86);
+      --accent: #58a6ff;
+      --violet: #8b7dff;
+      --green: #19c37d;
+      --amber: #f8b84e;
+      --red: #ff6b7d;
+      --txt: #eef4ff;
+      --txt2: #9aa9c6;
+      --txt3: #54627d;
+      --admin-glow: rgba(88, 166, 255, 0.24);
+      --admin-wash: rgba(26, 35, 64, 0.78);
+      --teal: #22c55e;
+      --body-bg-1: rgba(88, 166, 255, .16);
+      --body-bg-2: rgba(139, 125, 255, .12);
+      --body-bg-3: rgba(25, 195, 125, .08);
+      --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
+    }
+
+    /* ─── THEME: WHITE ────────────────────────────────────────── */
+    :root[data-theme="white"] {
+      --bg: #f0f2f8;
+      --panel: rgba(255, 255, 255, 0.82);
+      --card: rgba(255, 255, 255, 0.92);
+      --input: rgba(240, 243, 252, 0.9);
+      --border: rgba(160, 175, 220, 0.28);
+      --hover: rgba(220, 228, 250, 0.7);
+      --accent: #2563eb;
+      --violet: #7c3aed;
+      --green: #16a34a;
+      --amber: #d97706;
+      --red: #dc2626;
+      --txt: #0f172a;
+      --txt2: #475569;
+      --txt3: #94a3b8;
+      --admin-glow: rgba(37, 99, 235, 0.15);
+      --admin-wash: rgba(219, 234, 254, 0.7);
+      --teal: #059669;
+      --body-bg-1: rgba(37, 99, 235, .08);
+      --body-bg-2: rgba(124, 58, 237, .06);
+      --body-bg-3: rgba(16, 163, 74, .04);
+      --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
+    }
+
+    /* ─── THEME: GAMING (insomnia style) ─────────────────────── */
+    :root[data-theme="gaming"] {
+      --bg: #0e1428;
+      --panel: rgba(8, 10, 22, 0.82);
+      --card: rgba(12, 15, 32, 0.88);
+      --input: rgba(15, 18, 40, 0.85);
+      --border: rgba(212, 175, 55, 0.18);
+      --hover: rgba(212, 175, 55, 0.08);
+      --accent: #d4af37;
+      --violet: #a855f7;
+      --green: #22c55e;
+      --amber: #f5c518;
+      --red: #ef4444;
+      --txt: #f5e6a3;
+      --txt2: #c8aa6e;
+      --txt3: #8a7240;
+      --admin-glow: rgba(212, 175, 55, 0.22);
+      --admin-wash: rgba(12, 15, 32, 0.9);
+      --teal: #22c55e;
+      --body-bg-1: rgba(212, 175, 55, .08);
+      --body-bg-2: rgba(80, 100, 200, .06);
+      --body-bg-3: rgba(34, 197, 94, .03);
+      --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
+    }
+
+    /* ── GAMING: INSOMNIA BACKGROUND SHARDS ─────────────────────── */
+    [data-theme="gaming"] body {
+      background: #0e1428 !important;
+      position: relative;
+    }
+    [data-theme="gaming"] body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        /* left shard cluster */
+        linear-gradient(148deg, rgba(60,90,200,0.22) 0%, transparent 45%) left -120px top -80px / 520px 700px no-repeat,
+        linear-gradient(155deg, rgba(40,65,170,0.15) 0%, transparent 50%) left -60px top 60px / 380px 580px no-repeat,
+        linear-gradient(140deg, rgba(80,110,220,0.12) 0%, transparent 55%) left 80px top -40px / 300px 460px no-repeat,
+        /* right shard cluster */
+        linear-gradient(320deg, rgba(55,80,190,0.20) 0%, transparent 45%) right -100px top -60px / 480px 620px no-repeat,
+        linear-gradient(310deg, rgba(40,60,160,0.14) 0%, transparent 50%) right -40px top 80px / 340px 500px no-repeat,
+        linear-gradient(330deg, rgba(70,95,210,0.10) 0%, transparent 55%) right 60px bottom 0 / 260px 420px no-repeat,
+        /* bottom accent */
+        linear-gradient(110deg, rgba(212,175,55,0.04) 0%, transparent 40%) left 0 bottom 0 / 100% 300px no-repeat,
+        #0e1428;
+    }
+    [data-theme="gaming"] body::after {
+      content: '';
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      /* SVG shard shapes overlaid */
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cpolygon points='0,0 420,0 320,600 0,520' fill='rgba(50,75,180,0.09)'/%3E%3Cpolygon points='0,0 280,0 180,420 0,360' fill='rgba(60,90,200,0.07)'/%3E%3Cpolygon points='100%25,0 100%25,480 60%25,100%25 80%25,0' fill='rgba(45,70,175,0.08)'/%3E%3Cpolygon points='75%25,0 100%25,0 100%25,320 55%25,100%25' fill='rgba(55,85,195,0.06)'/%3E%3Cpolygon points='30%25,0 65%25,0 50%25,35%25 20%25,40%25' fill='rgba(212,175,55,0.04)'/%3E%3Cline x1='0' y1='38' x2='100%25' y2='38' stroke='rgba(212,175,55,0.22)' stroke-width='1'/%3E%3Cline x1='40' y1='60' x2='100%25' y2='60' stroke='rgba(212,175,55,0.10)' stroke-width='0.5'/%3E%3C/svg%3E");
+      background-size: 100% 100%;
+    }
+
+    /* ── GAMING: VALORANT-STYLE TABS ─────────────────────────────── */
+    [data-theme="gaming"] #tabbar {
+      background: rgba(8, 10, 22, 0.85) !important;
+      border-bottom: 1px solid rgba(212,175,55,0.2) !important;
+      height: 42px;
+      gap: 0;
+      padding: 0;
+    }
+
+    [data-theme="gaming"] .tb {
+      position: relative;
+      height: 42px;
+      padding: 0 22px 0 26px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: #8a7240;
+      border-bottom: none !important;
+      border-radius: 0;
+      transition: color .15s;
+      clip-path: polygon(14px 0%, 100% 0%, calc(100% - 0px) 100%, 0% 100%);
+      background: transparent !important;
+      overflow: visible;
+    }
+
+    [data-theme="gaming"] .tb::before {
+      content: '';
+      position: absolute; inset: 0;
+      clip-path: polygon(14px 0%, 100% 0%, calc(100% - 0px) 100%, 0% 100%);
+      background: transparent;
+      transition: background .15s;
+    }
+    [data-theme="gaming"] .tb:hover { color: #d4af37 !important; }
+    [data-theme="gaming"] .tb:hover::before { background: rgba(212,175,55,0.07); }
+
+    [data-theme="gaming"] .tb.active {
+      color: #f5e6a3 !important;
+      background: transparent !important;
+    }
+    [data-theme="gaming"] .tb.active::before {
+      background: rgba(212,175,55,0.13);
+    }
+    [data-theme="gaming"] .tb.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 14px; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #d4af37, #f5c518 60%, transparent);
+      border-radius: 0;
+    }
+
+    /* ── GAMING: titlebar gold accent ────────────────────────────── */
+    [data-theme="gaming"] #titlebar {
+      border-bottom: 1px solid rgba(212,175,55,0.2) !important;
+      background: rgba(6, 8, 18, 0.9) !important;
+    }
+
+    /* ── GAMING: sidebar gold border ─────────────────────────────── */
+    [data-theme="gaming"] #sidebar {
+      border-right: 1px solid rgba(212,175,55,0.14) !important;
+      background: rgba(7, 9, 20, 0.75) !important;
+    }
+
+    /* ── GAMING: peer-search gold focus ──────────────────────────── */
+    [data-theme="gaming"] .peer-search {
+      border-color: rgba(212,175,55,0.16) !important;
+      background: rgba(10,12,26,0.85) !important;
+    }
+    [data-theme="gaming"] .peer-search:focus {
+      border-color: rgba(212,175,55,0.45) !important;
+      box-shadow: 0 0 0 3px rgba(212,175,55,0.10) !important;
+    }
+
+    /* ── GAMING: z-index fix so UI sits above body shards ─────────── */
+    [data-theme="gaming"] #titlebar,
+    [data-theme="gaming"] #app { position: relative; z-index: 1; }
+
+    /* apply body bg dynamically */
+    body {
+      background:
+        radial-gradient(circle at top right, var(--body-bg-1), transparent 26%),
+        radial-gradient(circle at top left, var(--body-bg-2), transparent 24%),
+        radial-gradient(circle at bottom left, var(--body-bg-3), transparent 22%),
+        var(--bg) !important;
+    }
+
+    /* ─── SETTINGS GEAR BUTTON ────────────────────────────────── */
+    .settings-btn {
+      width: 28px !important; height: 26px !important;
+      color: var(--txt2) !important;
+      transition: color .15s, background .12s !important;
+    }
+    .settings-btn:hover { background: var(--hover) !important; color: var(--accent) !important; }
+    .settings-btn svg { pointer-events: none; }
+
+    /* ─── SETTINGS OVERLAY ────────────────────────────────────── */
+    #settings-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+    }
+    #settings-overlay.open { display: flex; animation: sett-in .2s ease; }
+    @keyframes sett-in {
+      from { opacity: 0; } to { opacity: 1; }
+    }
+
+    .sett-panel {
+      width: 480px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+      overflow: hidden;
+      animation: sett-slide .22s cubic-bezier(.175,.885,.32,1.275);
+    }
+    @keyframes sett-slide {
+      from { opacity: 0; transform: scale(.94) translateY(12px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .sett-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sett-header svg { color: var(--accent); flex-shrink: 0; }
+    .sett-header-title {
+      font-size: 14px; font-weight: 700;
+      color: var(--txt); flex: 1;
+    }
+    .sett-close {
+      width: 28px; height: 28px; border-radius: 8px;
+      border: none; background: transparent; color: var(--txt2);
+      font-size: 16px; cursor: pointer; display: flex;
+      align-items: center; justify-content: center;
+      transition: background .12s, color .12s;
+    }
+    .sett-close:hover { background: var(--red); color: #fff; }
+
+    .sett-body { padding: 20px 22px 22px; }
+
+    .sett-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--txt3);
+      margin-bottom: 14px;
+    }
+
+    /* Theme cards grid */
+    .theme-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .theme-card {
+      border-radius: 12px; overflow: hidden;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: border-color .15s, transform .12s, box-shadow .15s;
+      position: relative;
+    }
+    .theme-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .theme-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent), 0 8px 24px rgba(0,0,0,0.3);
+    }
+    .theme-card.active::after {
+      content: '✓';
+      position: absolute; top: 6px; right: 8px;
+      font-size: 11px; font-weight: 800;
+      color: var(--accent);
+    }
+
+    .theme-preview {
+      height: 72px; width: 100%; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Dark preview */
+    .tp-dark { background: #06070b; }
+    .tp-dark .tp-bar { background: rgba(14,18,27,.92); border-bottom: 1px solid rgba(107,125,177,.18); }
+    .tp-dark .tp-sidebar { background: rgba(14,18,27,.72); border-right: 1px solid rgba(107,125,177,.14); }
+    .tp-dark .tp-main { background: #06070b; }
+    .tp-dark .tp-dot { background: #58a6ff; }
+
+    /* White preview */
+    .tp-white { background: #f0f2f8; }
+    .tp-white .tp-bar { background: rgba(255,255,255,.88); border-bottom: 1px solid rgba(160,175,220,.28); }
+    .tp-white .tp-sidebar { background: rgba(255,255,255,.82); border-right: 1px solid rgba(160,175,220,.2); }
+    .tp-white .tp-main { background: #f0f2f8; }
+    .tp-white .tp-dot { background: #2563eb; }
+
+    /* Gaming preview */
+    .tp-gaming { background: #0e1428; }
+    .tp-gaming .tp-bar { background: rgba(6,8,18,.92); border-bottom: 1px solid rgba(212,175,55,.22); }
+    .tp-gaming .tp-sidebar { background: rgba(7,9,20,.82); border-right: 1px solid rgba(212,175,55,.14); }
+    .tp-gaming .tp-main { background: #0e1428; }
+    .tp-gaming .tp-dot { background: #d4af37; }
+
+    .tp-bar { height: 10px; display: flex; align-items: center; padding: 0 6px; gap: 3px; }
+    .tp-dot { width: 4px; height: 4px; border-radius: 50%; }
+    .tp-body { display: flex; flex: 1; }
+    .tp-sidebar { width: 30%; }
+    .tp-main { flex: 1; }
+
+    .theme-card-label {
+      padding: 7px 10px; font-size: 11px; font-weight: 600;
+      color: var(--txt2); background: var(--panel);
+      text-align: center;
+    }
+
+    /* Divider */
+    .sett-divider {
+      height: 1px; background: var(--border);
+      margin: 4px 0 18px;
+    }
+
+    .sett-footer {
+      font-size: 11px; color: var(--txt3); text-align: center;
+      padding-top: 4px;
+    }
   </style>
 </head>
 
@@ -4914,6 +5242,11 @@
     <div class="spacer"></div>
     <span id="conn-pill" class="off">● Searching…</span>
     <div class="wbtns">
+      <button class="wb settings-btn" onclick="openSettings()" title="Settings">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
       <button class="wb" onclick="OpsLynk.minimize()">─</button>
       <button class="wb" onclick="OpsLynk.maximize()">□</button>
       <button class="wb x" onclick="OpsLynk.close()">✕</button>
@@ -6977,6 +7310,108 @@
     setLockUi(false);
 
     init();
+  </script>
+
+  <!-- ─── SETTINGS OVERLAY ──────────────────────────────────────── -->
+  <div id="settings-overlay" onclick="settingsOverlayClick(event)">
+    <div class="sett-panel">
+      <div class="sett-header">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <div class="sett-header-title">Settings</div>
+        <button class="sett-close" onclick="closeSettings()">✕</button>
+      </div>
+
+      <div class="sett-body">
+        <div class="sett-section-label">Appearance — Choose Theme</div>
+
+        <div class="theme-grid">
+          <!-- Dark Theme -->
+          <div class="theme-card active" id="tc-dark" onclick="applyTheme('dark')">
+            <div class="theme-preview tp-dark">
+              <div class="tp-bar"><div class="tp-dot"></div><div class="tp-dot"></div><div class="tp-dot"></div></div>
+              <div class="tp-body">
+                <div class="tp-sidebar"></div>
+                <div class="tp-main"></div>
+              </div>
+            </div>
+            <div class="theme-card-label">Dark</div>
+          </div>
+
+          <!-- White Theme -->
+          <div class="theme-card" id="tc-white" onclick="applyTheme('white')">
+            <div class="theme-preview tp-white">
+              <div class="tp-bar"><div class="tp-dot"></div><div class="tp-dot"></div><div class="tp-dot"></div></div>
+              <div class="tp-body">
+                <div class="tp-sidebar"></div>
+                <div class="tp-main"></div>
+              </div>
+            </div>
+            <div class="theme-card-label">Light</div>
+          </div>
+
+          <!-- Gaming Theme -->
+          <div class="theme-card" id="tc-gaming" onclick="applyTheme('gaming')">
+            <div class="theme-preview tp-gaming">
+              <div class="tp-bar"><div class="tp-dot"></div><div class="tp-dot"></div><div class="tp-dot"></div></div>
+              <div class="tp-body">
+                <div class="tp-sidebar"></div>
+                <div class="tp-main"></div>
+              </div>
+            </div>
+            <div class="theme-card-label">Gaming</div>
+          </div>
+        </div>
+
+        <div class="sett-divider"></div>
+        <div class="sett-footer">More settings coming soon — OpsLynk v2</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ─── SETTINGS + THEME ──────────────────────────────────────────
+    (function() {
+      const STORAGE_KEY = 'opslynk-theme';
+
+      function openSettings() {
+        document.getElementById('settings-overlay').classList.add('open');
+      }
+      function closeSettings() {
+        document.getElementById('settings-overlay').classList.remove('open');
+      }
+      function settingsOverlayClick(e) {
+        if (e.target === document.getElementById('settings-overlay')) closeSettings();
+      }
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        // update active card
+        ['dark','white','gaming'].forEach(t => {
+          document.getElementById('tc-' + t)?.classList.toggle('active', t === theme);
+        });
+        // persist
+        try { localStorage.setItem(STORAGE_KEY, theme); } catch {}
+      }
+
+      // restore saved theme
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY) || 'dark';
+        applyTheme(saved);
+      } catch { applyTheme('dark'); }
+
+      // expose globally
+      window.openSettings    = openSettings;
+      window.closeSettings   = closeSettings;
+      window.settingsOverlayClick = settingsOverlayClick;
+      window.applyTheme      = applyTheme;
+
+      // close on Escape
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') closeSettings();
+      });
+    })();
   </script>
 </body>
 

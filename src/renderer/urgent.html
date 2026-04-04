@@ -3,106 +3,210 @@
 <head>
 <meta charset="UTF-8">
 <style>
-* { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; }
-body {
-  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
-  background:radial-gradient(circle at center, rgba(127,29,29,0.22), rgba(0,0,0,0.96) 58%);
-  height:100vh; display:flex; align-items:center; justify-content:center;
-  overflow:hidden; user-select:none;
+* { margin:0; padding:0; box-sizing:border-box; -webkit-font-smoothing:antialiased; user-select:none; }
+
+html, body {
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #05070d;
+  color: #e2e8f0;
 }
-.overlay {
-  width:min(920px, calc(100vw - 80px)); min-height:440px; background:linear-gradient(180deg,#1b1e28 0%, #13161f 100%);
-  border:2px solid rgba(239,68,68,.55); border-radius:24px; padding:42px 46px;
-  box-shadow:0 0 120px rgba(239,68,68,.26), 0 24px 80px rgba(0,0,0,.5);
-  animation:emerge .35s cubic-bezier(.175,.885,.32,1.275);
-  display:flex; flex-direction:column; justify-content:center;
+
+/* Animated background — mirrors lockscreen */
+.bg {
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(239,68,68,0.14) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 30%, rgba(139,125,255,0.09) 0%, transparent 55%),
+    #05070d;
+  animation: pulse-bg 6s ease-in-out infinite alternate;
 }
-@keyframes emerge {
-  from { opacity:0; transform:scale(.88) translateY(20px); }
-  to   { opacity:1; transform:scale(1) translateY(0); }
+@keyframes pulse-bg { from { opacity:.85; } to { opacity:1; } }
+
+/* Centered content */
+.content {
+  position: relative; z-index: 10;
+  width: 100vw; height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0;
 }
-.badge-row {
-  display:flex; align-items:center; gap:10px; margin-bottom:20px; flex-wrap:wrap;
+
+/* Icon circle — mirrors lock-icon style */
+.alert-icon {
+  width: 80px; height: 80px;
+  background: rgba(239,68,68,0.12);
+  border: 2px solid rgba(239,68,68,0.35);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 24px;
+  animation: alert-pulse 2.2s ease-in-out infinite;
 }
+@keyframes alert-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.25), 0 0 30px rgba(239,68,68,0.12); }
+  50%       { box-shadow: 0 0 0 14px rgba(239,68,68,0), 0 0 50px rgba(239,68,68,0.28); }
+}
+.alert-icon svg { width: 36px; height: 36px; }
+
+/* Badge row */
+.badge-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
 .urgent-badge {
-  background:rgba(239,68,68,.15); color:#ef4444; border:1px solid rgba(239,68,68,.3);
-  font-size:12px; font-weight:800; letter-spacing:2px; padding:6px 12px; border-radius:999px;
-  animation:pulse 1.4s ease infinite;
+  background: rgba(239,68,68,.15); color: #ef4444;
+  border: 1px solid rgba(239,68,68,.3);
+  font-size: 11px; font-weight: 800; letter-spacing: 2px;
+  padding: 5px 12px; border-radius: 999px;
+  animation: blink-badge 1.4s ease infinite;
+  text-transform: uppercase;
 }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
-.from-label { font-size:14px; color:#9ca3af; }
-.msg-icon { font-size:56px; margin-bottom:18px; }
-.msg-text {
-  font-size:32px; font-weight:700; color:#f3f4f6; line-height:1.35;
-  margin-bottom:16px;
+@keyframes blink-badge { 0%,100%{opacity:1} 50%{opacity:.55} }
+
+.from-label { font-size: 13px; color: rgba(148,163,184,.7); }
+
+/* Message text */
+.msg-headline {
+  font-size: 26px; font-weight: 700; color: #f1f5f9;
+  margin-bottom: 8px; text-align: center;
+  max-width: 600px; line-height: 1.35;
+  word-break: break-word;
+}
+
+/* Card — mirrors lockscreen msg-card */
+.msg-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(239,68,68,0.18);
+  border-radius: 14px;
+  padding: 22px 32px;
+  max-width: 580px; width: 90%;
+  margin-top: 4px; margin-bottom: 24px;
+}
+.msg-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(239,68,68,.6); margin-bottom: 8px;
 }
 .lock-note {
-  font-size:15px; line-height:1.7; color:#cfd6e4; margin-bottom:26px;
+  font-size: 14px; color: #cfd6e4; line-height: 1.6;
 }
-.reply-section { margin-bottom:22px; }
-.reply-label { font-size:12px; font-weight:700; color:#9ca3af; text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
+
+/* Reply section */
+.reply-section { width: 90%; max-width: 580px; margin-bottom: 18px; }
+.reply-label {
+  font-size: 11px; font-weight: 700; color: rgba(148,163,184,.7);
+  text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px;
+}
 #reply-input {
-  width:100%; background:#1c1f2a; border:1px solid #2d3347; color:#dde1ed;
-  border-radius:14px; padding:14px 16px; font-family:inherit; font-size:15px; outline:none;
-  transition:border-color .15s;
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(107,125,177,0.2);
+  color: #dde1ed;
+  border-radius: 12px; padding: 13px 16px;
+  font-family: inherit; font-size: 14px; outline: none;
+  transition: border-color .15s;
 }
-#reply-input:focus { border-color:#3d7ff5; }
-#reply-input::placeholder { color:#404660; }
+#reply-input:focus { border-color: rgba(239,68,68,0.4); }
+#reply-input::placeholder { color: rgba(107,125,177,0.4); }
+
+/* Action buttons */
 .action-row {
-  display:flex; gap:14px; flex-wrap:wrap;
+  display: flex; gap: 12px; flex-wrap: wrap;
+  width: 90%; max-width: 580px; justify-content: center;
 }
 .btn-ack, .btn-secondary {
-  height:64px; border:none; border-radius:16px; font-family:inherit; font-weight:800; font-size:18px;
-  cursor:pointer; transition:background .15s, transform .15s; letter-spacing:.5px;
-  display:flex; align-items:center; justify-content:center; gap:10px; padding:0 24px;
+  height: 52px; border: none; border-radius: 12px;
+  font-family: inherit; font-weight: 700; font-size: 15px;
+  cursor: pointer; transition: background .15s, transform .1s;
+  letter-spacing: .3px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 0 22px;
 }
 .btn-ack {
-  flex:1 1 300px; background:#ef4444; color:#fff;
+  flex: 1 1 260px;
+  background: rgba(239,68,68,0.85); color: #fff;
+  border: 1px solid rgba(239,68,68,0.5);
 }
-.btn-ack:hover { background:#dc2626; }
+.btn-ack:hover { background: #dc2626; }
 .btn-secondary {
-  flex:0 0 auto; background:#232838; color:#dfe5f5; border:1px solid #31384d;
+  flex: 0 0 auto;
+  background: rgba(255,255,255,0.05); color: #dfe5f5;
+  border: 1px solid rgba(107,125,177,0.2);
 }
-.btn-secondary:hover { background:#2a3044; }
-.btn-ack:disabled, .btn-secondary:disabled { opacity:.65; cursor:default; transform:none; }
-.status-line { font-size:13px; color:#6b7280; text-align:center; margin-top:14px; min-height:18px; }
+.btn-secondary:hover { background: rgba(255,255,255,0.09); }
+.btn-ack:disabled, .btn-secondary:disabled { opacity:.55; cursor:default; }
+
+.status-line {
+  font-size: 12px; color: rgba(148,163,184,0.4);
+  text-align: center; margin-top: 14px; min-height: 16px;
+  letter-spacing: .04em;
+}
+
+/* Bottom badge — mirrors lockscreen */
+.badge {
+  position: fixed; bottom: 26px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: rgba(148,163,184,.3);
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(239,68,68,0.5);
+  animation: dot-blink 2s ease-in-out infinite;
+}
+@keyframes dot-blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 </style>
 </head>
 <body>
-<div class="overlay">
+<div class="bg"></div>
+<div class="content">
+
+  <div class="alert-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      <line x1="12" y1="9" x2="12" y2="13"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  </div>
+
   <div class="badge-row">
-    <span class="urgent-badge" id="mode-badge">URGENT BROADCAST</span>
+    <span class="urgent-badge" id="mode-badge">Urgent Broadcast</span>
     <span class="from-label" id="from-label">From: Admin</span>
   </div>
-  <div class="msg-icon" id="msg-icon">!</div>
-  <div class="msg-text" id="msg-text">Loading...</div>
-  <div class="lock-note" id="lock-note">This message requires your acknowledgement before you can continue.</div>
+
+  <div class="msg-headline" id="msg-text">Loading...</div>
+
+  <div class="msg-card">
+    <div class="msg-label">Admin Message</div>
+    <div class="lock-note" id="lock-note">This message requires your acknowledgement before you can continue.</div>
+  </div>
+
   <div class="reply-section">
     <div class="reply-label">Reply To Admin</div>
     <input id="reply-input" placeholder="Type a reply to the admin (optional)...">
   </div>
+
   <div class="action-row" id="action-row">
-    <button class="btn-ack" id="ack-btn" onclick="doAck()">Acknowledge And Dismiss</button>
+    <button class="btn-ack" id="ack-btn" onclick="doAck()">✓ Acknowledge &amp; Dismiss</button>
     <button class="btn-secondary" id="reply-btn" onclick="sendReplyOnly()">Send Reply</button>
   </div>
+
   <div class="status-line" id="status-line">This screen stays active until you acknowledge it.</div>
+</div>
+
+<div class="badge">
+  <div class="badge-dot"></div>
+  OpsLynk — Urgent Broadcast
 </div>
 
 <script>
 let broadcastData = null;
 let allowClose = false;
 
-function getReplyText() {
-  return document.getElementById('reply-input').value.trim();
-}
-
-function setStatus(message) {
-  document.getElementById('status-line').textContent = message || '';
-}
+function getReplyText() { return document.getElementById('reply-input').value.trim(); }
+function setStatus(m) { document.getElementById('status-line').textContent = m || ''; }
 
 function updateUi() {
   document.getElementById('from-label').textContent = 'From: ' + (broadcastData?.fromName || 'Admin');
-  document.getElementById('msg-text').textContent = broadcastData?.text || '';
+  document.getElementById('msg-text').textContent   = broadcastData?.text || '';
   setStatus('This screen stays active until you acknowledge it.');
 }
 
@@ -114,7 +218,7 @@ function playUrgent() {
       const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.35, ctx.currentTime + i * 0.12);
+      gain.gain.setValueAtTime(0.32, ctx.currentTime + i * 0.12);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.1);
       osc.start(ctx.currentTime + i * 0.12);
       osc.stop(ctx.currentTime + i * 0.12 + 0.12);
@@ -125,10 +229,7 @@ function playUrgent() {
 function sendReplyOnly() {
   if (!broadcastData || !window.OpsLynk) return;
   const reply = getReplyText();
-  if (!reply) {
-    setStatus('Write a reply first.');
-    return;
-  }
+  if (!reply) { setStatus('Write a reply first.'); return; }
   window.OpsLynk.urgentReply({ peerId: broadcastData.fromId, text: reply, broadcastId: broadcastData.broadcastId });
   document.getElementById('reply-input').value = '';
   setStatus('Reply sent.');
@@ -139,9 +240,7 @@ function doAck() {
   const reply = getReplyText();
   if (window.OpsLynk) {
     window.OpsLynk.urgentAck({ peerId: broadcastData.fromId, broadcastId: broadcastData.broadcastId });
-    if (reply) {
-      window.OpsLynk.urgentReply({ peerId: broadcastData.fromId, text: reply, broadcastId: broadcastData.broadcastId });
-    }
+    if (reply) window.OpsLynk.urgentReply({ peerId: broadcastData.fromId, text: reply, broadcastId: broadcastData.broadcastId });
   }
   allowClose = true;
   window.close();
@@ -157,8 +256,7 @@ if (window.OpsLynk) {
 
 window.addEventListener('beforeunload', (e) => {
   if (allowClose) return;
-  e.preventDefault();
-  e.returnValue = '';
+  e.preventDefault(); e.returnValue = '';
 });
 
 document.addEventListener('keydown', (e) => {

@@ -1,5 +1,5 @@
 import path from 'path';
-import { BrowserWindow, dialog, screen } from 'electron';
+import { BrowserWindow, screen } from 'electron';
 import type { WindowManagerApi, WindowRuntimeState } from '../../shared/types/runtime';
 
 interface WindowManagerDeps {
@@ -33,21 +33,6 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
         contextIsolation: true,
         preload: preloadPath
       }
-    });
-    state.mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
-      console.error('[OpsLynk] Main window failed to load:', {
-        errorCode,
-        errorDescription,
-        validatedURL,
-        preloadPath,
-        rendererDir
-      });
-      void dialog.showMessageBox(state.mainWindow!, {
-        type: 'error',
-        title: 'OpsLynk startup error',
-        message: 'OpsLynk could not load the main screen.',
-        detail: `Renderer load failed (${errorCode}): ${errorDescription}\n${validatedURL || path.join(rendererDir, 'index.html')}`
-      });
     });
     state.mainWindow.loadFile(path.join(rendererDir, 'index.html'));
     state.mainWindow.once('ready-to-show', () => {
@@ -126,11 +111,9 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
     const { bounds } = screen.getPrimaryDisplay();
     state.overlayWindow = new BrowserWindow({
       width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
-      frame: false, alwaysOnTop: true, skipTaskbar: true,
-      fullscreen: false, kiosk: true,
+      frame: false, alwaysOnTop: true, skipTaskbar: true, fullscreen: true,
       movable: false, minimizable: false, maximizable: false, closable: false,
-      backgroundColor: '#05070d',
-      show: false,
+      backgroundColor: 'rgba(0,0,0,0.88)', transparent: true,
       webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
     });
     state.overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -185,7 +168,6 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
       frame: false, fullscreen: false, alwaysOnTop: true, skipTaskbar: true,
       resizable: false, movable: false, minimizable: false, maximizable: false,
       closable: false, kiosk: true, backgroundColor: '#05070d',
-      show: false,
       webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
     });
     state.lockWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -196,9 +178,9 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
     state.lockWindow.on('resize', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
     state.lockWindow.loadFile(path.join(rendererDir, 'lockscreen.html'));
     state.lockWindow.once('ready-to-show', () => {
+      state.lockWindow?.show();
       state.lockWindow?.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
       state.lockWindow?.setAlwaysOnTop(true, 'screen-saver', 1);
-      state.lockWindow?.show();
       state.lockWindow?.focus();
       state.lockWindow?.moveTop();
       state.lockWindow?.webContents.send('lockscreen-data', {
@@ -231,10 +213,9 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
     const { bounds } = screen.getPrimaryDisplay();
     state.forcedVideoWindow = new BrowserWindow({
       width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
-      frame: false, fullscreen: false, alwaysOnTop: true, skipTaskbar: true,
+      frame: false, fullscreen: true, alwaysOnTop: true, skipTaskbar: true,
       resizable: false, movable: false, minimizable: false, maximizable: false,
-      closable: false, kiosk: true, backgroundColor: '#03060c',
-      show: false,
+      closable: false, kiosk: false, backgroundColor: '#03060c',
       webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
     });
     state.forcedVideoWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -245,9 +226,9 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
     state.forcedVideoWindow.on('resize', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
     state.forcedVideoWindow.loadFile(path.join(rendererDir, 'forced-video.html'));
     state.forcedVideoWindow.once('ready-to-show', () => {
+      state.forcedVideoWindow?.show();
       state.forcedVideoWindow?.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
       state.forcedVideoWindow?.setAlwaysOnTop(true, 'screen-saver', 1);
-      state.forcedVideoWindow?.show();
       state.forcedVideoWindow?.focus();
       state.forcedVideoWindow?.moveTop();
       state.forcedVideoWindow?.webContents.send('forced-video-data', data);
