@@ -1,5 +1,5 @@
 import path from 'path';
-import { BrowserWindow, dialog, screen } from 'electron';
+import { BrowserWindow, dialog, screen, globalShortcut } from 'electron';
 import type { WindowManagerApi, WindowRuntimeState } from '../../shared/types/runtime';
 
 interface WindowManagerDeps {
@@ -142,8 +142,18 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
       state.overlayWindow?.focus();
       state.overlayWindow?.moveTop();
       state.overlayWindow?.webContents.send('urgent-data', data);
+      // Block system shortcuts while urgent overlay is up
+      try {
+        globalShortcut.registerAll([
+          'Super', 'Meta',
+          'Alt+Tab', 'Alt+Shift+Tab', 'Alt+F4',
+          'Meta+Tab', 'Meta+D', 'Meta+L',
+          'Ctrl+Escape', 'Alt+Escape',
+        ], () => { /* blocked */ });
+      } catch { /* ignore */ }
     });
     state.overlayWindow.on('closed', () => {
+      try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
       state.overlayWindow = null;
       state.overlayState = null;
     });
@@ -208,10 +218,28 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
     });
     state.lockWindow.on('closed', () => { state.lockWindow = null; });
     state.screenLocked = true;
+
+    // Block Win / Alt+Tab / all system shortcuts at OS level
+    try {
+      globalShortcut.registerAll([
+        'Super', 'Meta',
+        'Alt+Tab', 'Alt+Shift+Tab',
+        'Alt+F4',
+        'Meta+Tab', 'Meta+Shift+Tab',
+        'Meta+D', 'Meta+E', 'Meta+L',
+        'Meta+R', 'Meta+M',
+        'Ctrl+Escape', 'Ctrl+Alt+Delete',
+        'Alt+Escape',
+        'Meta+Up', 'Meta+Down',
+        'Meta+Left', 'Meta+Right',
+      ], () => { /* blocked */ });
+    } catch { /* some shortcuts may not register on all platforms */ }
   }
 
   function unlockScreen(): void {
     state.screenLocked = false;
+    // Release all blocked shortcuts
+    try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
     if (state.lockWindow && !state.lockWindow.isDestroyed()) {
       try { state.lockWindow.removeAllListeners('close'); } catch {}
       try { state.lockWindow.destroy(); } catch {}
@@ -256,10 +284,20 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
       state.forcedVideoWindow = null;
       state.forcedVideoActive = false;
     });
+    // Block system shortcuts
+    try {
+      globalShortcut.registerAll([
+        'Super', 'Meta',
+        'Alt+Tab', 'Alt+Shift+Tab', 'Alt+F4',
+        'Meta+Tab', 'Meta+D', 'Meta+L',
+        'Ctrl+Escape', 'Alt+Escape',
+      ], () => { /* blocked */ });
+    } catch { /* ignore */ }
   }
 
   function closeForcedVideoWindow(force = false): void {
     state.forcedVideoActive = false;
+    try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
     if (state.forcedVideoWindow && !state.forcedVideoWindow.isDestroyed()) {
       try { state.forcedVideoWindow.webContents.send('forced-video-stop'); } catch {}
       if (force) {

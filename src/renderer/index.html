@@ -4931,161 +4931,492 @@
 
     /* ─── THEME: WHITE ────────────────────────────────────────── */
     :root[data-theme="white"] {
-      --bg: #f0f2f8;
-      --panel: rgba(255, 255, 255, 0.82);
-      --card: rgba(255, 255, 255, 0.92);
-      --input: rgba(240, 243, 252, 0.9);
-      --border: rgba(160, 175, 220, 0.28);
-      --hover: rgba(220, 228, 250, 0.7);
+      --bg: #eef0f5;
+      --panel: rgba(232, 235, 244, 0.90);
+      --card: rgba(228, 231, 242, 0.95);
+      --input: rgba(220, 224, 238, 0.92);
+      --border: rgba(140, 155, 200, 0.22);
+      --hover: rgba(210, 216, 236, 0.80);
       --accent: #2563eb;
       --violet: #7c3aed;
       --green: #16a34a;
       --amber: #d97706;
       --red: #dc2626;
-      --txt: #0f172a;
-      --txt2: #475569;
-      --txt3: #94a3b8;
-      --admin-glow: rgba(37, 99, 235, 0.15);
-      --admin-wash: rgba(219, 234, 254, 0.7);
+      --txt: #1e2540;
+      --txt2: #4a5580;
+      --txt3: #8a94b8;
+      --admin-glow: rgba(37, 99, 235, 0.12);
+      --admin-wash: rgba(210, 220, 248, 0.75);
       --teal: #059669;
-      --body-bg-1: rgba(37, 99, 235, .08);
-      --body-bg-2: rgba(124, 58, 237, .06);
-      --body-bg-3: rgba(16, 163, 74, .04);
+      --body-bg-1: rgba(37, 99, 235, .05);
+      --body-bg-2: rgba(124, 58, 237, .04);
+      --body-bg-3: rgba(16, 163, 74, .03);
       --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
+    }
+
+    /* White theme — unified surface, nothing pure white */
+    [data-theme="white"] body {
+      background:
+        radial-gradient(circle at top right, rgba(37,99,235,.05), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(124,58,237,.04), transparent 26%),
+        #eef0f5 !important;
+    }
+    [data-theme="white"] #titlebar {
+      background: rgba(228, 231, 242, 0.95) !important;
+      border-bottom: 1px solid rgba(140,155,200,0.24) !important;
+    }
+    [data-theme="white"] #sidebar {
+      background: rgba(232, 235, 244, 0.92) !important;
+      border-right: 1px solid rgba(140,155,200,0.20) !important;
+    }
+    [data-theme="white"] #tabbar {
+      background: rgba(224, 228, 240, 0.95) !important;
+      border-bottom: 1px solid rgba(140,155,200,0.22) !important;
+    }
+    [data-theme="white"] .peer-search {
+      background: rgba(210, 216, 236, 0.85) !important;
+      border-color: rgba(140,155,200,0.22) !important;
+    }
+    [data-theme="white"] .peer-search::placeholder { color: #8a94b8 !important; }
+    /* ── WHITE THEME: override ALL hardcoded dark content cards ──── */
+
+    /* Dashboard cards */
+    [data-theme="white"] .metric-card {
+      background: rgba(255,255,255,0.92) !important;
+      border: 1px solid rgba(140,155,200,0.22) !important;
+      box-shadow: 0 2px 12px rgba(60,80,160,0.06) !important;
+    }
+    [data-theme="white"] .signal-card {
+      background: rgba(252,253,255,0.90) !important;
+      border: 1px solid rgba(140,155,200,0.20) !important;
+      box-shadow: 0 2px 10px rgba(60,80,160,0.05) !important;
+    }
+    [data-theme="white"] .dash-section {
+      background: rgba(240,242,250,0.85) !important;
+      border: 1px solid rgba(140,155,200,0.18) !important;
+    }
+    [data-theme="white"] .dash-hero {
+      background: rgba(232,235,248,0.70) !important;
+    }
+    [data-theme="white"] .dash-status-chip {
+      background: rgba(220,228,248,0.85) !important;
+      color: #2a3a80 !important;
+      border: 1px solid rgba(140,155,200,0.28) !important;
+    }
+    [data-theme="white"] .chart-shell {
+      background: rgba(225,229,245,0.70) !important;
+    }
+    [data-theme="white"] .presence-card {
+      background: rgba(252,253,255,0.92) !important;
+      border: 1px solid rgba(140,155,200,0.20) !important;
+    }
+    [data-theme="white"] .quick-action {
+      background: rgba(255,255,255,0.88) !important;
+      border: 1px solid rgba(140,155,200,0.22) !important;
+    }
+    [data-theme="white"] .quick-action:hover {
+      background: rgba(235,240,255,0.95) !important;
+      border-color: rgba(37,99,235,0.30) !important;
+    }
+    [data-theme="white"] .mini-item {
+      background: rgba(232,235,248,0.80) !important;
+      border: 1px solid rgba(140,155,200,0.18) !important;
+    }
+    [data-theme="white"] .timeline-item {
+      background: rgba(248,250,255,0.90) !important;
+      border: 1px solid rgba(140,155,200,0.18) !important;
+    }
+    [data-theme="white"] .ring-card {
+      background: rgba(252,253,255,0.90) !important;
+      border: 1px solid rgba(140,155,200,0.18) !important;
+    }
+
+    /* Broadcast cards */
+    [data-theme="white"] .broadcast-card,
+    [data-theme="white"] #tab-broadcast .broadcast-card-v2,
+    [data-theme="white"] #tab-broadcast .broadcast-adv-card,
+    [data-theme="white"] #tab-broadcast .broadcast-ack-bar,
+    [data-theme="white"] #tab-broadcast .broadcast-ack-list {
+      background: rgba(255,255,255,0.94) !important;
+      border: 1px solid rgba(140,155,200,0.22) !important;
+      box-shadow: 0 2px 12px rgba(60,80,160,0.06) !important;
+    }
+    [data-theme="white"] .broadcast-prio {
+      background: rgba(240,242,252,0.90) !important;
+      border: 1px solid rgba(140,155,200,0.20) !important;
+    }
+    [data-theme="white"] .broadcast-extra {
+      background: rgba(232,235,248,0.85) !important;
+      border: 1px solid rgba(140,155,200,0.18) !important;
+    }
+    [data-theme="white"] .broadcast-field input,
+    [data-theme="white"] .broadcast-field select,
+    [data-theme="white"] #tab-broadcast .broadcast-card textarea.binput,
+    [data-theme="white"] #tab-broadcast .broadcast-card .inline-setting.broadcast-inl {
+      background: rgba(232,236,250,0.90) !important;
+      border-color: rgba(140,155,200,0.28) !important;
+      color: #1e2540 !important;
+    }
+    [data-theme="white"] .broadcast-peer-pill {
+      background: rgba(220,228,248,0.88) !important;
+      border: 1px solid rgba(140,155,200,0.24) !important;
+    }
+
+    /* Users / filterbar / rows */
+    [data-theme="white"] .filterbar {
+      background: rgba(240,242,252,0.88) !important;
+      border: 1px solid rgba(140,155,200,0.20) !important;
+    }
+    [data-theme="white"] .filterbar input,
+    [data-theme="white"] .filterbar select {
+      background: rgba(232,236,250,0.90) !important;
+      color: #1e2540 !important;
+      border-color: rgba(140,155,200,0.26) !important;
+    }
+    [data-theme="white"] .filter-pill {
+      background: rgba(220,228,248,0.85) !important;
+      color: #2a3a80 !important;
+      border: 1px solid rgba(140,155,200,0.24) !important;
+    }
+    [data-theme="white"] .urow {
+      background: rgba(255,255,255,0.92) !important;
+      border: 1px solid rgba(140,155,200,0.20) !important;
+      box-shadow: 0 1px 8px rgba(60,80,160,0.05) !important;
+    }
+    [data-theme="white"] .ustat {
+      background: rgba(232,236,250,0.85) !important;
+      border: 1px solid rgba(140,155,200,0.20) !important;
+    }
+    [data-theme="white"] .udetails div {
+      background: rgba(228,232,246,0.80) !important;
+    }
+
+    /* Help cards */
+    [data-theme="white"] .hcard {
+      background: rgba(255,255,255,0.93) !important;
+      border: 1px solid rgba(140,155,200,0.22) !important;
+      box-shadow: 0 2px 10px rgba(60,80,160,0.05) !important;
+    }
+    [data-theme="white"] .help-stat {
+      background: rgba(232,236,250,0.85) !important;
+      border: 1px solid rgba(140,155,200,0.20) !important;
+    }
+    [data-theme="white"] .empty-glass {
+      background: rgba(240,242,252,0.85) !important;
+      border: 1px solid rgba(140,155,200,0.18) !important;
+    }
+
+    /* Profile / modals */
+    [data-theme="white"] .pw-toggle {
+      background: rgba(228,232,246,0.85) !important;
+      border: 1px solid rgba(140,155,200,0.20) !important;
+    }
+    [data-theme="white"] .super-perm {
+      background: rgba(232,236,250,0.85) !important;
+      border: 1px solid rgba(140,155,200,0.22) !important;
+    }
+
+    /* var(--card) and var(--input) already adapt via CSS vars above */
+    /* Make sure any remaining dark inline backgrounds adapt */
+    [data-theme="white"] .admin-state {
+      background: rgba(220,245,230,0.85) !important;
+      color: #166534 !important;
+    }
+    [data-theme="white"] #conn-pill {
+      background: rgba(200,240,215,0.85) !important;
+    }
+    [data-theme="white"] #conn-pill.off {
+      background: rgba(245,220,220,0.80) !important;
+    }
+
+    /* Text color fixes for white theme inside dark cards */
+    [data-theme="white"] .metric-card *,
+    [data-theme="white"] .signal-card *,
+    [data-theme="white"] .urow *,
+    [data-theme="white"] .hcard *,
+    [data-theme="white"] .broadcast-card *,
+    [data-theme="white"] #tab-broadcast .broadcast-card-v2 *,
+    [data-theme="white"] #tab-broadcast .broadcast-adv-card * {
+      color: inherit;
     }
 
     /* ─── THEME: GAMING (insomnia style) ─────────────────────── */
     :root[data-theme="gaming"] {
-      --bg: #0e1428;
-      --panel: rgba(8, 10, 22, 0.82);
-      --card: rgba(12, 15, 32, 0.88);
-      --input: rgba(15, 18, 40, 0.85);
-      --border: rgba(212, 175, 55, 0.18);
-      --hover: rgba(212, 175, 55, 0.08);
+      --bg: #0a0c10;
+      --panel: rgba(6, 7, 10, 0.78);
+      --card: rgba(5, 5, 8, 0.92);
+      --input: rgba(4, 4, 7, 0.92);
+      --border: rgba(212, 175, 55, 0.24);
+      --hover: rgba(212, 175, 55, 0.10);
       --accent: #d4af37;
       --violet: #a855f7;
       --green: #22c55e;
       --amber: #f5c518;
       --red: #ef4444;
-      --txt: #f5e6a3;
-      --txt2: #c8aa6e;
-      --txt3: #8a7240;
+      --txt: #f0dcc0;
+      --txt2: #b8926a;
+      --txt3: #7a5a38;
       --admin-glow: rgba(212, 175, 55, 0.22);
-      --admin-wash: rgba(12, 15, 32, 0.9);
+      --admin-wash: rgba(8, 9, 14, 0.88);
       --teal: #22c55e;
-      --body-bg-1: rgba(212, 175, 55, .08);
-      --body-bg-2: rgba(80, 100, 200, .06);
-      --body-bg-3: rgba(34, 197, 94, .03);
+      --body-bg-1: rgba(0,0,0,0);
+      --body-bg-2: rgba(0,0,0,0);
+      --body-bg-3: rgba(0,0,0,0);
       --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
     }
 
-    /* ── GAMING: INSOMNIA BACKGROUND SHARDS ─────────────────────── */
+    /* ── GAMING: SPACE HANGAR BACKGROUND IMAGE ───────────────────── */
     [data-theme="gaming"] body {
-      background: #0e1428 !important;
+      background: #0a0c10 !important;
       position: relative;
     }
     [data-theme="gaming"] body::before {
       content: '';
       position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background:
-        /* left shard cluster */
-        linear-gradient(148deg, rgba(60,90,200,0.22) 0%, transparent 45%) left -120px top -80px / 520px 700px no-repeat,
-        linear-gradient(155deg, rgba(40,65,170,0.15) 0%, transparent 50%) left -60px top 60px / 380px 580px no-repeat,
-        linear-gradient(140deg, rgba(80,110,220,0.12) 0%, transparent 55%) left 80px top -40px / 300px 460px no-repeat,
-        /* right shard cluster */
-        linear-gradient(320deg, rgba(55,80,190,0.20) 0%, transparent 45%) right -100px top -60px / 480px 620px no-repeat,
-        linear-gradient(310deg, rgba(40,60,160,0.14) 0%, transparent 50%) right -40px top 80px / 340px 500px no-repeat,
-        linear-gradient(330deg, rgba(70,95,210,0.10) 0%, transparent 55%) right 60px bottom 0 / 260px 420px no-repeat,
-        /* bottom accent */
-        linear-gradient(110deg, rgba(212,175,55,0.04) 0%, transparent 40%) left 0 bottom 0 / 100% 300px no-repeat,
-        #0e1428;
+      background-image: url('./gaming-bg.jpg');
+      background-size: cover;
+      background-position: 62% center;
+      background-repeat: no-repeat;
+      filter: brightness(0.28) saturate(1.1);
     }
     [data-theme="gaming"] body::after {
       content: '';
       position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      /* SVG shard shapes overlaid */
-      background-image:
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cpolygon points='0,0 420,0 320,600 0,520' fill='rgba(50,75,180,0.09)'/%3E%3Cpolygon points='0,0 280,0 180,420 0,360' fill='rgba(60,90,200,0.07)'/%3E%3Cpolygon points='100%25,0 100%25,480 60%25,100%25 80%25,0' fill='rgba(45,70,175,0.08)'/%3E%3Cpolygon points='75%25,0 100%25,0 100%25,320 55%25,100%25' fill='rgba(55,85,195,0.06)'/%3E%3Cpolygon points='30%25,0 65%25,0 50%25,35%25 20%25,40%25' fill='rgba(212,175,55,0.04)'/%3E%3Cline x1='0' y1='38' x2='100%25' y2='38' stroke='rgba(212,175,55,0.22)' stroke-width='1'/%3E%3Cline x1='40' y1='60' x2='100%25' y2='60' stroke='rgba(212,175,55,0.10)' stroke-width='0.5'/%3E%3C/svg%3E");
-      background-size: 100% 100%;
+      background:
+        radial-gradient(ellipse at 50% 100%, rgba(200, 80, 20, 0.18) 0%, transparent 60%),
+        radial-gradient(ellipse at 0% 50%, rgba(180, 60, 10, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 100% 50%, rgba(180, 60, 10, 0.12) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(5,6,10,0.55) 0%, transparent 30%, transparent 70%, rgba(5,6,10,0.40) 100%);
     }
 
-    /* ── GAMING: VALORANT-STYLE TABS ─────────────────────────────── */
+        /* ── GAMING: VALORANT-STYLE TABS ─────────────────────────────── */
     [data-theme="gaming"] #tabbar {
-      background: rgba(8, 10, 22, 0.85) !important;
-      border-bottom: 1px solid rgba(212,175,55,0.2) !important;
-      height: 42px;
+      background: rgba(8, 10, 22, 0.92) !important;
+      border-bottom: 1px solid rgba(212,175,55,0.22) !important;
+      height: 44px;
       gap: 0;
       padding: 0;
     }
 
     [data-theme="gaming"] .tb {
       position: relative;
-      height: 42px;
-      padding: 0 22px 0 26px;
+      height: 44px;
+      padding: 0 22px 0 28px;
       font-size: 11px;
       font-weight: 800;
-      letter-spacing: .12em;
+      letter-spacing: .13em;
       text-transform: uppercase;
-      color: #8a7240;
+      color: #6b5530;
       border-bottom: none !important;
       border-radius: 0;
-      transition: color .15s;
-      clip-path: polygon(14px 0%, 100% 0%, calc(100% - 0px) 100%, 0% 100%);
+      transition: color .18s, text-shadow .18s;
+      clip-path: polygon(14px 0%, 100% 0%, 100% 100%, 0% 100%);
       background: transparent !important;
       overflow: visible;
+      cursor: pointer;
     }
 
+    /* fill layer */
     [data-theme="gaming"] .tb::before {
       content: '';
       position: absolute; inset: 0;
-      clip-path: polygon(14px 0%, 100% 0%, calc(100% - 0px) 100%, 0% 100%);
+      clip-path: polygon(14px 0%, 100% 0%, 100% 100%, 0% 100%);
       background: transparent;
-      transition: background .15s;
+      transition: background .18s, box-shadow .18s;
+      z-index: 0;
     }
-    [data-theme="gaming"] .tb:hover { color: #d4af37 !important; }
-    [data-theme="gaming"] .tb:hover::before { background: rgba(212,175,55,0.07); }
 
-    [data-theme="gaming"] .tb.active {
-      color: #f5e6a3 !important;
-      background: transparent !important;
-    }
-    [data-theme="gaming"] .tb.active::before {
-      background: rgba(212,175,55,0.13);
-    }
-    [data-theme="gaming"] .tb.active::after {
+    /* gold line at bottom */
+    [data-theme="gaming"] .tb::after {
       content: '';
       position: absolute;
       bottom: 0; left: 14px; right: 0;
       height: 2px;
-      background: linear-gradient(90deg, #d4af37, #f5c518 60%, transparent);
-      border-radius: 0;
+      background: transparent;
+      transition: background .18s, box-shadow .18s;
+      z-index: 1;
     }
 
-    /* ── GAMING: titlebar gold accent ────────────────────────────── */
+    /* HOVER — neon orange-gold glow (matches image neon) */
+    [data-theme="gaming"] .tb:hover {
+      color: #ff9040 !important;
+      text-shadow:
+        0 0 8px rgba(255,140,40,0.85),
+        0 0 20px rgba(220,80,20,0.50);
+    }
+    [data-theme="gaming"] .tb:hover::before {
+      background: linear-gradient(180deg, rgba(220,100,30,0.12) 0%, rgba(220,80,20,0.04) 100%);
+    }
+    [data-theme="gaming"] .tb:hover::after {
+      background: linear-gradient(90deg, transparent 0%, #cc5010 30%, #ff7020 70%, transparent 100%);
+      box-shadow: 0 0 10px rgba(255,120,30,0.70), 0 0 20px rgba(200,70,10,0.35);
+    }
+
+    /* ACTIVE — full bright orange neon */
+    [data-theme="gaming"] .tb.active {
+      color: #ffc080 !important;
+      background: transparent !important;
+      text-shadow:
+        0 0 6px rgba(255,180,80,0.70),
+        0 0 16px rgba(255,120,30,0.40);
+    }
+    [data-theme="gaming"] .tb.active::before {
+      background: linear-gradient(180deg, rgba(220,100,30,0.18) 0%, rgba(200,70,20,0.06) 100%);
+    }
+    [data-theme="gaming"] .tb.active::after {
+      background: linear-gradient(90deg, transparent 0%, #cc5010 20%, #ff7020 50%, #cc5010 80%, transparent 100%);
+      box-shadow: 0 0 12px rgba(255,120,30,0.80), 0 0 26px rgba(200,70,10,0.40);
+    }
+
+    /* tab text sits above pseudo elements */
+    [data-theme="gaming"] .tb > * { position: relative; z-index: 2; }
+
+    /* shimmer animation for active tab */
+    @keyframes gold-shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+
+    /* GAMING: all buttons / interactive elements gold style */
+    [data-theme="gaming"] button:not(.wb):not(.tb):not(.sett-close):not(.peer-search),
+    [data-theme="gaming"] .btn,
+    [data-theme="gaming"] .bsm,
+    [data-theme="gaming"] .quick-action {
+      transition: color .15s, border-color .15s, box-shadow .15s, background .15s !important;
+    }
+    [data-theme="gaming"] button:not(.wb):not(.tb):not(.sett-close):hover,
+    [data-theme="gaming"] .btn:hover,
+    [data-theme="gaming"] .bsm:hover,
+    [data-theme="gaming"] .quick-action:hover {
+      border-color: rgba(212,175,55,0.5) !important;
+      box-shadow: 0 0 0 1px rgba(212,175,55,0.25), 0 0 14px rgba(212,175,55,0.18) !important;
+      color: #f5c518 !important;
+    }
+
+    /* ── GAMING: titlebar — matches hangar frame dark ───────────── */
     [data-theme="gaming"] #titlebar {
-      border-bottom: 1px solid rgba(212,175,55,0.2) !important;
-      background: rgba(6, 8, 18, 0.9) !important;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.26) !important;
+      background: rgba(3, 3, 5, 0.94) !important;
     }
 
-    /* ── GAMING: sidebar gold border ─────────────────────────────── */
+    /* ── GAMING: sidebar — dark glass over image ─────────────────── */
     [data-theme="gaming"] #sidebar {
-      border-right: 1px solid rgba(212,175,55,0.14) !important;
-      background: rgba(7, 9, 20, 0.75) !important;
+      border-right: 1px solid rgba(212, 175, 55, 0.18) !important;
+      background: rgba(4, 4, 7, 0.88) !important;
     }
 
-    /* ── GAMING: peer-search gold focus ──────────────────────────── */
+    /* ── GAMING: tabbar — dark glass ────────────────────────────── */
+    [data-theme="gaming"] #tabbar {
+      background: rgba(4, 4, 7, 0.94) !important;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.26) !important;
+    }
+
+    /* ── GAMING: peer row hover orange glow ──────────────────────── */
+    [data-theme="gaming"] .peer-item:hover,
+    [data-theme="gaming"] .peer-item.active {
+      box-shadow: inset 0 0 0 1px rgba(220,100,30,0.20), 0 0 12px rgba(220,100,30,0.10) !important;
+    }
+
+    /* ── GAMING: peer-search ─────────────────────────────────────── */
     [data-theme="gaming"] .peer-search {
-      border-color: rgba(212,175,55,0.16) !important;
-      background: rgba(10,12,26,0.85) !important;
+      border-color: rgba(220,100,30,0.20) !important;
+      background: rgba(5,5,8,0.75) !important;
     }
     [data-theme="gaming"] .peer-search:focus {
-      border-color: rgba(212,175,55,0.45) !important;
-      box-shadow: 0 0 0 3px rgba(212,175,55,0.10) !important;
+      border-color: rgba(220,100,30,0.55) !important;
+      box-shadow: 0 0 0 3px rgba(220,100,30,0.12), 0 0 16px rgba(220,100,30,0.10) !important;
     }
 
-    /* ── GAMING: z-index fix so UI sits above body shards ─────────── */
+    /* ── GAMING: input fields ────────────────────────────────────── */
+    [data-theme="gaming"] input:focus,
+    [data-theme="gaming"] textarea:focus {
+      border-color: rgba(212,175,55,0.50) !important;
+      box-shadow: 0 0 0 2px rgba(212,175,55,0.12), 0 0 14px rgba(212,175,55,0.08) !important;
+    }
+
+    /* ── GAMING: accent buttons glow ────────────────────────────── */
+    [data-theme="gaming"] .pr,
+    [data-theme="gaming"] [style*="background: var(--accent)"],
+    [data-theme="gaming"] [style*="background:var(--accent)"] {
+      box-shadow: 0 0 16px rgba(212,175,55,0.40) !important;
+    }
+
+    /* ── GAMING: z-index fix — UI above image layers ─────────────── */
     [data-theme="gaming"] #titlebar,
     [data-theme="gaming"] #app { position: relative; z-index: 1; }
+
+    /* ── GAMING: UNIFIED CARD STYLE — solid black + gold border ──── */
+    [data-theme="gaming"] .metric-card,
+    [data-theme="gaming"] .signal-card,
+    [data-theme="gaming"] .dash-section,
+    [data-theme="gaming"] .dash-hero,
+    [data-theme="gaming"] .presence-card,
+    [data-theme="gaming"] .ring-card,
+    [data-theme="gaming"] .timeline-item,
+    [data-theme="gaming"] .mini-item,
+    [data-theme="gaming"] .quick-action,
+    [data-theme="gaming"] .chart-shell,
+    [data-theme="gaming"] .filterbar,
+    [data-theme="gaming"] .urow,
+    [data-theme="gaming"] .ustat,
+    [data-theme="gaming"] .udetails div,
+    [data-theme="gaming"] .hcard,
+    [data-theme="gaming"] .help-stat,
+    [data-theme="gaming"] .empty-glass,
+    [data-theme="gaming"] .broadcast-card,
+    [data-theme="gaming"] #tab-broadcast .broadcast-card-v2,
+    [data-theme="gaming"] #tab-broadcast .broadcast-adv-card,
+    [data-theme="gaming"] #tab-broadcast .broadcast-ack-bar,
+    [data-theme="gaming"] #tab-broadcast .broadcast-ack-list,
+    [data-theme="gaming"] .broadcast-prio,
+    [data-theme="gaming"] .broadcast-extra,
+    [data-theme="gaming"] .pw-toggle,
+    [data-theme="gaming"] .super-perm {
+      background: rgba(5, 5, 8, 0.90) !important;
+      border: 1px solid rgba(212, 175, 55, 0.24) !important;
+      box-shadow: none !important;
+    }
+
+    [data-theme="gaming"] .broadcast-field input,
+    [data-theme="gaming"] .broadcast-field select,
+    [data-theme="gaming"] #tab-broadcast .broadcast-card textarea.binput,
+    [data-theme="gaming"] #tab-broadcast .broadcast-card .inline-setting.broadcast-inl,
+    [data-theme="gaming"] .filterbar input,
+    [data-theme="gaming"] .filterbar select {
+      background: rgba(3, 3, 6, 0.94) !important;
+      border-color: rgba(212, 175, 55, 0.18) !important;
+      color: #f0dcc0 !important;
+    }
+
+    [data-theme="gaming"] .broadcast-peer-pill {
+      background: rgba(5, 5, 8, 0.90) !important;
+      border: 1px solid rgba(212, 175, 55, 0.22) !important;
+    }
+
+    [data-theme="gaming"] .quick-action:hover,
+    [data-theme="gaming"] .urow:hover {
+      background: rgba(8, 8, 13, 0.96) !important;
+      border-color: rgba(212, 175, 55, 0.45) !important;
+      box-shadow: 0 0 16px rgba(212, 175, 55, 0.10) !important;
+    }
+
+    [data-theme="gaming"] .dash-status-chip {
+      background: rgba(5, 5, 8, 0.88) !important;
+      border: 1px solid rgba(212, 175, 55, 0.20) !important;
+      color: #c8aa6e !important;
+    }
+
+    [data-theme="gaming"] .filter-pill {
+      background: rgba(5, 5, 8, 0.88) !important;
+      border: 1px solid rgba(212, 175, 55, 0.20) !important;
+      color: #c8aa6e !important;
+    }
+    [data-theme="gaming"] .filter-pill.active,
+    [data-theme="gaming"] .filter-pill:hover {
+      background: rgba(212, 175, 55, 0.12) !important;
+      border-color: rgba(212, 175, 55, 0.48) !important;
+      color: #f5e6a3 !important;
+    }
 
     /* apply body bg dynamically */
     body {
