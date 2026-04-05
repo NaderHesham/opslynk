@@ -57,6 +57,17 @@ contextBridge.exposeInMainWorld('OpsLynk', {
   urgentAck:   (data) => ipcRenderer.send('urgent-ack', data),
   urgentReply: (data) => ipcRenderer.send('urgent-reply', data),
 
+  // ── AUTH ───────────────────────────────────────────────────────────────────
+  auth: {
+    isFirstRun:     ()     => ipcRenderer.invoke('auth:is-first-run'),
+    setup:          (data) => ipcRenderer.invoke('auth:setup', data),
+    login:          (data) => ipcRenderer.invoke('auth:login', data),
+    createUser:     (data) => ipcRenderer.invoke('auth:create-user', data),
+    changePassword: (data) => ipcRenderer.invoke('auth:change-password', data),
+    deleteUser:     (data) => ipcRenderer.invoke('auth:delete-user', data),
+    listUsers:      ()     => ipcRenderer.invoke('auth:list-users'),
+  },
+
   // ── EVENTS FROM MAIN ───────────────────────────────────────────────────────
   on:   (event, cb) => {
     ipcRenderer.on(event, (_, data) => cb(data));

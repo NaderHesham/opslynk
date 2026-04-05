@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OpsLynk — Admin Portal</title>
+<style>
+  :root {
+    --bg:      #06070b;
+    --surface: rgba(14,18,27,.9);
+    --border:  rgba(107,125,177,.18);
+    --accent:  #58a6ff;
+    --red:     #ff6b7d;
+    --txt:     #eef4ff;
+    --txt2:    #9aa9c6;
+    --txt3:    #54627d;
+    --input:   rgba(25,31,45,.8);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background:
+      radial-gradient(circle at top right,  rgba(88,166,255,.14), transparent 28%),
+      radial-gradient(circle at bottom left, rgba(139,125,255,.1), transparent 26%),
+      var(--bg);
+    color: var(--txt);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+  .card {
+    width: 380px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 36px 36px 32px;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  }
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 28px;
+  }
+  .logo-mark {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #58a6ff 0%, #8b7dff 100%);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .logo-text { font-size: 17px; font-weight: 600; letter-spacing: -.3px; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; letter-spacing: -.3px; }
+  .subtitle { font-size: 13px; color: var(--txt2); margin-bottom: 28px; }
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; color: var(--txt2); margin-bottom: 6px; font-weight: 500; }
+  .input-wrap { position: relative; }
+  input[type=text], input[type=password] {
+    width: 100%;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--txt);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color .15s;
+    font-family: inherit;
+  }
+  input[type=password] { padding-right: 38px; }
+  input:focus { border-color: var(--accent); }
+  .toggle-pw {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--txt3); cursor: pointer;
+    font-size: 14px; padding: 2px 4px; line-height: 1;
+  }
+  .toggle-pw:hover { color: var(--txt2); }
+  .btn {
+    width: 100%; padding: 11px;
+    background: var(--accent); border: none; border-radius: 8px;
+    color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 8px;
+    transition: opacity .15s;
+    font-family: inherit;
+  }
+  .btn:hover   { opacity: .88; }
+  .btn:active  { opacity: .74; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .form-err {
+    margin-top: 14px; padding: 10px 14px;
+    background: rgba(255,107,125,.08); border: 1px solid rgba(255,107,125,.25);
+    border-radius: 8px; font-size: 12px; color: var(--red);
+    display: none;
+  }
+  .form-err.show { display: block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <div class="logo-mark">⚡</div>
+    <span class="logo-text">OpsLynk</span>
+  </div>
+  <h1>Admin Portal</h1>
+  <p class="subtitle">Sign in to continue to the dashboard.</p>
+
+  <div class="field">
+    <label for="username">Username</label>
+    <input type="text" id="username" placeholder="Enter your username" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <label for="password">Password</label>
+    <div class="input-wrap">
+      <input type="password" id="password" placeholder="Enter your password">
+      <button class="toggle-pw" type="button" onclick="togglePw()" tabindex="-1">👁</button>
+    </div>
+  </div>
+
+  <button class="btn" id="submitBtn" onclick="doLogin()">Sign In</button>
+  <div class="form-err" id="form-err"></div>
+</div>
+
+<script>
+  function togglePw() {
+    const el  = document.getElementById('password');
+    const btn = document.querySelector('.toggle-pw');
+    if (el.type === 'password') { el.type = 'text';     btn.textContent = '🙈'; }
+    else                        { el.type = 'password'; btn.textContent = '👁'; }
+  }
+
+  async function doLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const formErr  = document.getElementById('form-err');
+    formErr.classList.remove('show');
+
+    if (!username || !password) {
+      formErr.textContent = 'Please enter your username and password.';
+      formErr.classList.add('show');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Signing in…';
+
+    try {
+      const result = await window.OpsLynk.auth.login({ username, password });
+      if (result.success) {
+        window.location.href = 'index.html';
+      } else {
+        formErr.textContent = 'Invalid username or password.';
+        formErr.classList.add('show');
+      }
+    } catch {
+      formErr.textContent = 'An unexpected error occurred.';
+      formErr.classList.add('show');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+    }
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('username').focus();
+</script>
+</body>
+</html>

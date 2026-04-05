@@ -6,9 +6,34 @@ import { registerAdminHandlers } from './registerAdminHandlers';
 import { registerGroupHandlers } from './registerGroupHandlers';
 import { registerLockScreenHandlers } from './registerLockScreenHandlers';
 import { registerForcedVideoHandlers } from './registerForcedVideoHandlers';
+import { registerAuthHandlers } from './registerAuthHandlers';
+
+const authService = require('../../../src/services/authService') as {
+  isFirstRun:       ()                                                 => boolean;
+  createSuperAdmin: (u: string, p: string)                            => Promise<{ success: boolean; error?: string; user?: unknown }>;
+  login:            (u: string, p: string)                            => Promise<{ success: boolean; error?: string; user?: unknown }>;
+  createUser:       (u: string, p: string, r: string)                 => Promise<{ success: boolean; error?: string; user?: unknown }>;
+  changePassword:   (id: string, cur: string, next: string)           => Promise<{ success: boolean; error?: string }>;
+  deleteUser:       (id: string, rid: string)                         => { success: boolean; error?: string };
+  listUsers:        ()                                                 => unknown[];
+};
 
 export function registerFullHandlers(deps: RegisterDeps): void {
   const { ipcMain } = deps;
+
+  // Auth handlers (admin only)
+  registerAuthHandlers({
+    ipcMain: deps.ipcMain,
+    authService,
+    onLoginSuccess: (user: unknown) => {
+      const u = user as { id?: string; username?: string; role?: string } | null;
+      if (u && deps.state.myProfile) {
+        if (u.role)     deps.state.myProfile.role     = u.role as import('../../shared/types/runtime').UserRole;
+        if (u.username) deps.state.myProfile.username = u.username;
+      }
+      deps.updateTrayMenu();
+    }
+  });
 
   // All client-mode handlers first
   registerClientHandlers(deps);

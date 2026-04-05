@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OpsLynk — Initial Setup</title>
+<style>
+  :root {
+    --bg:      #06070b;
+    --surface: rgba(14,18,27,.9);
+    --border:  rgba(107,125,177,.18);
+    --accent:  #58a6ff;
+    --green:   #19c37d;
+    --red:     #ff6b7d;
+    --txt:     #eef4ff;
+    --txt2:    #9aa9c6;
+    --txt3:    #54627d;
+    --input:   rgba(25,31,45,.8);
+    --hover:   rgba(88,166,255,.08);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background:
+      radial-gradient(circle at top right,  rgba(88,166,255,.14), transparent 28%),
+      radial-gradient(circle at bottom left, rgba(139,125,255,.1), transparent 26%),
+      var(--bg);
+    color: var(--txt);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+  .card {
+    width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 36px 36px 32px;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  }
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .logo-mark {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, #58a6ff 0%, #8b7dff 100%);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+  .logo-text { font-size: 17px; font-weight: 600; letter-spacing: -.3px; }
+  h1 {
+    font-size: 20px; font-weight: 600; margin-bottom: 6px;
+    letter-spacing: -.3px;
+  }
+  .subtitle {
+    font-size: 13px; color: var(--txt2); margin-bottom: 28px; line-height: 1.5;
+  }
+  .field { margin-bottom: 16px; }
+  label { display: block; font-size: 12px; color: var(--txt2); margin-bottom: 6px; font-weight: 500; }
+  .input-wrap { position: relative; }
+  input[type=text], input[type=password] {
+    width: 100%;
+    background: var(--input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--txt);
+    font-size: 13px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color .15s;
+    font-family: inherit;
+  }
+  input:focus { border-color: var(--accent); }
+  .toggle-pw {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--txt3); cursor: pointer;
+    font-size: 14px; padding: 2px 4px; line-height: 1;
+  }
+  .toggle-pw:hover { color: var(--txt2); }
+  .rules {
+    margin-top: 8px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px;
+  }
+  .rule {
+    font-size: 11px; color: var(--txt3);
+    display: flex; align-items: center; gap: 5px;
+    transition: color .15s;
+  }
+  .rule.ok  { color: var(--green); }
+  .rule.bad { color: var(--red); }
+  .rule::before { content: '○'; font-size: 10px; }
+  .rule.ok::before  { content: '●'; }
+  .rule.bad::before { content: '○'; }
+  .field-err {
+    font-size: 11px; color: var(--red); margin-top: 6px;
+    display: none;
+  }
+  .field-err.show { display: block; }
+  .btn {
+    width: 100%; padding: 11px;
+    background: var(--accent); border: none; border-radius: 8px;
+    color: #fff; font-size: 14px; font-weight: 600;
+    cursor: pointer; margin-top: 8px;
+    transition: opacity .15s, background .15s;
+    font-family: inherit;
+  }
+  .btn:hover   { opacity: .88; }
+  .btn:active  { opacity: .74; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .form-err {
+    margin-top: 14px; padding: 10px 14px;
+    background: rgba(255,107,125,.08); border: 1px solid rgba(255,107,125,.25);
+    border-radius: 8px; font-size: 12px; color: var(--red);
+    display: none;
+  }
+  .form-err.show { display: block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <div class="logo-mark">⚡</div>
+    <span class="logo-text">OpsLynk</span>
+  </div>
+  <h1>Initial Setup</h1>
+  <p class="subtitle">Create your Super Admin account to get started.</p>
+
+  <div class="field">
+    <label for="username">Username</label>
+    <input type="text" id="username" placeholder="e.g. admin" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="field">
+    <label for="password">Password</label>
+    <div class="input-wrap">
+      <input type="password" id="password" placeholder="Create a strong password" oninput="checkRules()">
+      <button class="toggle-pw" type="button" onclick="togglePw('password', this)" tabindex="-1">👁</button>
+    </div>
+    <div class="rules">
+      <span class="rule" id="r-len">At least 8 characters</span>
+      <span class="rule" id="r-upper">One uppercase letter</span>
+      <span class="rule" id="r-num">One number</span>
+      <span class="rule" id="r-special">One special character</span>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="confirm">Confirm Password</label>
+    <div class="input-wrap">
+      <input type="password" id="confirm" placeholder="Repeat password">
+      <button class="toggle-pw" type="button" onclick="togglePw('confirm', this)" tabindex="-1">👁</button>
+    </div>
+    <div class="field-err" id="match-err">Passwords do not match.</div>
+  </div>
+
+  <button class="btn" id="submitBtn" onclick="doSetup()">Create Account</button>
+  <div class="form-err" id="form-err"></div>
+</div>
+
+<script>
+  function togglePw(id, btn) {
+    const el = document.getElementById(id);
+    if (el.type === 'password') { el.type = 'text';     btn.textContent = '🙈'; }
+    else                        { el.type = 'password'; btn.textContent = '👁'; }
+  }
+
+  function checkRules() {
+    const v = document.getElementById('password').value;
+    set('r-len',     v.length >= 8);
+    set('r-upper',   /[A-Z]/.test(v));
+    set('r-num',     /[0-9]/.test(v));
+    set('r-special', /[^A-Za-z0-9]/.test(v));
+  }
+
+  function set(id, ok) {
+    const el = document.getElementById(id);
+    el.classList.toggle('ok',  ok);
+    el.classList.toggle('bad', !ok && document.getElementById('password').value.length > 0);
+  }
+
+  function passwordValid() {
+    const v = document.getElementById('password').value;
+    return v.length >= 8 && /[A-Z]/.test(v) && /[0-9]/.test(v) && /[^A-Za-z0-9]/.test(v);
+  }
+
+  async function doSetup() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const confirm  = document.getElementById('confirm').value;
+    const matchErr = document.getElementById('match-err');
+    const formErr  = document.getElementById('form-err');
+
+    matchErr.classList.remove('show');
+    formErr.classList.remove('show');
+
+    if (!username) { showErr('Username is required.'); return; }
+    if (!passwordValid()) { showErr('Password does not meet all requirements.'); return; }
+    if (password !== confirm) { matchErr.classList.add('show'); return; }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Creating…';
+
+    try {
+      const result = await window.OpsLynk.auth.setup({ username, password });
+      if (result.success) {
+        window.location.href = 'index.html';
+      } else {
+        showErr(result.error || 'Setup failed.');
+      }
+    } catch (e) {
+      showErr('An unexpected error occurred.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  }
+
+  function showErr(msg) {
+    const el = document.getElementById('form-err');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') doSetup(); });
+</script>
+</body>
+</html>

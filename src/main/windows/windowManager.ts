@@ -7,9 +7,10 @@ interface WindowManagerDeps {
   state: WindowRuntimeState;
   getWindowModeConfig: (modeName: string) => { width: number; height: number; minWidth: number; minHeight: number; resizable: boolean } | null;
   appSourceDir: string;
+  getStartPage: () => string;
 }
 
-export function createWindowManager({ state, getWindowModeConfig, appSourceDir }: WindowManagerDeps): WindowManagerApi {
+export function createWindowManager({ state, getWindowModeConfig, appSourceDir, getStartPage }: WindowManagerDeps): WindowManagerApi {
   const preloadPath = path.join(appSourceDir, 'preload.js');
   const rendererDir = path.join(appSourceDir, 'renderer');
   const appIconPath = path.join(appSourceDir, '..', 'assets', 'icon.ico');
@@ -50,7 +51,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
         detail: `Renderer load failed (${errorCode}): ${errorDescription}\n${validatedURL || path.join(rendererDir, 'index.html')}`
       });
     });
-    state.mainWindow.loadFile(path.join(rendererDir, 'index.html'));
+    state.mainWindow.loadFile(path.join(rendererDir, getStartPage()));
     state.mainWindow.once('ready-to-show', () => {
       state.mainWindow?.center();
       state.mainWindow?.show();

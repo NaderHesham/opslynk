@@ -54,6 +54,7 @@ const { createAdminModule } = require('./admin') as typeof import('./admin');
 const { createFileAuditSink } = require('./audit/fileAuditSink') as typeof import('./audit/fileAuditSink');
 const { createTrustStore } = require('./security/trustStore') as typeof import('./security/trustStore');
 const { createDeviceTrust } = require('./security/deviceTrust') as typeof import('./security/deviceTrust');
+const authService = require('../../src/services/authService') as { isFirstRun: () => boolean };
 
 const state: AppRuntimeState = createAppState(wsNet.CHAT_PORT_BASE);
 const owners = createStateOwners(state);
@@ -99,7 +100,11 @@ function flushPendingHelpRequests(targetAdminId: string | null = null): void {
 const windowManager = createWindowManager({
   state: owners.windowState,
   getWindowModeConfig,
-  appSourceDir
+  appSourceDir,
+  getStartPage: () => {
+    if (APP_MODE !== 'admin') return 'index.html';
+    return authService.isFirstRun() ? 'setup.html' : 'login.html';
+  }
 });
 
 const trayManager = createTrayManager({
