@@ -5606,16 +5606,16 @@
     <div id="main">
       <div id="tabbar">
         <button class="tb active" data-tab="chat" onclick="switchTab('chat')">💬 Chat</button>
-        <button class="tb atab" data-tab="broadcast" onclick="switchTab('broadcast')">📢 Broadcast</button>
-        <button class="tb atab" data-tab="replies" onclick="switchTab('replies')">↩ Replies</button>
-        <button class="tb atab" data-tab="users" onclick="switchTab('users')">👥 Users</button>
-        <button class="tb atab" data-tab="groups" onclick="switchTab('groups')">🗂 Groups</button>
-        <button class="tb atab" data-tab="help" onclick="switchTab('help')" id="helptabbtn">🆘 Help Requests</button>
+        <button class="tb atab" data-tab="broadcast" data-admin-only onclick="switchTab('broadcast')">📢 Broadcast</button>
+        <button class="tb atab" data-tab="replies" data-admin-only onclick="switchTab('replies')">↩ Replies</button>
+        <button class="tb atab" data-tab="users" data-admin-only onclick="switchTab('users')">👥 Users</button>
+        <button class="tb atab" data-tab="groups" data-admin-only onclick="switchTab('groups')">🗂 Groups</button>
+        <button class="tb atab" data-tab="help" data-admin-only onclick="switchTab('help')" id="helptabbtn">🆘 Help Requests</button>
         <button class="tb utab" data-tab="ask" onclick="switchTab('ask')">🆘 Ask For Help</button>
       </div>
 
       <!-- DASHBOARD (admin) -->
-      <div class="panel" id="tab-dashboard">
+      <div class="panel" id="tab-dashboard" data-admin-only>
         <div class="dashboard-wrap">
           <div class="dash-grid">
             <div class="dash-stack">
@@ -5830,7 +5830,7 @@
       </div>
 
       <!-- BROADCAST (admin) -->
-      <div class="panel" id="tab-broadcast">
+      <div class="panel" id="tab-broadcast" data-admin-only>
         <div class="pscroll">
           <div class="broadcast-page">
             <div class="broadcast-page-header">
@@ -5984,7 +5984,7 @@
       </div>
 
       <!-- REPLIES (admin) -->
-      <div class="panel" id="tab-replies">
+      <div class="panel" id="tab-replies" data-admin-only>
         <div class="pscroll">
           <div class="ptitle">↩ User Replies</div>
           <div id="replieslist">
@@ -5996,7 +5996,7 @@
       </div>
 
       <!-- USERS (admin) -->
-      <div class="panel" id="tab-users">
+      <div class="panel" id="tab-users" data-admin-only>
         <div class="pscroll">
           <div class="ptitle">👥 Connected Users</div>
           <div class="psub" style="margin-bottom:12px;">Search, filter, and inspect endpoints with a more operational
@@ -6021,7 +6021,7 @@
         </div>
       </div>
 
-      <div class="panel" id="tab-groups">
+      <div class="panel" id="tab-groups" data-admin-only>
         <div class="pscroll">
           <div class="ptitle">🗂 Groups</div>
           <div class="psub">Create clean user groups here, review members, then target them from Broadcast</div>
@@ -6041,7 +6041,7 @@
       </div>
 
       <!-- HELP REQUESTS (admin) -->
-      <div class="panel" id="tab-help">
+      <div class="panel" id="tab-help" data-admin-only>
         <div class="pscroll">
           <div class="ptitle">🆘 Help Requests</div>
           <div class="psub" style="margin-bottom:12px;">Triage incoming issues with filters, status context, and quicker
@@ -6244,6 +6244,10 @@
   </div>
 
   <script>
+    // Resolve APP_MODE once; init() awaits this before rendering anything.
+    const _appModePromise = window.OpsLynk.getAppMode().catch(() => 'client');
+    let _appMode = 'client'; // safe default until resolved
+
     window.OpsLynk?.setMainWindow?.();
 
     // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -6355,6 +6359,7 @@
     }
 
     function ensureDashboardTabButton() {
+      if (_appMode === 'client') return;
       const bar = document.getElementById('tabbar');
       if (!bar || bar.querySelector('[data-tab="dashboard"]')) return;
       const btn = document.createElement('button');
@@ -6561,7 +6566,17 @@
     }
 
     async function init() {
-      const d = await OpsLynk.getInitData();
+      const [d, resolvedMode] = await Promise.all([OpsLynk.getInitData(), _appModePromise]);
+      _appMode = resolvedMode;
+
+      // Remove admin-only DOM elements before any rendering so they never flash
+      console.log('[OpsLynk] _appMode resolved:', _appMode);
+      if (_appMode === 'client') {
+        const removed = document.querySelectorAll('[data-admin-only]');
+        console.log('[OpsLynk] removing', removed.length, 'data-admin-only elements');
+        removed.forEach(el => el.remove());
+      }
+
       me = d.profile; history = d.history || {}; peers = {};
       userGroups = d.userGroups || [];
       networkReady = !!d.networkReady;
@@ -6603,10 +6618,12 @@
 
     function renderMyProfile() {
       const av = document.getElementById('myav');
-      applyAvatar(av, me);
-      document.getElementById('myname').innerHTML = `${esc(me.username)} ${roleBadgeHTML(me.role)}`;
-      document.getElementById('mytitle').textContent = me.title || (me.role === 'super_admin' ? 'Super Administrator' : hasAdminAccess(me.role) ? 'Administrator' : 'Team Member');
-      const isSuper = isSuperAdminRole(me.role);
+      const meForAvatar = _appMode === 'client' ? { ...me, role: 'user' } : me;
+      applyAvatar(av, meForAvatar);
+      const badge = _appMode !== 'client' ? roleBadgeHTML(me.role) : '';
+      document.getElementById('myname').innerHTML = `${esc(me.username)} ${badge}`;
+      document.getElementById('mytitle').textContent = me.title || (_appMode !== 'client' && me.role === 'super_admin' ? 'Super Administrator' : _appMode !== 'client' && hasAdminAccess(me.role) ? 'Administrator' : 'Team Member');
+      const isSuper = _appMode !== 'client' && isSuperAdminRole(me.role);
       document.getElementById('admin-badge').textContent = isSuper ? 'CONTROL' : 'READY';
       const lockCard = document.querySelector('.lock-card');
       const lockNote = document.getElementById('lockCardNote');
@@ -6614,8 +6631,10 @@
       if (lockNote) lockNote.textContent = isSuper ? 'Full device control enabled.' : 'Screen lock requires control mode.';
     }
     function applyRoleState() {
-      const isAdmin = hasAdminAccess(me.role);
-      const isSuper = me.role === 'super_admin';
+      // In client mode the APP_MODE overrides the saved profile role:
+      // always treat the user as non-admin so .utab tabs show and .atab tabs hide.
+      const isAdmin = _appMode !== 'client' && hasAdminAccess(me.role);
+      const isSuper = _appMode !== 'client' && me.role === 'super_admin';
       document.body.classList.toggle('is-admin', isAdmin);
       document.body.classList.toggle('is-user', !isAdmin);
       document.body.classList.toggle('is-super', isSuper);
@@ -7024,7 +7043,7 @@
       const peerIds = targetGroup ? targetGroup.memberIds : null;
       const durationSeconds = Math.min(120, Math.max(3, Number(durationInput?.value || 10) || 10));
       if (durationInput) durationInput.value = durationSeconds;
-      await OpsLynk.sendBroadcast({ text, urgency: selUrg, durationSeconds, peerIds });
+      OpsLynk.sendBroadcast({ text, urgency: selUrg, durationSeconds, peerIds });
       document.getElementById('bctext').value = '';
       updateBroadcastCharCount();
       ackCount = 0;
@@ -7174,8 +7193,8 @@
       document.getElementById('modname').value = me.username || '';
       document.getElementById('modtitle').value = me.title || '';
       modalAvatar = me.avatar || null;
-      const a = document.getElementById('profprev'); applyAvatar(a, { ...me, avatar: modalAvatar });
-      document.getElementById('profprevname').innerHTML = `${esc(me.username)} ${roleBadgeHTML(me.role)}`;
+      const a = document.getElementById('profprev'); applyAvatar(a, { ...me, avatar: modalAvatar, role: _appMode === 'client' ? 'user' : me.role });
+      document.getElementById('profprevname').innerHTML = `${esc(me.username)} ${_appMode !== 'client' ? roleBadgeHTML(me.role) : ''}`;
       document.getElementById('profprevtitle').textContent = me.title || 'No title set';
       document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('sel', s.dataset.color === me.color));
       document.getElementById('profmodal').classList.add('show');
@@ -7195,11 +7214,11 @@
         return;
       }
       modalAvatar = result.avatar;
-      applyAvatar(document.getElementById('profprev'), { ...me, avatar: modalAvatar });
+      applyAvatar(document.getElementById('profprev'), { ...me, avatar: modalAvatar, role: _appMode === 'client' ? 'user' : me.role });
     }
     function removeAvatar() {
       modalAvatar = null;
-      applyAvatar(document.getElementById('profprev'), { ...me, avatar: null });
+      applyAvatar(document.getElementById('profprev'), { ...me, avatar: null, role: _appMode === 'client' ? 'user' : me.role });
     }
     // TOAST
     function showToast(title, body, type = '') {
@@ -7307,6 +7326,7 @@
 
     function appendHelpCard(req) {
       const list = document.getElementById('helplist');
+      if (!list) return;
       const existing = document.getElementById('hc-' + req.reqId);
       if (existing) existing.remove();
       const empty = list.querySelector('.empty, .empty-glass'); if (empty) empty.remove();
@@ -7469,9 +7489,10 @@
 
       // Show persistent device ID in profile modal if element exists
       OpsLynk.getDeviceId?.().then(id => {
+        console.log('[OpsLynk] get-device-id returned:', id);
         const el = document.getElementById('device-id-display');
         if (el && id) el.textContent = id;
-      }).catch(() => { });
+      }).catch(err => { console.error('[OpsLynk] get-device-id failed:', err); });
     }
 
     // ── Screen Lock (admin side) ─────────────────────────────────────

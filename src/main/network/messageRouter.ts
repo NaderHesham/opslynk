@@ -91,7 +91,7 @@ export function createMessageRouter({
 
     if (type === 'hello' || type === 'hello-ack') {
       const p = msg.from as PeerSession | undefined;
-      if (!p || p.id === state.myProfile?.id) return;
+      if (!p || typeof p.id !== 'string' || !p.id || p.id === state.myProfile?.id) return;
       let peer = state.peers.get(p.id);
       if (!peer) {
         peer = { ...p, ip: remoteIp, port: p.port || wsNet.CHAT_PORT_BASE, ws, online: true, lastSeen: Date.now() };
@@ -111,8 +111,8 @@ export function createMessageRouter({
 
     if (type === 'broadcast') {
       if (!checkSensitiveTrust(msg, 'broadcast')) return;
-      const peer = state.peers.get(String(msg.fromId || '')) || ({ username: 'Admin' } as PeerSession);
-      const data = { ...msg, fromName: peer.username };
+      const peer = state.peers.get(String(msg.fromId || ''));
+      const data = { ...msg, fromName: peer?.username ?? 'Admin' };
       bus.emit(EVENTS.NETWORK_BROADCAST, data);
       if (msg.urgency === 'urgent') showUrgentOverlay(data);
       else {

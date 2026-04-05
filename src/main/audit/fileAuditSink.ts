@@ -52,8 +52,8 @@ export function createFileAuditSink({
         stream = fs.createWriteStream(filePath, { flags: 'a', encoding: 'utf8' });
         flushPending();
       })
-      .catch(() => {
-        // Keep runtime resilient. Future phase can add sink-health telemetry.
+      .catch((err: unknown) => {
+        console.error('[audit] Failed to initialize audit sink:', err);
       });
   };
 

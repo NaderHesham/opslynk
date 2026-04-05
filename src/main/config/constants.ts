@@ -1,3 +1,8 @@
+export type AppMode = 'client' | 'admin';
+
+export const APP_MODE: AppMode =
+  (process.env.OPSLYNK_MODE as AppMode) === 'admin' ? 'admin' : 'client';
+
 export interface WindowModeConfig {
   width: number;
   height: number;

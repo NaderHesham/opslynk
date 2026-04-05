@@ -1,21 +1,18 @@
-import type { AdminModuleApi, AdminRuntimeState } from '../../shared/types/runtime';
+import type { AdminModuleApi } from '../../shared/types/runtime';
 import type { AdminCommand } from '../../shared/contracts/admin';
-import type { CommandOrigin } from '../security/deviceTrust';
 import { ADMIN_COMMANDS } from './adminTypes';
 import { createAdminPolicies } from './adminPolicies';
 import { createAdminCommands } from './adminCommands';
+import type { AdminCommandDeps } from './adminCommands';
 import { createAdminController } from './adminController';
 import { createAuthorizationBoundary } from '../auth/authorizationBoundary';
 import { createAdminCommandValidators, createCommandValidation } from './commandValidation';
 import { createAuditLogger } from '../audit/auditLogger';
 
-interface AdminDeps {
-  state: AdminRuntimeState;
+interface AdminDeps extends AdminCommandDeps {
   hasAdminAccess: (role: string | undefined) => boolean;
   isSuperAdmin: (role: string | undefined) => boolean;
   onAuditEntry?: (entry: Record<string, unknown>) => void;
-  buildCommandOrigin: (commandType: string) => CommandOrigin;
-  [key: string]: unknown;
 }
 
 export function createAdminModule(deps: AdminDeps): AdminModuleApi {
@@ -25,7 +22,7 @@ export function createAdminModule(deps: AdminDeps): AdminModuleApi {
     isSuperAdmin: deps.isSuperAdmin
   });
 
-  const commands = createAdminCommands(deps as never);
+  const commands = createAdminCommands(deps);
   const checkPolicy = (command: AdminCommand, payload: Record<string, unknown>): { allowed: boolean; error?: string } =>
     policies.check(command, payload);
   const authorization = createAuthorizationBoundary({

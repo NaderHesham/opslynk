@@ -43,7 +43,9 @@ export function createTrustStore({ app, fs, path, hasAdminAccess }: TrustStoreDe
       void fs.promises
         .mkdir(trustDir, { recursive: true })
         .then(() => fs.promises.writeFile(trustFile, JSON.stringify(snapshot, null, 2), 'utf8'))
-        .catch(() => {});
+        .catch((err: unknown) => {
+          console.error('[trust-store] Failed to persist trust data:', err);
+        });
     });
   };
 

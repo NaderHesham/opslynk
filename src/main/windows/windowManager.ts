@@ -147,8 +147,11 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
         globalShortcut.registerAll([
           'Super', 'Meta',
           'Alt+Tab', 'Alt+Shift+Tab', 'Alt+F4',
-          'Meta+Tab', 'Meta+D', 'Meta+L',
-          'Ctrl+Escape', 'Alt+Escape',
+          'Meta+Tab', 'Meta+Shift+Tab',
+          'Meta+D', 'Meta+E', 'Meta+L', 'Meta+R', 'Meta+M',
+          'Meta+Up', 'Meta+Down', 'Meta+Left', 'Meta+Right',
+          'Ctrl+Escape', 'Ctrl+Alt+Delete',
+          'Alt+Escape',
         ], () => { /* blocked */ });
       } catch { /* ignore */ }
     });

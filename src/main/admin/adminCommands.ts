@@ -3,7 +3,7 @@ import type { AdminCommand } from '../../shared/contracts/admin';
 import type { CommandOrigin } from '../security/deviceTrust';
 import { ADMIN_COMMANDS } from './adminTypes';
 
-interface AdminCommandDeps {
+export interface AdminCommandDeps {
   state: AdminRuntimeState;
   wsNet: { broadcastToSelectedPeers: (peerIds: string[] | null | undefined, payload: Record<string, unknown>) => void };
   helpSvc: {
@@ -18,9 +18,9 @@ interface AdminCommandDeps {
   showMainWindow: () => void;
   closeHelpPopup: (reqId: string) => void;
   bus: { emit: (event: string, payload?: unknown) => void };
-  EVENTS: { GOTO_TAB: string; FOCUS_HELP: string };
+  EVENTS: Record<string, string>;
   uuidv4: () => string;
-  app: { getPath: (name: string) => string };
+  app: { getPath: (name: 'documents' | 'userData' | 'temp' | 'downloads' | 'desktop') => string };
   dialog: { showSaveDialog: (options: Record<string, unknown>) => Promise<{ canceled: boolean; filePath?: string }> };
   fs: { writeFileSync: (path: string, content: string, enc: BufferEncoding) => void };
   path: { join: (...parts: string[]) => string };

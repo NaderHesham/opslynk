@@ -25,6 +25,7 @@ const wsNet = require('../../src/network/wsServer') as {
   safeSend: (ws: unknown, payload: Record<string, unknown>) => void;
   sendToPeer: (peerId: string, payload: Record<string, unknown>, queueFn: (peerId: string, payload: Record<string, unknown>) => void) => unknown;
   broadcastToPeers: (payload: Record<string, unknown>, excludeId?: string | null) => void;
+  broadcastToSelectedPeers: (peerIds: string[] | null | undefined, payload: Record<string, unknown>) => void;
 };
 const udp = require('../../src/network/udpDiscovery');
 const helpSvc = require('../../src/services/helpService');
@@ -36,7 +37,7 @@ const { bus, EVENTS } = require('../../src/services/eventBus') as {
   EVENTS: Record<string, string>;
 };
 
-const { CONTROL_ROLE, CONTROL_USERNAME, getWindowModeConfig } = require('./config/constants') as typeof import('./config/constants');
+const { CONTROL_ROLE, CONTROL_USERNAME, getWindowModeConfig, APP_MODE } = require('./config/constants') as typeof import('./config/constants');
 const { createAppState } = require('./state/createAppState') as typeof import('./state/createAppState');
 const { createStateOwners } = require('./state/owners') as typeof import('./state/owners');
 const { hasAdminAccess, isSuperAdmin, peerToSafe } = require('./utils/roles') as typeof import('./utils/roles');
@@ -47,7 +48,8 @@ const { createNetworkMonitor } = require('../../src/main/network/networkMonitor'
 const { createMessageRouter } = require('./network/messageRouter') as typeof import('./network/messageRouter');
 const { createPeerSession } = require('../../src/main/network/peerSession');
 const { registerLifecycle } = require('../../src/main/bootstrap/lifecycle');
-const { registerIpcHandlers } = require('./ipc/registerIpcHandlers') as typeof import('./ipc/registerIpcHandlers');
+const { registerClientHandlers } = require('./ipc/registerClientHandlers') as typeof import('./ipc/registerClientHandlers');
+const { registerFullHandlers } = require('./ipc/registerFullHandlers') as typeof import('./ipc/registerFullHandlers');
 const { createAdminModule } = require('./admin') as typeof import('./admin');
 const { createFileAuditSink } = require('./audit/fileAuditSink') as typeof import('./audit/fileAuditSink');
 const { createTrustStore } = require('./security/trustStore') as typeof import('./security/trustStore');
@@ -63,9 +65,11 @@ const deviceTrust = createDeviceTrust({ hasAdminAccess, trustStore });
 
 function ensureControlProfile(): void {
   if (!state.myProfile) return;
-  state.myProfile.role = CONTROL_ROLE;
-  if (!state.myProfile.username || /^device-/i.test(state.myProfile.username)) {
-    state.myProfile.username = CONTROL_USERNAME;
+  if (APP_MODE === 'admin') {
+    state.myProfile.role = CONTROL_ROLE;
+    if (!state.myProfile.username || /^device-/i.test(state.myProfile.username)) {
+      state.myProfile.username = CONTROL_USERNAME;
+    }
   }
 }
 
@@ -188,7 +192,9 @@ const adminModule = createAdminModule({
   })
 });
 
-registerIpcHandlers({
+ipcMain.handle('get-app-mode', () => APP_MODE);
+
+const _ipcDeps = {
   ipcMain,
   BrowserWindow,
   dialog,
@@ -213,7 +219,13 @@ registerIpcHandlers({
   updateTrayMenu: trayManager.updateTrayMenu,
   applyWindowMode: windowManager.applyWindowMode,
   closeOverlayWindow: windowManager.closeOverlayWindow
-});
+};
+
+if (APP_MODE === 'admin') {
+  registerFullHandlers(_ipcDeps);
+} else {
+  registerClientHandlers(_ipcDeps);
+}
 
 registerLifecycle({
   app,

@@ -19,16 +19,6 @@ export function registerBroadcastHandlers({
     closeOverlayWindow(true);
   });
 
-  handle(IPC_CHANNELS.broadcast.SEND_REPLY, ({ peerId, text, broadcastId }) => {
-    sendToPeer(peerId, { type: 'broadcast-reply', fromId: state.myProfile?.id, text, broadcastId });
-    closeOverlayWindow(true);
-  });
-
-  ipcMain.handle(IPC_CHANNELS.broadcast.POPUP_CLOSE, (e) => {
-    const win = BrowserWindow.fromWebContents(e.sender);
-    if (win && !win.isDestroyed()) win.close();
-  });
-
   on(IPC_EVENTS.URGENT_ACK, (data) => {
     sendToPeer(data.peerId, { type: 'ack', fromId: state.myProfile?.id, broadcastId: data.broadcastId });
     closeOverlayWindow(true);

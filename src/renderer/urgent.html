@@ -259,8 +259,18 @@ window.addEventListener('beforeunload', (e) => {
   e.preventDefault(); e.returnValue = '';
 });
 
+// Block system shortcuts at renderer level (capture phase — fires before any other handler)
+window.addEventListener('keydown', (e) => {
+  if (e.metaKey || e.key === 'Meta' || e.key === 'Super' ||
+      e.key === 'Escape' ||
+      (e.altKey && (e.key === 'Tab' || e.key === 'F4')) ||
+      (e.ctrlKey && e.key === 'Escape')) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+}, true);
+
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' || (e.altKey && e.key === 'F4')) e.preventDefault();
   if (e.key === 'Enter' && e.ctrlKey) doAck();
 });
 </script>

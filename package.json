@@ -10,10 +10,14 @@
     "typecheck": "tsc -p tsconfig.main.json --noEmit",
     "prestart": "npm run build:ts",
     "start": "node scripts/start-electron.js",
+    "start:client": "npm run build:ts && cross-env OPSLYNK_MODE=client node scripts/start-electron.js",
+    "start:admin": "npm run build:ts && cross-env OPSLYNK_MODE=admin node scripts/start-electron.js",
     "pretest:main-refactor": "npm run build:ts",
     "test:main-refactor": "node --test tests/main-refactor/*.test.js",
     "prebuild": "npm run build:ts",
     "build": "electron-builder --win --x64",
+    "build:client": "npm run build:ts && electron-builder --win portable --x64 --config.extraMetadata.main=src/main-client.js --config.artifactName=\"OpsLynk-Client-${version}.${ext}\"",
+    "build:admin": "npm run build:ts && electron-builder --win portable --x64 --config.extraMetadata.main=src/main-admin.js --config.artifactName=\"OpsLynk-Admin-${version}.${ext}\"",
     "prebuild-msi": "npm run build:ts",
     "build-msi": "electron-builder --win msi --x64",
     "prebuild-portable": "npm run build:ts",
@@ -74,10 +78,11 @@
     "ws": "^8.20.0"
   },
   "devDependencies": {
+    "@types/node": "^22.15.2",
+    "@types/uuid": "^10.0.0",
+    "cross-env": "^7.0.3",
     "electron": "^41.1.0",
     "electron-builder": "^26.8.1",
-    "typescript": "^5.8.3",
-    "@types/node": "^22.15.2",
-    "@types/uuid": "^10.0.0"
+    "typescript": "^5.8.3"
   }
 }

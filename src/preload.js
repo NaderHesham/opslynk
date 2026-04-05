@@ -5,7 +5,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('OpsLynk', {
 
   // ── INIT ───────────────────────────────────────────────────────────────────
-  getInitData: () => ipcRenderer.invoke('get-init-data'),
+  getInitData:  () => ipcRenderer.invoke('get-init-data'),
+  getAppMode:   () => ipcRenderer.invoke('get-app-mode'),
 
   // ── CHAT ───────────────────────────────────────────────────────────────────
   sendChat:      (data) => ipcRenderer.invoke('send-chat', data),
