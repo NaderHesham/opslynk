@@ -6,15 +6,25 @@ const WebSocket = require('ws');
 // ── PEER MESSAGE QUEUE ────────────────────────────────────────────────────────
 const pendingPeerMessages = new Map();   // peerId → msg[]
 
+const QUEUE_MAX_SIZE  = 50;
+const QUEUE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+
 function queuePeerMessage(peerId, data) {
   if (!peerId || !data) return;
   const list = pendingPeerMessages.get(peerId) || [];
-  list.push(data);
-  pendingPeerMessages.set(peerId, list.slice(-50));
+  list.push({ ...data, _queuedAt: Date.now() });
+  // Drop oldest if over max size
+  pendingPeerMessages.set(peerId, list.slice(-QUEUE_MAX_SIZE));
 }
 
 function getPendingMessages(peerId) {
-  return pendingPeerMessages.get(peerId) || [];
+  const list = pendingPeerMessages.get(peerId) || [];
+  const now  = Date.now();
+  // Filter out messages older than 5 minutes
+  const fresh = list.filter(m => (now - (m._queuedAt || now)) < QUEUE_MAX_AGE_MS);
+  if (fresh.length !== list.length) pendingPeerMessages.set(peerId, fresh);
+  // Strip internal _queuedAt before returning
+  return fresh.map(({ _queuedAt, ...m }) => m);
 }
 
 function clearPendingMessages(peerId) {

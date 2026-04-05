@@ -223,7 +223,8 @@ const _ipcDeps = {
   doSaveState,
   updateTrayMenu: trayManager.updateTrayMenu,
   applyWindowMode: windowManager.applyWindowMode,
-  closeOverlayWindow: windowManager.closeOverlayWindow
+  closeOverlayWindow: windowManager.closeOverlayWindow,
+  broadcastToRenderer
 };
 
 if (APP_MODE === 'admin') {

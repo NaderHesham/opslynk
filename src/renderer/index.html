@@ -1427,6 +1427,15 @@
       font-size: 20px
     }
 
+    .msg-status {
+      font-size: 10px;
+      margin-left: 5px;
+      opacity: .55;
+      vertical-align: middle;
+    }
+    .msg-status.delivered { opacity: .75; color: var(--accent); }
+    .msg-status.failed    { opacity: 1;   color: var(--red); }
+
     #welcome {
       flex: 1;
       display: flex;
@@ -7081,8 +7090,10 @@
         : (msg.emoji ? `<span class="ebig">${msg.emoji}</span>${msg.text ? ' ' + esc(msg.text) : ''}` : esc(msg.text || ''));
       const last = msgs.querySelector('.mgroup:last-child');
       const cls = mine ? 'mine' : 'theirs';
+      const statusSpan = mine && msg.id ? `<span class="msg-status" data-msgid="${msg.id}" title="Sent">✓</span>` : '';
+      const bubbleAttr = mine && msg.id ? ` data-msgid="${msg.id}"` : '';
       if (last && last.classList.contains(cls) && !showSender) {
-        last.querySelector('.bubbles').insertAdjacentHTML('beforeend', `<div class="bubble ${mine ? 'm' : 't'}">${content}<span class="ts">${ts}</span></div>`);
+        last.querySelector('.bubbles').insertAdjacentHTML('beforeend', `<div class="bubble ${mine ? 'm' : 't'}"${bubbleAttr}>${content}${statusSpan}<span class="ts">${ts}</span></div>`);
       } else {
         const g = document.createElement('div');
         g.className = `mgroup ${cls}`;
@@ -7090,7 +7101,7 @@
       ${!mine ? `<div class="avcol">${avatarHTML(peer, 's24')}</div>` : ''}
       <div class="bubbles">
         ${showSender ? `<div class="msender">${esc(peer.username)}</div>` : ''}
-        <div class="bubble ${mine ? 'm' : 't'}">${content}<span class="ts">${ts}</span></div>
+        <div class="bubble ${mine ? 'm' : 't'}"${bubbleAttr}>${content}${statusSpan}<span class="ts">${ts}</span></div>
       </div>`;
         msgs.appendChild(g);
       }
@@ -7586,6 +7597,33 @@
 
       OpsLynk.on('network:broadcast', data => { if (data.urgency !== 'urgent') { beep(520, 0.18); } });
       OpsLynk.on('network:status', ({ online }) => { networkOnline = !!online; updateConnPill(); });
+
+      OpsLynk.on('peer:heartbeat', ({ peerId, systemInfo }) => {
+        if (peers[peerId]) {
+          peers[peerId].online = true;
+          if (systemInfo) peers[peerId].systemInfo = systemInfo;
+          // Refresh peer list if currently visible
+          const active = document.querySelector('.panel.active');
+          if (active?.id === 'tab-users' || active?.id === 'tab-dashboard') renderPeerList();
+        }
+      });
+
+      OpsLynk.on('peer:stale', ({ peerId }) => {
+        if (peers[peerId]) {
+          peers[peerId].online = false;
+          renderPeerList();
+        }
+      });
+
+      OpsLynk.on('chat:delivered', ({ msgId }) => {
+        const el = document.querySelector(`.msg-status[data-msgid="${msgId}"]`);
+        if (el) { el.textContent = '✓✓'; el.classList.add('delivered'); el.title = 'Delivered'; }
+      });
+
+      OpsLynk.on('chat:failed', ({ msgId }) => {
+        const el = document.querySelector(`.msg-status[data-msgid="${msgId}"]`);
+        if (el) { el.textContent = '✗'; el.classList.add('failed'); el.title = 'Failed to deliver'; }
+      });
 
       OpsLynk.on('network:ack', ({ fromId, broadcastId, username }) => {
         ackCount++;

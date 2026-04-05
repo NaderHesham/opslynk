@@ -20,6 +20,7 @@ export interface PeerSession extends PeerIdentity {
   ws?: unknown;
   online: boolean;
   lastSeen?: number;
+  lastHeartbeat?: number;
 }
 
 export interface FileTransferMetadata {

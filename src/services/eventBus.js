@@ -42,6 +42,10 @@ const EVENTS = {
   // Sound
   PLAY_SOUND       : 'ui:playSound',
 
+  // Heartbeat / staleness
+  PEER_HEARTBEAT   : 'peer:heartbeat',
+  PEER_STALE       : 'peer:stale',
+
   // Profile
   PROFILE_UPDATED  : 'system:profileUpdated',
 };

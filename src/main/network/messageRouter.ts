@@ -89,6 +89,11 @@ export function createMessageRouter({
       }
     }
 
+    // Auto-ACK every incoming message so sender can track delivery
+    if (msg.msgId && ws && type !== 'ack') {
+      wsNet.safeSend(ws, { type: 'ack', msgId: msg.msgId, fromId: state.myProfile?.id });
+    }
+
     if (type === 'hello' || type === 'hello-ack') {
       const p = msg.from as PeerSession | undefined;
       if (!p || typeof p.id !== 'string' || !p.id || p.id === state.myProfile?.id) return;
@@ -191,8 +196,16 @@ export function createMessageRouter({
     }
 
     if (type === 'ack') {
-      const peer = state.peers.get(String(msg.fromId || ''));
-      bus.emit(EVENTS.NETWORK_ACK, { fromId: msg.fromId, broadcastId: msg.broadcastId, username: peer?.username });
+      // Confirm delivery tracking for chat ACKs
+      if (msg.msgId) {
+        const { confirm } = require('../../services/ackTracker') as { confirm: (id: string) => void };
+        confirm(String(msg.msgId));
+      }
+      // Broadcast ACK (has broadcastId) — emit to renderer for the ACK list UI
+      if (msg.broadcastId) {
+        const peer = state.peers.get(String(msg.fromId || ''));
+        bus.emit(EVENTS.NETWORK_ACK, { fromId: msg.fromId, broadcastId: msg.broadcastId, username: peer?.username });
+      }
       return;
     }
 
@@ -233,6 +246,21 @@ export function createMessageRouter({
 
     if (type === 'help-ack') {
       bus.emit(EVENTS.HELP_ACKED, { reqId: msg.reqId, fromId: msg.fromId });
+      return;
+    }
+
+    if (type === 'heartbeat') {
+      const fromId = String(msg.fromId || '');
+      const peer   = state.peers.get(fromId);
+      if (peer) {
+        peer.lastHeartbeat = Date.now();
+        peer.systemInfo    = (msg.systemInfo as Record<string, unknown>) || peer.systemInfo;
+        bus.emit(EVENTS.PEER_HEARTBEAT, {
+          peerId:     fromId,
+          timestamp:  msg.timestamp,
+          systemInfo: peer.systemInfo
+        });
+      }
       return;
     }
 

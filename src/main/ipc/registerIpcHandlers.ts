@@ -45,6 +45,7 @@ export function registerIpcHandlers(deps: RegisterDeps): void {
     uuidv4: deps.uuidv4,
     sendToPeer: deps.sendToPeer,
     doSaveHistory: deps.doSaveHistory,
+    broadcastToRenderer: deps.broadcastToRenderer,
     dialog: deps.dialog,
     fs: deps.fs,
     path: deps.path

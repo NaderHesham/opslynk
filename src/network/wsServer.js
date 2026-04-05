@@ -102,7 +102,14 @@ function connectToPeer(peer) {
 
 // ── SEND HELPERS ──────────────────────────────────────────────────────────────
 function safeSend(ws, data) {
-  try { if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data)); } catch {}
+  if (!data.msgId) data.msgId = uuidv4();
+  try {
+    if (ws?.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(data));
+      return true;
+    }
+  } catch {}
+  return false;
 }
 
 function sendToPeer(peerId, data, queueOnFail) {

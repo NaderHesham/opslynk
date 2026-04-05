@@ -1,4 +1,4 @@
-import { IPC_CHANNELS } from '../../shared/contracts/ipc';
+import { IPC_CHANNELS, IPC_EVENTS } from '../../shared/contracts/ipc';
 import type { RegisterDeps } from './types';
 import type { HandleFn } from './types';
 import { registerAppHandlers } from './registerAppHandlers';
@@ -22,6 +22,7 @@ export function registerClientHandlers(deps: RegisterDeps): void {
     uuidv4: deps.uuidv4,
     sendToPeer: deps.sendToPeer,
     doSaveHistory: deps.doSaveHistory,
+    broadcastToRenderer: deps.broadcastToRenderer,
     dialog: deps.dialog,
     fs: deps.fs,
     path: deps.path
@@ -44,6 +45,12 @@ export function registerClientHandlers(deps: RegisterDeps): void {
   // Broadcast reply — client sends reply from toast.html back to admin
   handle(IPC_CHANNELS.broadcast.SEND_REPLY, ({ peerId, text, broadcastId }) => {
     deps.sendToPeer(peerId, { type: 'broadcast-reply', fromId: deps.state.myProfile?.id, text, broadcastId });
+  });
+
+  // Urgent reply — client sends reply from urgent.html overlay back to admin
+  // Uses ipcRenderer.send (one-way), so must use ipcMain.on (not handle)
+  deps.ipcMain.on(IPC_EVENTS.URGENT_REPLY, (_e, data: { peerId: string; text: string; broadcastId: string }) => {
+    deps.sendToPeer(data.peerId, { type: 'broadcast-reply', fromId: deps.state.myProfile?.id, text: data.text, broadcastId: data.broadcastId });
   });
 
   // Screenshot preview — for the "include screenshot" checkbox in Ask For Help

@@ -40,6 +40,7 @@ export interface RegisterDeps {
   updateTrayMenu: () => void;
   applyWindowMode: (modeName: string) => void;
   closeOverlayWindow: (force?: boolean) => void;
+  broadcastToRenderer: (event: string, data: unknown) => void;
 }
 
 export type HandleFn = <C extends keyof IpcChannelMap>(
@@ -57,7 +58,7 @@ export interface WindowRegistrarDeps extends Pick<RegisterDeps, 'state' | 'apply
   handle: HandleFn;
 }
 
-export interface ChatRegistrarDeps extends Pick<RegisterDeps, 'state' | 'uuidv4' | 'sendToPeer' | 'doSaveHistory' | 'dialog' | 'fs' | 'path'> {
+export interface ChatRegistrarDeps extends Pick<RegisterDeps, 'state' | 'uuidv4' | 'sendToPeer' | 'doSaveHistory' | 'dialog' | 'fs' | 'path' | 'broadcastToRenderer'> {
   handle: HandleFn;
 }
 
