@@ -76,13 +76,12 @@ export function createTrustStore({ app, fs, path, hasAdminAccess }: TrustStoreDe
 
   const isTrustedPeer = (peerId: string, role?: string): boolean => {
     if (!peerId || blockedPeerIds.has(peerId)) return false;
-    if (trustedPeerIds.has(peerId)) return true;
     if (hasAdminAccess(role)) {
       trustedPeerIds.add(peerId);
       persist();
       return true;
     }
-    return false;
+    return trustedPeerIds.has(peerId);
   };
 
   const blockPeer = (peerId: string): void => {

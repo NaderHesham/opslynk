@@ -1,5 +1,6 @@
 import path from 'path';
 import { BrowserWindow, dialog, screen, globalShortcut } from 'electron';
+const { blockInput, unblockInput } = require('../../../src/services/inputBlocker') as { blockInput: () => void; unblockInput: () => void };
 import type { WindowManagerApi, WindowRuntimeState } from '../../shared/types/runtime';
 
 interface WindowManagerDeps {
@@ -218,6 +219,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
         message: message || 'Your screen has been locked by the administrator.',
         lockedAt: new Date().toISOString()
       });
+      blockInput();
     });
     state.lockWindow.on('closed', () => { state.lockWindow = null; });
     state.screenLocked = true;
@@ -241,6 +243,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
 
   function unlockScreen(): void {
     state.screenLocked = false;
+    unblockInput();
     // Release all blocked shortcuts
     try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
     if (state.lockWindow && !state.lockWindow.isDestroyed()) {
@@ -282,6 +285,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
       state.forcedVideoWindow?.focus();
       state.forcedVideoWindow?.moveTop();
       state.forcedVideoWindow?.webContents.send('forced-video-data', data);
+      blockInput();
     });
     state.forcedVideoWindow.on('closed', () => {
       state.forcedVideoWindow = null;
@@ -300,6 +304,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir }
 
   function closeForcedVideoWindow(force = false): void {
     state.forcedVideoActive = false;
+    unblockInput();
     try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
     if (state.forcedVideoWindow && !state.forcedVideoWindow.isDestroyed()) {
       try { state.forcedVideoWindow.webContents.send('forced-video-stop'); } catch {}

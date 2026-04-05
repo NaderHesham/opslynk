@@ -227,6 +227,11 @@ if (APP_MODE === 'admin') {
   registerClientHandlers(_ipcDeps);
 }
 
+const { unblockInput } = require('../../src/services/inputBlocker') as { unblockInput: () => void };
+app.on('before-quit', () => {
+  unblockInput();
+});
+
 registerLifecycle({
   app,
   process,

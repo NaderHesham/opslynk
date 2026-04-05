@@ -30,6 +30,11 @@ Thumbs.db
 *.exe
 *.msi
 
+# Native InputBlocker build artifacts
+resources/InputBlocker.exe
+native/InputBlocker/bin/
+native/InputBlocker/obj/
+
 # Temp
 tmp/
 temp/

@@ -63,7 +63,12 @@
       "createStartMenuShortcut": true,
       "runAfterFinish": true
     },
-    "extraResources": [],
+    "extraResources": [
+      {
+        "from": "resources/InputBlocker.exe",
+        "to":   "InputBlocker.exe"
+      }
+    ],
     "files": [
       "src/**/*",
       "dist-ts/**/*",
