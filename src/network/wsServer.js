@@ -1,23 +1,29 @@
 // network/wsServer.js
 // WebSocket server + outbound peer connections + P2P message router
+// All messages are AES-256-GCM encrypted after ECDH key exchange.
 
 const http      = require('http');
 const WebSocket = require('ws');
 const { v4: uuidv4 } = require('uuid');
+const { generateKeyPair, deriveSharedKey, encrypt, decrypt } = require('../services/encryptionService');
 
 // These are injected via init() so wsServer has no circular dependency on main
-let _peers            = null;   // Map<id, peer>
+let _peers            = null;
 let _myProfile        = null;
-let _myPortRef        = null;   // { value: number }  — writable ref
-let _onMessage        = null;   // callback(ws, msg, remoteIp)
-let _onPeerOnline     = null;   // callback(peer)
-let _onPeerOffline    = null;   // callback(peerId)
-let _getPendingMsgs   = null;   // (peerId) => []
-let _clearPendingMsgs = null;   // (peerId) => void
+let _myPortRef        = null;
+let _onMessage        = null;
+let _onPeerOnline     = null;
+let _onPeerOffline    = null;
+let _getPendingMsgs   = null;
+let _clearPendingMsgs = null;
 let _hasAdminAccess   = null;
 let _flushHelpRequests = null;
 
 let wsServer = null;
+
+// Per-socket encryption state
+const sessionKeys  = new Map(); // ws → Buffer (32-byte AES key)
+const pendingECDH  = new Map(); // ws → ECDH object (during handshake)
 
 const CHAT_PORT_BASE = 45679;
 
@@ -53,20 +59,56 @@ function startWsServer(port) {
   });
 }
 
+function cleanupSocket(ws) {
+  sessionKeys.delete(ws);
+  pendingECDH.delete(ws);
+}
+
 function handleIncomingWS(ws, req) {
-  ws.on('message', raw => {
-    try { _onMessage(ws, JSON.parse(raw), req.socket.remoteAddress); } catch (e) { console.error('ws parse err', e.message); }
-  });
-  ws.on('close', () => {
+  const remoteIp = req.socket.remoteAddress;
+
+  const markOffline = () => {
+    cleanupSocket(ws);
     for (const [id, peer] of _peers) {
-      if (peer.ws === ws) {
-        peer.ws     = null;
-        peer.online = false;
-        _onPeerOffline(id);
-        break;
-      }
+      if (peer.ws !== ws) continue;
+      peer.ws = null;
+      peer.online = false;
+      _onPeerOffline(id);
+      break;
     }
+  };
+
+  // Respond to ECDH key-exchange from the connector
+  ws.on('message', raw => {
+    try {
+      const msg = JSON.parse(raw);
+
+      // Key-exchange: initiator sends { _kx: pubKeyHex }
+      if (msg._kx && !sessionKeys.has(ws)) {
+        const ecdh      = generateKeyPair();
+        const sharedKey = deriveSharedKey(ecdh, msg._kx);
+        sessionKeys.set(ws, sharedKey);
+        // Reply with our pubkey (plain — handshake is before encryption)
+        ws.send(JSON.stringify({ _kx: ecdh.getPublicKey('hex') }));
+        return;
+      }
+
+      // Encrypted envelope
+      if (msg._e) {
+        const key = sessionKeys.get(ws);
+        if (!key) return; // no key yet — drop
+        const decrypted = decrypt(key, msg._e);
+        _onMessage(ws, decrypted, remoteIp);
+        return;
+      }
+
+      // Fallback: plaintext (should not happen in normal operation)
+      _onMessage(ws, msg, remoteIp);
+    } catch (e) { console.error('[ws] parse/decrypt err', e.message); }
   });
+
+  ws.on('close', markOffline);
+  ws.on('error', markOffline);
 }
 
 // ── OUTBOUND CONNECTION ───────────────────────────────────────────────────────
@@ -74,49 +116,91 @@ function connectToPeer(peer) {
   if (peer.ws && (peer.ws.readyState === WebSocket.OPEN || peer.ws.readyState === WebSocket.CONNECTING)) return;
   const ws = new WebSocket(`ws://${peer.ip}:${peer.port}`, { maxPayload: 50 * 1024 * 1024 });
 
+  const markOffline = () => {
+    cleanupSocket(ws);
+    if (peer.ws !== ws) return;
+    peer.ws = null;
+    peer.online = false;
+    _onPeerOffline(peer.id);
+  };
+
   ws.on('open', () => {
     peer.ws       = ws;
-    peer.online   = true;
     peer.lastSeen = Date.now();
-    ws.send(JSON.stringify({ type: 'hello', from: { ..._myProfile(), port: _myPortRef.value } }));
 
-    // flush queued messages
-    const queued = _getPendingMsgs(peer.id);
-    queued.forEach(m => safeSend(ws, m));
-    _clearPendingMsgs(peer.id);
-
-    _onPeerOnline(peer);
-    if (_hasAdminAccess(peer.role)) _flushHelpRequests(peer.id);
+    // Initiate ECDH: generate our keypair, send pubkey
+    const ecdh = generateKeyPair();
+    pendingECDH.set(ws, ecdh);
+    ws.send(JSON.stringify({ _kx: ecdh.getPublicKey('hex') }));
+    // hello + queued messages sent after key exchange completes (in 'message' handler below)
   });
 
   ws.on('message', raw => {
-    try { _onMessage(ws, JSON.parse(raw), peer.ip); } catch {}
+    try {
+      const msg = JSON.parse(raw);
+
+      // Key-exchange response: remote sends back their pubkey
+      if (msg._kx && pendingECDH.has(ws)) {
+        const ecdh      = pendingECDH.get(ws);
+        const sharedKey = deriveSharedKey(ecdh, msg._kx);
+        sessionKeys.set(ws, sharedKey);
+        pendingECDH.delete(ws);
+
+        // Now encryption is ready — send hello + queued messages
+        peer.online = true;
+        encryptSend(ws, { type: 'hello', from: { ..._myProfile(), port: _myPortRef.value } });
+        const queued = _getPendingMsgs(peer.id);
+        queued.forEach(m => encryptSend(ws, m));
+        _clearPendingMsgs(peer.id);
+        _onPeerOnline(peer);
+        if (_hasAdminAccess(peer.role)) _flushHelpRequests(peer.id);
+        return;
+      }
+
+      // Encrypted envelope
+      if (msg._e) {
+        const key = sessionKeys.get(ws);
+        if (!key) return;
+        const decrypted = decrypt(key, msg._e);
+        _onMessage(ws, decrypted, peer.ip);
+        return;
+      }
+
+      // Fallback plaintext
+      _onMessage(ws, msg, peer.ip);
+    } catch {}
   });
-  ws.on('close', () => {
-    peer.ws     = null;
-    peer.online = false;
-    _onPeerOffline(peer.id);
-  });
-  ws.on('error', () => {});
+
+  ws.on('close', markOffline);
+  ws.on('error', markOffline);
 }
 
 // ── SEND HELPERS ──────────────────────────────────────────────────────────────
-function safeSend(ws, data) {
+function encryptSend(ws, data) {
   if (!data.msgId) data.msgId = uuidv4();
   try {
-    if (ws?.readyState === WebSocket.OPEN) {
+    if (ws?.readyState !== WebSocket.OPEN) return false;
+    const key = sessionKeys.get(ws);
+    if (key) {
+      ws.send(JSON.stringify({ _e: encrypt(key, data) }));
+    } else {
+      // No session key yet (e.g. key-exchange in progress) — send plaintext as fallback
       ws.send(JSON.stringify(data));
-      return true;
     }
+    return true;
   } catch {}
   return false;
+}
+
+function safeSend(ws, data) {
+  return encryptSend(ws, data);
 }
 
 function sendToPeer(peerId, data, queueOnFail) {
   const p = _peers.get(peerId);
   if (!p) return false;
   if (p.ws?.readyState === WebSocket.OPEN) {
-    p.ws.send(JSON.stringify(data));
+    encryptSend(p.ws, data);
     return true;
   }
   if (queueOnFail) queueOnFail(peerId, data);
