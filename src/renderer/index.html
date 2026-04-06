@@ -97,6 +97,12 @@
       border-color: #321620
     }
 
+    #conn-pill.searching {
+      background: #23190a;
+      color: var(--amber);
+      border-color: #4a3412
+    }
+
     .spacer {
       flex: 1
     }
@@ -6465,10 +6471,16 @@
     const hasAdminAccess = role => role === 'admin' || role === 'super_admin';
     const isSuperAdminRole = role => role === 'super_admin';
     const comparePeers = (a, b) => roleRank(b.role) - roleRank(a.role) || Number(b.online) - Number(a.online) || String(a.username || '').localeCompare(String(b.username || ''));
+    const getRoleLabel = role => role === 'super_admin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'User';
+    const isDefaultRoleTitle = title => ['Super Administrator', 'Administrator', 'User', 'Super Admin', 'Admin'].includes(String(title || '').trim());
+    const getPeerDisplayTitle = peer => {
+      const title = String(peer?.title || '').trim();
+      return title && !isDefaultRoleTitle(title) ? title : getRoleLabel(peer?.role);
+    };
     const roleBadgeHTML = role => role === 'super_admin'
-      ? '<span class="rbadge super">SUPER ADMIN</span>'
+      ? '<span class="rbadge super">Super Admin</span>'
       : role === 'admin'
-        ? '<span class="rbadge admin">ADMIN</span>'
+        ? '<span class="rbadge admin">Admin</span>'
         : '';
     const getSortedPeers = () => Object.values(peers).sort(comparePeers);
     const getSidebarSearchValue = () => (document.getElementById('peerSearch')?.value || '').trim().toLowerCase();
@@ -6754,6 +6766,10 @@
     }
 
     async function init() {
+      // Register IPC listeners immediately — before any await — so no peer join/update
+      // events are dropped while we wait for init data to resolve.
+      setupEvents();
+
       const [d, resolvedMode] = await Promise.all([OpsLynk.getInitData(), _appModePromise]);
       _appMode = resolvedMode;
 
@@ -6765,11 +6781,22 @@
         removed.forEach(el => el.remove());
       }
 
-      me = d.profile; _acctCurrentUserId = me?.id || null; history = d.history || {}; peers = {};
+      me = d.profile; _acctCurrentUserId = me?.id || null; history = d.history || {};
       userGroups = d.userGroups || [];
       networkReady = !!d.networkReady;
       networkOnline = typeof navigator !== 'undefined' ? navigator.onLine : !!d.networkOnline;
-      d.peers.forEach(p => peers[p.id] = p);
+      // Merge init-data peers into the peers map (events may have already added some)
+      d.peers.forEach(p => {
+        const existing = peers[p.id] || {};
+        peers[p.id] = {
+          ...p,
+          ...existing,
+          id: p.id,
+          role: existing.role || p.role,
+          username: existing.username || p.username,
+          online: Boolean(existing.online || p.online)
+        };
+      });
       ensureDashboardTabButton();
 
       applyRoleState();
@@ -6799,7 +6826,6 @@
       renderHelpRequests();
       sanitizeVisibleText();
       updateConnPill();
-      setupEvents();
       updateEmojiButton();
       renderDashboard();
     }
@@ -6810,7 +6836,7 @@
       applyAvatar(av, meForAvatar);
       const badge = _appMode !== 'client' ? roleBadgeHTML(me.role) : '';
       document.getElementById('myname').innerHTML = `${esc(me.username)} ${badge}`;
-      document.getElementById('mytitle').textContent = me.title || (_appMode !== 'client' && me.role === 'super_admin' ? 'Super Administrator' : _appMode !== 'client' && hasAdminAccess(me.role) ? 'Administrator' : 'Team Member');
+      document.getElementById('mytitle').textContent = getPeerDisplayTitle(me);
       const isSuper = _appMode !== 'client' && isSuperAdminRole(me.role);
       document.getElementById('admin-badge').textContent = isSuper ? 'CONTROL' : 'READY';
       const lockCard = document.querySelector('.lock-card');
@@ -6846,7 +6872,7 @@
       }
       sorted.forEach(p => {
         const roleBadge = roleBadgeHTML(p.role);
-        const subtitle = esc(p.title || (p.role === 'super_admin' ? 'Super Administrator' : hasAdminAccess(p.role) ? 'Administrator' : 'Team Member'));
+        const subtitle = esc(getPeerDisplayTitle(p));
         const el = document.createElement('div');
         el.className = 'pi' + (p.role === 'super_admin' ? ' super-card' : '') + (p.id === activePeerId ? ' active' : '');
         el.dataset.pid = p.id; el.onclick = () => openChat(p.id);
@@ -6943,7 +6969,7 @@
         ${avatarHTML(p, 's44')}
         <div class="ubio">
           <div class="uname">${esc(p.username)} ${roleBadgeHTML(p.role)}</div>
-          <div class="usub">${esc(p.title || (p.role === 'super_admin' ? 'Super Administrator' : hasAdminAccess(p.role) ? 'Administrator' : 'Team Member'))}</div>
+          <div class="usub">${esc(getPeerDisplayTitle(p))}</div>
         </div>
         <div class="udot ${p.online ? 'on' : 'off'}"></div>
       </div>
@@ -7007,7 +7033,7 @@
       selectedSpecPeerId = peerId;
       applyAvatar(document.getElementById('specavatar'), peer);
       document.getElementById('specname').innerHTML = `${esc(peer.username)} ${roleBadgeHTML(peer.role)}`;
-      document.getElementById('specsubtitle').textContent = `${peer.online ? 'Online' : 'Offline'} • ${peer.title || (peer.role === 'super_admin' ? 'Super Administrator' : hasAdminAccess(peer.role) ? 'Administrator' : 'Team Member')}`;
+      document.getElementById('specsubtitle').textContent = `${peer.online ? 'Online' : 'Offline'} • ${getPeerDisplayTitle(peer)}`;
       document.getElementById('specgrid').innerHTML = buildSpecFields(peer).map(([label, value]) => `
     <div class="spec-card">
       <strong>${esc(label)}</strong>
@@ -7381,6 +7407,13 @@
       if (msgInput) msgInput.placeholder = 'Type a message...';
       const sendBtn = document.getElementById('sendbtn');
       if (sendBtn) sendBtn.textContent = 'Send';
+    }
+
+    function getStatusPeers() {
+      const allPeers = Object.values(peers);
+      return _appMode === 'client'
+        ? allPeers.filter(peer => hasAdminAccess(peer?.role))
+        : allPeers;
     }
 
     function updateConnPill() {
@@ -7793,13 +7826,13 @@
 
       OpsLynk.on('peer:heartbeat', ({ peerId, systemInfo, liveMetrics }) => {
         if (peers[peerId]) {
-          peers[peerId].online = true;
           if (systemInfo)   peers[peerId].systemInfo   = systemInfo;
           if (liveMetrics)  peers[peerId].liveMetrics  = liveMetrics;
           // Refresh peer list if currently visible
           const active = document.querySelector('.panel.active');
           if (active?.id === 'tab-users' || active?.id === 'tab-dashboard') { renderPeerList(); renderUsersTab(); }
         }
+        updateConnPill();
       });
 
       OpsLynk.on('peer:screenshot', ({ peerId, base64, name, timestamp }) => {
@@ -7811,9 +7844,11 @@
           peers[peerId].online = false;
           renderPeerList();
         }
+        updateConnPill();
       });
 
       OpsLynk.on('chat:delivered', ({ msgId }) => {
+        console.log('[ACK-DEBUG] chat:delivered received:', msgId);
         const el = document.querySelector(`.msg-status[data-msgid="${msgId}"]`);
         if (el) { el.textContent = '✓✓'; el.classList.add('delivered'); el.title = 'Delivered'; }
       });

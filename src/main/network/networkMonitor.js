@@ -17,9 +17,9 @@ function hasLiveNetwork() {
   return false;
 }
 
-const STALE_THRESHOLD = 25_000; // 2.5× heartbeat interval
+const STALE_THRESHOLD = 4_000;
 
-function createNetworkMonitor({ state, bus, EVENTS }) {
+function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer }) {
   function startNetworkMonitor() {
     state.networkOnline = hasLiveNetwork();
 
@@ -28,31 +28,35 @@ function createNetworkMonitor({ state, bus, EVENTS }) {
       const next = hasLiveNetwork();
       if (next === state.networkOnline) return;
       state.networkOnline = next;
+      if (!state.networkOnline) {
+        for (const [id, peer] of state.peers) {
+          if (!peer.online) continue;
+          peer.online = false;
+          peer.ws = null;
+          bus.emit(EVENTS.DEVICE_LEFT, { id });
+        }
+      }
       bus.emit(EVENTS.NETWORK_STATUS, { online: state.networkOnline });
     }, 2500);
 
-    // Stale-peer detection: mark clients as offline if no heartbeat received
+    // Stale-peer detection: fire even when WS appears OPEN (TCP won't detect network drop)
     setInterval(() => {
       const now = Date.now();
       for (const [id, peer] of state.peers) {
-        if (!hasAdminAccess(peer.role) && peer.online) {
-          const lastBeat = peer.lastHeartbeat || 0;
-          if (lastBeat > 0 && (now - lastBeat) > STALE_THRESHOLD) {
-            peer.online = false;
-            bus.emit(EVENTS.PEER_STALE, { peerId: id });
-          }
+        if (!peer.online) continue;
+        const lastBeat = peer.lastHeartbeat || 0;
+        if (lastBeat > 0 && (now - lastBeat) > STALE_THRESHOLD) {
+          peer.online = false;
+          if (peer.ws) { try { peer.ws.terminate?.() ?? peer.ws.close(); } catch {} }
+          peer.ws = null;
+          broadcastToRenderer?.('peer:offline', { peerId: id });
+          bus.emit(EVENTS.DEVICE_LEFT, { id });
         }
       }
-    }, 15_000);
+    }, 1_000);
   }
 
   return { startNetworkMonitor };
 }
 
-// hasAdminAccess re-implemented inline to avoid circular dep with main
-function hasAdminAccess(role) {
-  return role === 'admin' || role === 'super_admin';
-}
-
 module.exports = { createNetworkMonitor, hasLiveNetwork };
-

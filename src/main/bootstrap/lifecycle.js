@@ -13,6 +13,7 @@ function registerLifecycle({
   startNetworkMonitor,
   startPeerSession,
   createMainWindow,
+  initPreloadedWindows,
   createTray,
   bus,
   setRendererBridge,
@@ -34,8 +35,10 @@ function registerLifecycle({
       state.myProfile = buildDefaultProfile(deviceRecord);
     }
 
+    const preservedUsername = raw?.username;
     state.myProfile.systemInfo = getSystemInfo();
     ensureControlProfile();
+    if (preservedUsername) state.myProfile.username = preservedUsername;
     storage.saveProfile(state.myProfile);
 
     const saved = storage.loadState();
@@ -50,6 +53,7 @@ function registerLifecycle({
     await startPeerSession();
 
     createMainWindow();
+    initPreloadedWindows?.();
     setRendererBridge((event, data) => broadcastToRenderer(event, data));
     createTray();
 

@@ -144,6 +144,7 @@ export type TrayRuntimeState = Pick<
 
 export interface WindowManagerApi {
   createMainWindow(): void;
+  initPreloadedWindows(): void;
   applyWindowMode(modeName: string): void;
   showMainWindow(): void;
   closeOverlayWindow(force?: boolean): void;

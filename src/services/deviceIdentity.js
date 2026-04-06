@@ -64,7 +64,8 @@ function getOrCreateDeviceIdentity(currentIp) {
  * Uses deviceId as the persistent id so it never drifts.
  */
 function buildDefaultProfile(deviceIdentity) {
-  const winUser = process.env.USERNAME || os.userInfo().username || 'User';
+  const rawUser = process.env.USERNAME || os.userInfo().username || 'User';
+  const winUser = rawUser.replace(/\b\w/g, c => c.toUpperCase());
   return {
     id          : deviceIdentity.deviceId,   // ← permanent, from devices.json
     username    : winUser,

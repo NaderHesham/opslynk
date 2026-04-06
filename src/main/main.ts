@@ -150,7 +150,7 @@ const { handleP2PMessage } = createMessageRouter({
   captureScreenshot: () => captureScreenshot(state.mainWindow)
 });
 
-const { startNetworkMonitor } = createNetworkMonitor({ state: owners.sessionState, bus, EVENTS });
+const { startNetworkMonitor } = createNetworkMonitor({ state: owners.sessionState, bus, EVENTS, broadcastToRenderer });
 
 const peerSession = createPeerSession({
   state: owners.sessionState,
@@ -252,6 +252,7 @@ registerLifecycle({
   startNetworkMonitor,
   startPeerSession: peerSession.start,
   createMainWindow: windowManager.createMainWindow,
+  initPreloadedWindows: windowManager.initPreloadedWindows,
   createTray: trayManager.createTray,
   bus,
   setRendererBridge: (bridge: (event: string, data: unknown) => void) => bus.setRendererBridge(bridge),

@@ -1,6 +1,6 @@
 'use strict';
 
-const HEARTBEAT_INTERVAL = 10_000;
+const HEARTBEAT_INTERVAL = 3_000;
 const { getLiveMetrics } = require('../../system/systemInfo');
 
 function createPeerSession({
@@ -17,19 +17,51 @@ function createPeerSession({
   handleP2PMessage,
   flushPendingHelpRequests
 }) {
-  const heartbeatTimers = new Map(); // peerId → intervalId
+  const heartbeatTimers = new Map();
+  const reconnectTimers = new Map();
+
+  function stopReconnect(peerId) {
+    const id = reconnectTimers.get(peerId);
+    if (id != null) {
+      clearInterval(id);
+      reconnectTimers.delete(peerId);
+    }
+  }
+
+  function triggerDiscovery() {
+    try { udp.announceMyself(); } catch {}
+  }
+
+  function scheduleReconnect(peerId) {
+    const peer = state.peers.get(peerId);
+    if (!peer || reconnectTimers.has(peerId)) return;
+
+    const attempt = () => {
+      const current = state.peers.get(peerId);
+      const readyState = current?.ws?.readyState;
+      if (!current || current.online || readyState === 0 || readyState === 1) {
+        stopReconnect(peerId);
+        return;
+      }
+      triggerDiscovery();
+      if (current.ip && current.port) wsNet.connectToPeer(current);
+    };
+
+    attempt();
+    reconnectTimers.set(peerId, setInterval(attempt, 3000));
+  }
 
   function startHeartbeat(peerId) {
     if (heartbeatTimers.has(peerId)) return;
     const id = setInterval(() => {
       wsNet.sendToPeer(peerId, {
-        type:        'heartbeat',
-        fromId:      state.myProfile?.id,
-        username:    state.myProfile?.username,
-        role:        state.myProfile?.role,
-        systemInfo:  state.myProfile?.systemInfo,
+        type: 'heartbeat',
+        fromId: state.myProfile?.id,
+        username: state.myProfile?.username,
+        role: state.myProfile?.role,
+        systemInfo: state.myProfile?.systemInfo,
         liveMetrics: getLiveMetrics(),
-        timestamp:   Date.now()
+        timestamp: Date.now()
       });
     }, HEARTBEAT_INTERVAL);
     heartbeatTimers.set(peerId, id);
@@ -37,20 +69,31 @@ function createPeerSession({
 
   function stopHeartbeat(peerId) {
     const id = heartbeatTimers.get(peerId);
-    if (id != null) { clearInterval(id); heartbeatTimers.delete(peerId); }
+    if (id != null) {
+      clearInterval(id);
+      heartbeatTimers.delete(peerId);
+    }
   }
 
   function emitPeerJoined(peer) {
+    stopReconnect(peer.id);
     bus.emit(EVENTS.DEVICE_JOINED, peerToSafe(peer));
     updateTrayMenu();
-    // Start heartbeat only when this node is a client talking to an admin
     if (hasAdminAccess(peer.role)) {
       startHeartbeat(peer.id);
     }
   }
 
   function emitPeerLeft(id) {
+    const peer = state.peers.get(id);
+    const wasAlreadyOffline = !peer || peer.online === false;
+    const hadReconnectTimer = reconnectTimers.has(id);
     stopHeartbeat(id);
+    scheduleReconnect(id);
+    triggerDiscovery();
+    if (wasAlreadyOffline && hadReconnectTimer) return;
+    if (peer) peer.online = false;
+    broadcastToRenderer('peer:offline', { peerId: id });
     bus.emit(EVENTS.DEVICE_LEFT, { id });
     updateTrayMenu();
   }
@@ -81,6 +124,7 @@ function createPeerSession({
 
     await wsNet.startWsServer(wsNet.CHAT_PORT_BASE);
     udp.startUdpDiscovery();
+    triggerDiscovery();
   }
 
   return { start };

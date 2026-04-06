@@ -82,10 +82,12 @@ export function createMessageRouter({
 
   function handleP2PMessage(ws: unknown, msg: Record<string, unknown>, remoteIp: string): void {
     const type = String(msg.type || '');
+    console.log('[ACK-DEBUG] type:', type, 'msgId:', msg.msgId);
 
     for (const [, peer] of state.peers) {
       if (peer.ws === ws) {
         peer.lastSeen = Date.now();
+        peer.lastHeartbeat = Date.now();
         peer.online = true;
         break;
       }
@@ -93,6 +95,7 @@ export function createMessageRouter({
 
     // Auto-ACK every incoming message so sender can track delivery
     if (msg.msgId && ws && type !== 'ack') {
+      console.log('[ACK-DEBUG] sending ACK for:', msg.msgId);
       wsNet.safeSend(ws, { type: 'ack', msgId: msg.msgId, fromId: state.myProfile?.id });
     }
 
@@ -100,6 +103,7 @@ export function createMessageRouter({
       const p = msg.from as PeerSession | undefined;
       if (!p || typeof p.id !== 'string' || !p.id || p.id === state.myProfile?.id) return;
       let peer = state.peers.get(p.id);
+      const wasOnline = !!peer?.online;
       if (!peer) {
         peer = { ...p, ip: remoteIp, port: p.port || wsNet.CHAT_PORT_BASE, ws, online: true, lastSeen: Date.now() };
         state.peers.set(p.id, peer);
@@ -107,7 +111,7 @@ export function createMessageRouter({
         Object.assign(peer, { ...p, ip: remoteIp, ws, online: true, lastSeen: Date.now() });
       }
       if (!peer) return;
-      bus.emit(EVENTS.DEVICE_UPDATED, peerToSafe(peer));
+      bus.emit(wasOnline ? EVENTS.DEVICE_UPDATED : EVENTS.DEVICE_JOINED, peerToSafe(peer));
       updateTrayMenu();
       if (type === 'hello') {
         wsNet.safeSend(ws, { type: 'hello-ack', from: { ...state.myProfile, port: state.myPortRef.value } });
@@ -200,7 +204,7 @@ export function createMessageRouter({
     if (type === 'ack') {
       // Confirm delivery tracking for chat ACKs
       if (msg.msgId) {
-        const { confirm } = require('../../services/ackTracker') as { confirm: (id: string) => void };
+        const { confirm } = require('../../../src/services/ackTracker') as { confirm: (id: string) => void };
         confirm(String(msg.msgId));
       }
       // Broadcast ACK (has broadcastId) — emit to renderer for the ACK list UI
@@ -255,9 +259,15 @@ export function createMessageRouter({
       const fromId = String(msg.fromId || '');
       const peer   = state.peers.get(fromId);
       if (peer) {
+        const wasOnline = !!peer.online;
+        peer.online = true;
         peer.lastHeartbeat = Date.now();
         peer.systemInfo    = (msg.systemInfo as Record<string, unknown>) || peer.systemInfo;
         if (msg.liveMetrics) peer.liveMetrics = msg.liveMetrics as PeerSession['liveMetrics'];
+        if (!wasOnline) {
+          bus.emit(EVENTS.DEVICE_JOINED, peerToSafe(peer));
+          updateTrayMenu();
+        }
         bus.emit(EVENTS.PEER_HEARTBEAT, {
           peerId:      fromId,
           timestamp:   msg.timestamp,
@@ -318,6 +328,7 @@ export function createMessageRouter({
         flushPendingHelpRequests(peer.id);
       }
       bus.emit(EVENTS.DEVICE_UPDATED, peerToSafe(peer));
+      updateTrayMenu();
     }
   }
 

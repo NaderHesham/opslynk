@@ -15,6 +15,55 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
   const rendererDir = path.join(appSourceDir, 'renderer');
   const appIconPath = path.join(appSourceDir, '..', 'assets', 'icon.ico');
 
+  // Pre-created hidden windows — loaded at startup so show() is ~50ms, not ~500ms
+  let _preLockWin: BrowserWindow | null = null;
+  let _preUrgentWin: BrowserWindow | null = null;
+  let _preForcedVideoWin: BrowserWindow | null = null;
+
+  function initPreloadedWindows(): void {
+    const { bounds } = screen.getPrimaryDisplay();
+    if (!_preLockWin || _preLockWin.isDestroyed()) {
+      _preLockWin = new BrowserWindow({
+        width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
+        frame: false, fullscreen: false, alwaysOnTop: true, skipTaskbar: true,
+        resizable: false, movable: false, minimizable: false, maximizable: false,
+        closable: false, kiosk: true, backgroundColor: '#05070d', show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
+      });
+      _preLockWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      _preLockWin.setAlwaysOnTop(true, 'screen-saver', 1);
+      _preLockWin.loadFile(path.join(rendererDir, 'lockscreen.html'));
+      _preLockWin.on('closed', () => { _preLockWin = null; });
+    }
+    if (!_preUrgentWin || _preUrgentWin.isDestroyed()) {
+      _preUrgentWin = new BrowserWindow({
+        width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
+        frame: false, alwaysOnTop: true, skipTaskbar: true,
+        fullscreen: false, kiosk: true,
+        movable: false, minimizable: false, maximizable: false, closable: false,
+        backgroundColor: '#05070d', show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
+      });
+      _preUrgentWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      _preUrgentWin.setAlwaysOnTop(true, 'screen-saver');
+      _preUrgentWin.loadFile(path.join(rendererDir, 'urgent.html'));
+      _preUrgentWin.on('closed', () => { _preUrgentWin = null; });
+    }
+    if (!_preForcedVideoWin || _preForcedVideoWin.isDestroyed()) {
+      _preForcedVideoWin = new BrowserWindow({
+        width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
+        frame: false, fullscreen: false, alwaysOnTop: true, skipTaskbar: true,
+        resizable: false, movable: false, minimizable: false, maximizable: false,
+        closable: false, kiosk: true, backgroundColor: '#03060c', show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
+      });
+      _preForcedVideoWin.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      _preForcedVideoWin.setAlwaysOnTop(true, 'screen-saver', 1);
+      _preForcedVideoWin.loadFile(path.join(rendererDir, 'forced-video.html'));
+      _preForcedVideoWin.on('closed', () => { _preForcedVideoWin = null; });
+    }
+  }
+
   function createMainWindow(): void {
     const mode = getWindowModeConfig('main');
     if (!mode) return;
@@ -123,45 +172,65 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
   }
 
   function showUrgentOverlay(data: { broadcastId?: string } & Record<string, unknown>): void {
+    console.log('[TIMING] urgent command received:', Date.now());
     if (state.overlayWindow) closeOverlayWindow(true);
     state.overlayState = { mode: 'urgent', data, broadcastId: data.broadcastId };
     const { bounds } = screen.getPrimaryDisplay();
-    state.overlayWindow = new BrowserWindow({
-      width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
-      frame: false, alwaysOnTop: true, skipTaskbar: true,
-      fullscreen: false, kiosk: true,
-      movable: false, minimizable: false, maximizable: false, closable: false,
-      backgroundColor: '#05070d',
-      show: false,
-      webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
-    });
-    state.overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    state.overlayWindow.setAlwaysOnTop(true, 'screen-saver');
-    state.overlayWindow.loadFile(path.join(rendererDir, 'urgent.html'));
-    state.overlayWindow.once('ready-to-show', () => {
-      state.overlayWindow?.setAlwaysOnTop(true, 'screen-saver');
-      state.overlayWindow?.show();
-      state.overlayWindow?.focus();
-      state.overlayWindow?.moveTop();
-      state.overlayWindow?.webContents.send('urgent-data', data);
-      // Block system shortcuts while urgent overlay is up
-      try {
-        globalShortcut.registerAll([
-          'Super', 'Meta',
-          'Alt+Tab', 'Alt+Shift+Tab', 'Alt+F4',
-          'Meta+Tab', 'Meta+Shift+Tab',
-          'Meta+D', 'Meta+E', 'Meta+L', 'Meta+R', 'Meta+M',
-          'Meta+Up', 'Meta+Down', 'Meta+Left', 'Meta+Right',
-          'Ctrl+Escape', 'Ctrl+Alt+Delete',
-          'Alt+Escape',
-        ], () => { /* blocked */ });
-      } catch { /* ignore */ }
-    });
-    state.overlayWindow.on('closed', () => {
-      try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
-      state.overlayWindow = null;
-      state.overlayState = null;
-    });
+    const urgentShortcuts = [
+      'Super', 'Meta',
+      'Alt+Tab', 'Alt+Shift+Tab', 'Alt+F4',
+      'Meta+Tab', 'Meta+Shift+Tab',
+      'Meta+D', 'Meta+E', 'Meta+L', 'Meta+R', 'Meta+M',
+      'Meta+Up', 'Meta+Down', 'Meta+Left', 'Meta+Right',
+      'Ctrl+Escape', 'Ctrl+Alt+Delete', 'Alt+Escape',
+    ];
+
+    if (_preUrgentWin && !_preUrgentWin.isDestroyed()) {
+      // Fast path: window already loaded — just show()
+      state.overlayWindow = _preUrgentWin;
+      _preUrgentWin = null;
+      state.overlayWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
+      state.overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+      state.overlayWindow.on('closed', () => {
+        try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
+        state.overlayWindow = null;
+        state.overlayState = null;
+      });
+      state.overlayWindow.show();
+      state.overlayWindow.focus();
+      state.overlayWindow.moveTop();
+      state.overlayWindow.webContents.send('urgent-data', data);
+      console.log('[TIMING] urgent window shown:', Date.now());
+    } else {
+      // Slow path fallback: create fresh
+      state.overlayWindow = new BrowserWindow({
+        width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
+        frame: false, alwaysOnTop: true, skipTaskbar: true,
+        fullscreen: false, kiosk: true,
+        movable: false, minimizable: false, maximizable: false, closable: false,
+        backgroundColor: '#05070d', show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
+      });
+      state.overlayWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      state.overlayWindow.setAlwaysOnTop(true, 'screen-saver');
+      state.overlayWindow.loadFile(path.join(rendererDir, 'urgent.html'));
+      state.overlayWindow.once('ready-to-show', () => {
+        state.overlayWindow?.setAlwaysOnTop(true, 'screen-saver');
+        state.overlayWindow?.show();
+        state.overlayWindow?.focus();
+        state.overlayWindow?.moveTop();
+        state.overlayWindow?.webContents.send('urgent-data', data);
+        console.log('[TIMING] urgent window shown (slow path):', Date.now());
+        try { globalShortcut.registerAll(urgentShortcuts, () => { /* blocked */ }); } catch { /* ignore */ }
+      });
+      state.overlayWindow.on('closed', () => {
+        try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
+        state.overlayWindow = null;
+        state.overlayState = null;
+      });
+      return;
+    }
+    try { globalShortcut.registerAll(urgentShortcuts, () => { /* blocked */ }); } catch { /* ignore */ }
   }
 
   function showHelpRequestPopup(req: { reqId: string } & Record<string, unknown>): void {
@@ -193,114 +262,156 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
   }
 
   function showLockScreen(message: string): void {
-    if (state.lockWindow && !state.lockWindow.isDestroyed()) return;
+    console.log('[TIMING] lock command received:', Date.now());
+    if (state.screenLocked) return;
     const { bounds } = screen.getPrimaryDisplay();
-    state.lockWindow = new BrowserWindow({
-      width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
-      frame: false, fullscreen: false, alwaysOnTop: true, skipTaskbar: true,
-      resizable: false, movable: false, minimizable: false, maximizable: false,
-      closable: false, kiosk: true, backgroundColor: '#05070d',
-      show: false,
-      webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
-    });
-    state.lockWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    state.lockWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-    state.lockWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
-    state.lockWindow.on('close', (e) => { if (state.screenLocked) e.preventDefault(); });
-    state.lockWindow.on('move', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
-    state.lockWindow.on('resize', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
-    state.lockWindow.loadFile(path.join(rendererDir, 'lockscreen.html'));
-    state.lockWindow.once('ready-to-show', () => {
-      state.lockWindow?.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
-      state.lockWindow?.setAlwaysOnTop(true, 'screen-saver', 1);
-      state.lockWindow?.show();
-      state.lockWindow?.focus();
-      state.lockWindow?.moveTop();
-      state.lockWindow?.webContents.send('lockscreen-data', {
+    const lockShortcuts = [
+      'Super', 'Meta',
+      'Alt+Tab', 'Alt+Shift+Tab', 'Alt+F4',
+      'Meta+Tab', 'Meta+Shift+Tab',
+      'Meta+D', 'Meta+E', 'Meta+L', 'Meta+R', 'Meta+M',
+      'Ctrl+Escape', 'Ctrl+Alt+Delete',
+      'Alt+Escape', 'Meta+Up', 'Meta+Down', 'Meta+Left', 'Meta+Right',
+    ];
+
+    if (_preLockWin && !_preLockWin.isDestroyed()) {
+      // Fast path: window already loaded — just show()
+      state.lockWindow = _preLockWin;
+      _preLockWin = null;
+      state.lockWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
+      state.lockWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+      state.lockWindow.on('close', (e) => { if (state.screenLocked) e.preventDefault(); });
+      state.lockWindow.on('move', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
+      state.lockWindow.on('resize', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
+      state.lockWindow.on('closed', () => { state.lockWindow = null; });
+      state.screenLocked = true;
+      state.lockWindow.show();
+      state.lockWindow.focus();
+      state.lockWindow.moveTop();
+      state.lockWindow.webContents.send('lockscreen-data', {
         message: message || 'Your screen has been locked by the administrator.',
         lockedAt: new Date().toISOString()
       });
       blockInput();
-    });
-    state.lockWindow.on('closed', () => { state.lockWindow = null; });
-    state.screenLocked = true;
+      console.log('[TIMING] lock window shown:', Date.now());
+    } else {
+      // Slow path fallback: create fresh
+      state.lockWindow = new BrowserWindow({
+        width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
+        frame: false, fullscreen: false, alwaysOnTop: true, skipTaskbar: true,
+        resizable: false, movable: false, minimizable: false, maximizable: false,
+        closable: false, kiosk: true, backgroundColor: '#05070d', show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
+      });
+      state.lockWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      state.lockWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+      state.lockWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
+      state.lockWindow.on('close', (e) => { if (state.screenLocked) e.preventDefault(); });
+      state.lockWindow.on('move', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
+      state.lockWindow.on('resize', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
+      state.lockWindow.loadFile(path.join(rendererDir, 'lockscreen.html'));
+      state.lockWindow.once('ready-to-show', () => {
+        state.lockWindow?.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
+        state.lockWindow?.setAlwaysOnTop(true, 'screen-saver', 1);
+        state.lockWindow?.show();
+        state.lockWindow?.focus();
+        state.lockWindow?.moveTop();
+        state.lockWindow?.webContents.send('lockscreen-data', {
+          message: message || 'Your screen has been locked by the administrator.',
+          lockedAt: new Date().toISOString()
+        });
+        blockInput();
+        console.log('[TIMING] lock window shown (slow path):', Date.now());
+      });
+      state.lockWindow.on('closed', () => { state.lockWindow = null; });
+      state.screenLocked = true;
+    }
 
-    // Block Win / Alt+Tab / all system shortcuts at OS level
-    try {
-      globalShortcut.registerAll([
-        'Super', 'Meta',
-        'Alt+Tab', 'Alt+Shift+Tab',
-        'Alt+F4',
-        'Meta+Tab', 'Meta+Shift+Tab',
-        'Meta+D', 'Meta+E', 'Meta+L',
-        'Meta+R', 'Meta+M',
-        'Ctrl+Escape', 'Ctrl+Alt+Delete',
-        'Alt+Escape',
-        'Meta+Up', 'Meta+Down',
-        'Meta+Left', 'Meta+Right',
-      ], () => { /* blocked */ });
-    } catch { /* some shortcuts may not register on all platforms */ }
+    try { globalShortcut.registerAll(lockShortcuts, () => { /* blocked */ }); } catch { /* ignore */ }
   }
 
   function unlockScreen(): void {
     state.screenLocked = false;
     unblockInput();
-    // Release all blocked shortcuts
     try { globalShortcut.unregisterAll(); } catch { /* ignore */ }
     if (state.lockWindow && !state.lockWindow.isDestroyed()) {
       try { state.lockWindow.removeAllListeners('close'); } catch {}
       try { state.lockWindow.destroy(); } catch {}
       state.lockWindow = null;
     }
+    // Re-pre-create so the next lock command is fast too
+    setTimeout(() => initPreloadedWindows(), 500);
   }
 
   function showForcedVideoWindow(data: Record<string, unknown>): void {
+    console.log('[TIMING] forced-video command received:', Date.now());
     state.forcedVideoActive = true;
     if (state.forcedVideoWindow && !state.forcedVideoWindow.isDestroyed()) {
       state.forcedVideoWindow.webContents.send('forced-video-data', data);
       state.forcedVideoWindow.show();
       state.forcedVideoWindow.focus();
       state.forcedVideoWindow.moveTop();
+      console.log('[TIMING] forced-video window shown:', Date.now());
       return;
     }
     const { bounds } = screen.getPrimaryDisplay();
-    state.forcedVideoWindow = new BrowserWindow({
-      width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
-      frame: false, fullscreen: false, alwaysOnTop: true, skipTaskbar: true,
-      resizable: false, movable: false, minimizable: false, maximizable: false,
-      closable: false, kiosk: true, backgroundColor: '#03060c',
-      show: false,
-      webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
-    });
-    state.forcedVideoWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-    state.forcedVideoWindow.setAlwaysOnTop(true, 'screen-saver', 1);
-    state.forcedVideoWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
-    state.forcedVideoWindow.on('close', (e) => { if (state.forcedVideoActive) e.preventDefault(); });
-    state.forcedVideoWindow.on('move', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
-    state.forcedVideoWindow.on('resize', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
-    state.forcedVideoWindow.loadFile(path.join(rendererDir, 'forced-video.html'));
-    state.forcedVideoWindow.once('ready-to-show', () => {
-      state.forcedVideoWindow?.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
-      state.forcedVideoWindow?.setAlwaysOnTop(true, 'screen-saver', 1);
-      state.forcedVideoWindow?.show();
-      state.forcedVideoWindow?.focus();
-      state.forcedVideoWindow?.moveTop();
-      state.forcedVideoWindow?.webContents.send('forced-video-data', data);
+    const videoShortcuts = [
+      'Super', 'Meta',
+      'Alt+Tab', 'Alt+Shift+Tab', 'Alt+F4',
+      'Meta+Tab', 'Meta+Shift+Tab',
+      'Meta+D', 'Meta+E', 'Meta+L', 'Meta+R', 'Meta+M',
+      'Ctrl+Escape', 'Ctrl+Alt+Delete',
+      'Alt+Escape', 'Meta+Up', 'Meta+Down', 'Meta+Left', 'Meta+Right',
+    ];
+
+    if (_preForcedVideoWin && !_preForcedVideoWin.isDestroyed()) {
+      // Fast path: window already loaded — just show()
+      state.forcedVideoWindow = _preForcedVideoWin;
+      _preForcedVideoWin = null;
+      state.forcedVideoWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
+      state.forcedVideoWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+      state.forcedVideoWindow.on('close', (e) => { if (state.forcedVideoActive) e.preventDefault(); });
+      state.forcedVideoWindow.on('move', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
+      state.forcedVideoWindow.on('resize', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
+      state.forcedVideoWindow.on('closed', () => { state.forcedVideoWindow = null; state.forcedVideoActive = false; });
+      state.forcedVideoWindow.show();
+      state.forcedVideoWindow.focus();
+      state.forcedVideoWindow.moveTop();
+      state.forcedVideoWindow.webContents.send('forced-video-data', data);
       blockInput();
-    });
-    state.forcedVideoWindow.on('closed', () => {
-      state.forcedVideoWindow = null;
-      state.forcedVideoActive = false;
-    });
-    // Block system shortcuts
-    try {
-      globalShortcut.registerAll([
-        'Super', 'Meta',
-        'Alt+Tab', 'Alt+Shift+Tab', 'Alt+F4',
-        'Meta+Tab', 'Meta+D', 'Meta+L',
-        'Ctrl+Escape', 'Alt+Escape',
-      ], () => { /* blocked */ });
-    } catch { /* ignore */ }
+      console.log('[TIMING] forced-video window shown:', Date.now());
+    } else {
+      // Slow path fallback: create fresh
+      state.forcedVideoWindow = new BrowserWindow({
+        width: bounds.width, height: bounds.height, x: bounds.x, y: bounds.y,
+        frame: false, fullscreen: false, alwaysOnTop: true, skipTaskbar: true,
+        resizable: false, movable: false, minimizable: false, maximizable: false,
+        closable: false, kiosk: true, backgroundColor: '#03060c', show: false,
+        webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
+      });
+      state.forcedVideoWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+      state.forcedVideoWindow.setAlwaysOnTop(true, 'screen-saver', 1);
+      state.forcedVideoWindow.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
+      state.forcedVideoWindow.on('close', (e) => { if (state.forcedVideoActive) e.preventDefault(); });
+      state.forcedVideoWindow.on('move', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
+      state.forcedVideoWindow.on('resize', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
+      state.forcedVideoWindow.loadFile(path.join(rendererDir, 'forced-video.html'));
+      state.forcedVideoWindow.once('ready-to-show', () => {
+        state.forcedVideoWindow?.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
+        state.forcedVideoWindow?.setAlwaysOnTop(true, 'screen-saver', 1);
+        state.forcedVideoWindow?.show();
+        state.forcedVideoWindow?.focus();
+        state.forcedVideoWindow?.moveTop();
+        state.forcedVideoWindow?.webContents.send('forced-video-data', data);
+        blockInput();
+        console.log('[TIMING] forced-video window shown (slow path):', Date.now());
+      });
+      state.forcedVideoWindow.on('closed', () => {
+        state.forcedVideoWindow = null;
+        state.forcedVideoActive = false;
+      });
+    }
+    try { globalShortcut.registerAll(videoShortcuts, () => { /* blocked */ }); } catch { /* ignore */ }
   }
 
   function closeForcedVideoWindow(force = false): void {
@@ -325,6 +436,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
 
   return {
     createMainWindow,
+    initPreloadedWindows,
     applyWindowMode,
     showMainWindow,
     closeOverlayWindow,

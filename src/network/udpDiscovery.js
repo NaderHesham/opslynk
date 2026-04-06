@@ -2,13 +2,14 @@
 // UDP broadcast peer discovery — LAN only
 
 const dgram = require('dgram');
-const os    = require('os');
 const WebSocket = require('ws');
+const { getLanInterfaces } = require('../system/systemInfo');
 
 const DISCOVERY_PORT   = 45678;
 const BROADCAST_ADDR   = '255.255.255.255';
-const ANNOUNCE_INTERVAL = 3000;
-const PEER_TIMEOUT     = 30000;
+const LOOPBACK_ADDR    = '127.0.0.1';
+const ANNOUNCE_INTERVAL = 1000;
+const PEER_TIMEOUT     = 4000;
 
 let udpSocket    = null;
 let _peers       = null;
@@ -35,7 +36,7 @@ function startUdpDiscovery() {
     udpSocket.setBroadcast(true);
     announceMyself();
     setInterval(announceMyself,  ANNOUNCE_INTERVAL);
-    setInterval(cleanStalePeers, 5000);
+    setInterval(cleanStalePeers, 1000);
   });
 
   udpSocket.on('message', (msg, rinfo) => {
@@ -92,22 +93,22 @@ function announceMyself() {
     systemInfo: profile.systemInfo || null
   }));
 
-  const ifaces = os.networkInterfaces();
-  for (const iface of Object.values(ifaces)) {
-    for (const addr of iface) {
-      if (addr.family === 'IPv4' && !addr.internal) {
-        const bcast = addr.address.split('.').slice(0, 3).join('.') + '.255';
-        try { udpSocket.send(msg, DISCOVERY_PORT, bcast); } catch {}
-      }
-    }
+  const ifaces = getLanInterfaces();
+  for (const addr of ifaces) {
+    const octets = String(addr.address || '').split('.');
+    if (octets.length !== 4) continue;
+    const bcast = octets.slice(0, 3).join('.') + '.255';
+    try { udpSocket.send(msg, DISCOVERY_PORT, bcast); } catch {}
   }
   try { udpSocket.send(msg, DISCOVERY_PORT, BROADCAST_ADDR); } catch {}
+  try { udpSocket.send(msg, DISCOVERY_PORT, LOOPBACK_ADDR); } catch {}
 }
 
 function cleanStalePeers() {
   const now = Date.now();
   for (const [id, peer] of _peers) {
-    if (peer.ws?.readyState === WebSocket.OPEN) {
+    const wsState = peer.ws?.readyState;
+    if (wsState === WebSocket.OPEN) {
       peer.lastSeen = now;
       if (!peer.online) {
         peer.online = true;
@@ -115,8 +116,10 @@ function cleanStalePeers() {
       }
       continue;
     }
+    if (wsState === WebSocket.CONNECTING) continue;
     if (now - peer.lastSeen > PEER_TIMEOUT && peer.online) {
       peer.online = false;
+      peer.ws = null;
       _onPeerOffline(id);
     }
   }
@@ -127,6 +130,7 @@ function getSocket() { return udpSocket; }
 module.exports = {
   DISCOVERY_PORT,
   BROADCAST_ADDR,
+  LOOPBACK_ADDR,
   ANNOUNCE_INTERVAL,
   PEER_TIMEOUT,
   init,
