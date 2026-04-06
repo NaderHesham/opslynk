@@ -6631,6 +6631,7 @@
     }
 
     function addDashboardActivity(kind, title, detail, meta = '') {
+      if (!document.getElementById('dashTimeline')) return; // client mode — no dashboard
       const stamp = new Date();
       dashboardActivity.unshift({
         id: `${stamp.getTime()}-${Math.random().toString(16).slice(2, 8)}`,
@@ -7810,7 +7811,7 @@
       card.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
     function setupEvents() {
-      OpsLynk.on('system:deviceUpdated', p => { peers[p.id] = { ...peers[p.id], ...p }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateConnPill(); if (p.id === activePeerId) { const cs = document.getElementById('cpstatus'); cs.textContent = p.online ? '● Online' : '○ Offline'; cs.style.color = p.online ? 'var(--green)' : 'var(--txt3)'; } addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile or connectivity details changed.', p.online ? 'Online now' : 'Status refreshed'); });
+      OpsLynk.on('system:deviceUpdated', p => { const prev = peers[p.id]; peers[p.id] = { ...prev, ...p }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateConnPill(); if (p.id === activePeerId) { const cs = document.getElementById('cpstatus'); if (cs) { cs.textContent = p.online ? '● Online' : '○ Offline'; cs.style.color = p.online ? 'var(--green)' : 'var(--txt3)'; } } const nameChanged = prev && prev.username !== p.username; const wentOnline = prev && !prev.online && p.online; if (nameChanged || wentOnline) addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile details changed.', p.online ? 'Online now' : 'Status refreshed'); });
       OpsLynk.on('system:deviceJoined', p => { peers[p.id] = { ...peers[p.id], ...p, online: true }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateConnPill(); addDashboardActivity('system', `${p.username || 'Peer'} came online`, 'A reachable endpoint joined the LAN session.', p.title || 'Ready'); });
       OpsLynk.on('system:deviceLeft', ({ id }) => { if (peers[id]) { peers[id].online = false; renderPeerList(); renderUsersTab(); renderGroupUI(); addDashboardActivity('system', `${peers[id].username || 'Peer'} went offline`, 'This endpoint is temporarily unavailable for admin actions.', peers[id].title || 'Disconnected'); } updateConnPill(); });
 

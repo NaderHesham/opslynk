@@ -237,6 +237,7 @@ if (APP_MODE === 'admin') {
 const { unblockInput } = require('../../src/services/inputBlocker') as { unblockInput: () => void };
 app.on('before-quit', () => {
   unblockInput();
+  windowManager.destroyPreloadedWindows();
 });
 
 registerLifecycle({

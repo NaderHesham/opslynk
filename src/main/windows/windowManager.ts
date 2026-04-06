@@ -20,6 +20,13 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
   let _preUrgentWin: BrowserWindow | null = null;
   let _preForcedVideoWin: BrowserWindow | null = null;
 
+  function destroyPreloadedWindows(): void {
+    for (const win of [_preLockWin, _preUrgentWin, _preForcedVideoWin]) {
+      if (win && !win.isDestroyed()) { try { win.destroy(); } catch {} }
+    }
+    _preLockWin = null; _preUrgentWin = null; _preForcedVideoWin = null;
+  }
+
   function initPreloadedWindows(): void {
     const { bounds } = screen.getPrimaryDisplay();
     if (!_preLockWin || _preLockWin.isDestroyed()) {
@@ -283,6 +290,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
       state.lockWindow.on('close', (e) => { if (state.screenLocked) e.preventDefault(); });
       state.lockWindow.on('move', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
       state.lockWindow.on('resize', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
+      state.lockWindow.on('blur', () => { if (state.screenLocked) { state.lockWindow?.setAlwaysOnTop(true, 'screen-saver', 1); state.lockWindow?.focus(); state.lockWindow?.moveTop(); } });
       state.lockWindow.on('closed', () => { state.lockWindow = null; });
       state.screenLocked = true;
       state.lockWindow.show();
@@ -309,6 +317,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
       state.lockWindow.on('close', (e) => { if (state.screenLocked) e.preventDefault(); });
       state.lockWindow.on('move', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
       state.lockWindow.on('resize', () => { if (state.screenLocked) state.lockWindow?.setBounds(bounds); });
+      state.lockWindow.on('blur', () => { if (state.screenLocked) { state.lockWindow?.setAlwaysOnTop(true, 'screen-saver', 1); state.lockWindow?.focus(); state.lockWindow?.moveTop(); } });
       state.lockWindow.loadFile(path.join(rendererDir, 'lockscreen.html'));
       state.lockWindow.once('ready-to-show', () => {
         state.lockWindow?.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
@@ -373,6 +382,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
       state.forcedVideoWindow.on('close', (e) => { if (state.forcedVideoActive) e.preventDefault(); });
       state.forcedVideoWindow.on('move', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
       state.forcedVideoWindow.on('resize', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
+      state.forcedVideoWindow.on('blur', () => { if (state.forcedVideoActive) { state.forcedVideoWindow?.setAlwaysOnTop(true, 'screen-saver', 1); state.forcedVideoWindow?.focus(); state.forcedVideoWindow?.moveTop(); } });
       state.forcedVideoWindow.on('closed', () => { state.forcedVideoWindow = null; state.forcedVideoActive = false; });
       state.forcedVideoWindow.show();
       state.forcedVideoWindow.focus();
@@ -395,6 +405,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
       state.forcedVideoWindow.on('close', (e) => { if (state.forcedVideoActive) e.preventDefault(); });
       state.forcedVideoWindow.on('move', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
       state.forcedVideoWindow.on('resize', () => { if (state.forcedVideoActive) state.forcedVideoWindow?.setBounds(bounds); });
+      state.forcedVideoWindow.on('blur', () => { if (state.forcedVideoActive) { state.forcedVideoWindow?.setAlwaysOnTop(true, 'screen-saver', 1); state.forcedVideoWindow?.focus(); state.forcedVideoWindow?.moveTop(); } });
       state.forcedVideoWindow.loadFile(path.join(rendererDir, 'forced-video.html'));
       state.forcedVideoWindow.once('ready-to-show', () => {
         state.forcedVideoWindow?.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
@@ -437,6 +448,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
   return {
     createMainWindow,
     initPreloadedWindows,
+    destroyPreloadedWindows,
     applyWindowMode,
     showMainWindow,
     closeOverlayWindow,
