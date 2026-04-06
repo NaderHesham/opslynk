@@ -1,6 +1,7 @@
 'use strict';
 
 const HEARTBEAT_INTERVAL = 10_000;
+const { getLiveMetrics } = require('../../system/systemInfo');
 
 function createPeerSession({
   state,
@@ -22,12 +23,13 @@ function createPeerSession({
     if (heartbeatTimers.has(peerId)) return;
     const id = setInterval(() => {
       wsNet.sendToPeer(peerId, {
-        type:       'heartbeat',
-        fromId:     state.myProfile?.id,
-        username:   state.myProfile?.username,
-        role:       state.myProfile?.role,
-        systemInfo: state.myProfile?.systemInfo,
-        timestamp:  Date.now()
+        type:        'heartbeat',
+        fromId:      state.myProfile?.id,
+        username:    state.myProfile?.username,
+        role:        state.myProfile?.role,
+        systemInfo:  state.myProfile?.systemInfo,
+        liveMetrics: getLiveMetrics(),
+        timestamp:   Date.now()
       });
     }, HEARTBEAT_INTERVAL);
     heartbeatTimers.set(peerId, id);

@@ -71,9 +71,44 @@ function getSystemInfo() {
   };
 }
 
+// ── LIVE METRICS ─────────────────────────────────────────────────────────────
+// Stateful CPU delta-sampler: compares cpu.times between calls.
+// First call returns cpuPct=0 (no prior sample); subsequent calls give real %.
+let _prevCpuSample = null;
+
+function _getCpuSample() {
+  const cpus = os.cpus();
+  let idle = 0, total = 0;
+  for (const cpu of cpus) {
+    idle += cpu.times.idle;
+    for (const t of Object.values(cpu.times)) total += t;
+  }
+  return { idle: idle / cpus.length, total: total / cpus.length };
+}
+
+function getLiveMetrics() {
+  const sample = _getCpuSample();
+  let cpuPct = 0;
+  if (_prevCpuSample) {
+    const di = sample.idle  - _prevCpuSample.idle;
+    const dt = sample.total - _prevCpuSample.total;
+    cpuPct = dt > 0 ? Math.max(0, Math.min(100, Math.round((1 - di / dt) * 100))) : 0;
+  }
+  _prevCpuSample = sample;
+
+  const freeMem  = os.freemem();
+  const totalMem = os.totalmem();
+  return {
+    cpuPct,
+    ramUsedPct: Math.round((1 - freeMem / totalMem) * 100),
+    ramFreeGb:  (freeMem / (1024 ** 3)).toFixed(1)
+  };
+}
+
 module.exports = {
   getPrimaryNetworkInfo,
   getDiskInfo,
   getHardwareInfo,
-  getSystemInfo
+  getSystemInfo,
+  getLiveMetrics
 };

@@ -29,6 +29,7 @@ interface RouterDeps {
   }) => { trusted: boolean; reason: string; mode: 'trusted' | 'denied' };
   rememberTrustedPeer: (peerId: string, role?: string) => void;
   onTrustDecision?: (entry: Record<string, unknown>) => void;
+  captureScreenshot?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }
 
 export function createMessageRouter({
@@ -53,7 +54,8 @@ export function createMessageRouter({
   unlockScreen,
   evaluateControlMessageTrust,
   rememberTrustedPeer,
-  onTrustDecision
+  onTrustDecision,
+  captureScreenshot
 }: RouterDeps): { handleP2PMessage: (ws: unknown, msg: Record<string, unknown>, remoteIp: string) => void } {
   const checkSensitiveTrust = (msg: Record<string, unknown>, commandType: string): boolean => {
     const fromId = String(msg.fromId || '');
@@ -255,12 +257,49 @@ export function createMessageRouter({
       if (peer) {
         peer.lastHeartbeat = Date.now();
         peer.systemInfo    = (msg.systemInfo as Record<string, unknown>) || peer.systemInfo;
+        if (msg.liveMetrics) peer.liveMetrics = msg.liveMetrics as PeerSession['liveMetrics'];
         bus.emit(EVENTS.PEER_HEARTBEAT, {
-          peerId:     fromId,
-          timestamp:  msg.timestamp,
-          systemInfo: peer.systemInfo
+          peerId:      fromId,
+          timestamp:   msg.timestamp,
+          systemInfo:  peer.systemInfo,
+          liveMetrics: peer.liveMetrics
         });
       }
+      return;
+    }
+
+    if (type === 'screenshot-request') {
+      // Only non-admin nodes respond (clients capture their own screen)
+      if (hasAdminAccess(state.myProfile?.role)) return;
+      // Require sender to be a known admin
+      const requester = state.peers.get(String(msg.fromId || ''));
+      if (!requester || !hasAdminAccess(requester.role)) return;
+      const reqId = String(msg.reqId || '');
+      void (async () => {
+        const ss = captureScreenshot ? await captureScreenshot() : null;
+        if (ss) {
+          wsNet.safeSend(ws, {
+            type:      'screenshot-response',
+            reqId,
+            fromId:    state.myProfile?.id,
+            base64:    ss.base64,
+            name:      ss.name,
+            timestamp: new Date().toISOString()
+          });
+        }
+      })();
+      return;
+    }
+
+    if (type === 'screenshot-response') {
+      const fromId = String(msg.fromId || '');
+      bus.emit(EVENTS.PEER_SCREENSHOT, {
+        peerId:    fromId,
+        reqId:     msg.reqId,
+        base64:    msg.base64,
+        name:      msg.name,
+        timestamp: msg.timestamp
+      });
       return;
     }
 

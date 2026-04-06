@@ -146,7 +146,8 @@ const { handleP2PMessage } = createMessageRouter({
   unlockScreen: windowManager.unlockScreen,
   evaluateControlMessageTrust: deviceTrust.evaluateIncomingControl,
   rememberTrustedPeer: trustStore.rememberPeer,
-  onTrustDecision: auditSink.onAuditEntry
+  onTrustDecision: auditSink.onAuditEntry,
+  captureScreenshot: () => captureScreenshot(state.mainWindow)
 });
 
 const { startNetworkMonitor } = createNetworkMonitor({ state: owners.sessionState, bus, EVENTS });

@@ -53,6 +53,18 @@ export function registerFullHandlers(deps: RegisterDeps): void {
   handle(IPC_CHANNELS.help.ACK_HELP, (payload) =>
     deps.adminModule.run(deps.adminModule.COMMANDS.ACK_HELP, payload as Record<string, unknown>));
 
+  // On-demand remote screenshot — admin sends request to target client
+  handle(IPC_CHANNELS.admin.REQUEST_SCREENSHOT, ({ peerId }) => {
+    const peer = deps.state.peers.get(peerId);
+    if (!peer || !peer.online) return { success: false, error: 'Peer not found or offline.' };
+    deps.sendToPeer(peerId, {
+      type:   'screenshot-request',
+      fromId: deps.state.myProfile?.id,
+      reqId:  deps.uuidv4()
+    });
+    return { success: true, queued: false };
+  });
+
   // Admin-only handlers
   registerBroadcastHandlers({
     handle,

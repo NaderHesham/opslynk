@@ -2538,6 +2538,124 @@
       background: var(--txt3)
     }
 
+    /* Live metrics mini-bars */
+    .umetrics {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-top: 6px
+    }
+
+    .umetric-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 10px;
+      color: var(--txt2)
+    }
+
+    .umetric-label {
+      width: 28px;
+      flex-shrink: 0;
+      font-weight: 700;
+      color: var(--txt3)
+    }
+
+    .umetric-bar {
+      flex: 1;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--input);
+      overflow: hidden
+    }
+
+    .umetric-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width .8s ease
+    }
+
+    .umetric-fill.cpu { background: var(--accent) }
+    .umetric-fill.ram { background: var(--green) }
+    .umetric-fill.hot { background: var(--red) }
+
+    .umetric-val {
+      width: 32px;
+      text-align: right;
+      flex-shrink: 0
+    }
+
+    /* Screenshot modal */
+    #screenshotModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9000;
+      background: rgba(0,0,0,.78);
+      align-items: center;
+      justify-content: center;
+      padding: 28px
+    }
+
+    #screenshotModal.show { display: flex }
+
+    .ss-shell {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      max-width: 900px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 90vh;
+      overflow: hidden
+    }
+
+    .ss-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0
+    }
+
+    .ss-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--txt)
+    }
+
+    .ss-meta {
+      font-size: 11px;
+      color: var(--txt3);
+      margin-top: 2px
+    }
+
+    .ss-img-wrap {
+      flex: 1;
+      overflow: auto;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px
+    }
+
+    #screenshotImg {
+      max-width: 100%;
+      display: block;
+      border-radius: 6px
+    }
+
+    .ss-loading {
+      color: var(--txt3);
+      font-size: 13px;
+      padding: 40px
+    }
+
     .spec-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -6296,6 +6414,23 @@
     </div>
   </div>
 
+  <!-- Screenshot modal -->
+  <div id="screenshotModal">
+    <div class="ss-shell">
+      <div class="ss-header">
+        <div>
+          <div class="ss-title" id="ssTitle">Remote Screenshot</div>
+          <div class="ss-meta" id="ssMeta">Waiting for response…</div>
+        </div>
+        <button class="btng" onclick="closeScreenshotModal()">Close</button>
+      </div>
+      <div class="ss-img-wrap">
+        <div class="ss-loading" id="ssLoading">Requesting screenshot…</div>
+        <img id="screenshotImg" style="display:none;" alt="Remote screenshot">
+      </div>
+    </div>
+  </div>
+
   <script>
     // Resolve APP_MODE once; init() awaits this before rendering anything.
     const _appModePromise = window.OpsLynk.getAppMode().catch(() => 'client');
@@ -6783,7 +6918,26 @@
         if (sort === 'role') return roleRank(b.role) - roleRank(a.role) || Number(b.online) - Number(a.online) || String(a.username || '').localeCompare(String(b.username || ''));
         return comparePeers(a, b);
       });
-      list.innerHTML = filtered.length ? `<div class="users-grid">${filtered.map(p => `
+      list.innerHTML = filtered.length ? `<div class="users-grid">${filtered.map(p => {
+        const lm = p.liveMetrics;
+        const cpuPct = lm?.cpuPct ?? null;
+        const ramPct = lm?.ramUsedPct ?? null;
+        const metricsHTML = lm ? `
+      <div class="umetrics">
+        <div class="umetric-row">
+          <span class="umetric-label">CPU</span>
+          <div class="umetric-bar"><div class="umetric-fill cpu${cpuPct > 80 ? ' hot' : ''}" style="width:${cpuPct}%"></div></div>
+          <span class="umetric-val">${cpuPct}%</span>
+        </div>
+        <div class="umetric-row">
+          <span class="umetric-label">RAM</span>
+          <div class="umetric-bar"><div class="umetric-fill ram${ramPct > 85 ? ' hot' : ''}" style="width:${ramPct}%"></div></div>
+          <span class="umetric-val">${ramPct}%</span>
+        </div>
+      </div>` : '';
+        const captureBtn = (p.online && !hasAdminAccess(p.role) && _appMode === 'admin')
+          ? `<button class="ubtn" onclick="requestScreenshot('${p.id}')">Capture</button>` : '';
+        return `
     <div class="urow">
       <div class="uhead">
         ${avatarHTML(p, 's44')}
@@ -6804,12 +6958,15 @@
         <div><strong>CPU / RAM</strong><br>${esc(p.systemInfo?.cpuModel || '-')} • ${esc(p.systemInfo?.ramGb ? `${p.systemInfo.ramGb} GB` : '-')}</div>
         <div><strong>Disk Free</strong><br>${esc(p.systemInfo?.disk?.freeGb ? `${p.systemInfo.disk.freeGb} GB` : '-')}</div>
       </div>
+      ${metricsHTML}
       <div class="uactions">
         <button class="ubtn" onclick="openSpecsModal('${p.id}')">View Specs</button>
         <button class="ubtn" onclick="exportPeerSpecs('${p.id}','txt')">Export TXT</button>
         <button class="ubtn" onclick="openChat('${p.id}')">Open Chat</button>
+        ${captureBtn}
       </div>
-    </div>`).join('')}</div>`
+    </div>`;
+      }).join('')}</div>`
         : '<div class="empty-glass"><div class="ei">Users</div>No users match the current filters.</div>';
     }
 
@@ -6863,6 +7020,42 @@
     function closeSpecsModal() {
       document.getElementById('specmodal').classList.remove('show');
       selectedSpecPeerId = null;
+    }
+
+    // ── SCREENSHOT MODAL ──────────────────────────────���───────────────────────
+    async function requestScreenshot(peerId) {
+      const peer = peers[peerId];
+      if (!peer) return;
+      // Show modal in loading state
+      document.getElementById('ssTitle').textContent = `Capturing — ${esc(peer.username)}`;
+      document.getElementById('ssMeta').textContent  = 'Waiting for response from client…';
+      document.getElementById('ssLoading').style.display  = 'block';
+      document.getElementById('screenshotImg').style.display = 'none';
+      document.getElementById('screenshotModal').classList.add('show');
+      const result = await OpsLynk.requestPeerScreenshot({ peerId });
+      if (!result?.success) {
+        document.getElementById('ssMeta').textContent = result?.error || 'Request failed.';
+        document.getElementById('ssLoading').textContent = 'Failed to send request.';
+      }
+    }
+
+    function showScreenshotResult(peerId, base64, name, timestamp) {
+      const peer = peers[peerId];
+      document.getElementById('ssTitle').textContent = `Screenshot — ${esc(peer?.username || peerId)}`;
+      document.getElementById('ssMeta').textContent  = new Date(timestamp || Date.now()).toLocaleString();
+      document.getElementById('ssLoading').style.display     = 'none';
+      const img = document.getElementById('screenshotImg');
+      img.src = `data:image/png;base64,${base64}`;
+      img.style.display = 'block';
+      // Open modal if not already open (screenshot could arrive while closed)
+      document.getElementById('screenshotModal').classList.add('show');
+    }
+
+    function closeScreenshotModal() {
+      document.getElementById('screenshotModal').classList.remove('show');
+      document.getElementById('screenshotImg').src = '';
+      document.getElementById('ssLoading').textContent = 'Requesting screenshot…';
+      document.getElementById('ssLoading').style.display  = 'block';
     }
 
     async function exportPeerSpecs(peerId, format = 'txt') {
@@ -7598,14 +7791,19 @@
       OpsLynk.on('network:broadcast', data => { if (data.urgency !== 'urgent') { beep(520, 0.18); } });
       OpsLynk.on('network:status', ({ online }) => { networkOnline = !!online; updateConnPill(); });
 
-      OpsLynk.on('peer:heartbeat', ({ peerId, systemInfo }) => {
+      OpsLynk.on('peer:heartbeat', ({ peerId, systemInfo, liveMetrics }) => {
         if (peers[peerId]) {
           peers[peerId].online = true;
-          if (systemInfo) peers[peerId].systemInfo = systemInfo;
+          if (systemInfo)   peers[peerId].systemInfo   = systemInfo;
+          if (liveMetrics)  peers[peerId].liveMetrics  = liveMetrics;
           // Refresh peer list if currently visible
           const active = document.querySelector('.panel.active');
-          if (active?.id === 'tab-users' || active?.id === 'tab-dashboard') renderPeerList();
+          if (active?.id === 'tab-users' || active?.id === 'tab-dashboard') { renderPeerList(); renderUsersTab(); }
         }
+      });
+
+      OpsLynk.on('peer:screenshot', ({ peerId, base64, name, timestamp }) => {
+        showScreenshotResult(peerId, base64, name, timestamp);
       });
 
       OpsLynk.on('peer:stale', ({ peerId }) => {

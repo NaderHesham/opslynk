@@ -21,6 +21,7 @@ export interface PeerSession extends PeerIdentity {
   online: boolean;
   lastSeen?: number;
   lastHeartbeat?: number;
+  liveMetrics?: { cpuPct: number; ramUsedPct: number; ramFreeGb: string } | null;
 }
 
 export interface FileTransferMetadata {

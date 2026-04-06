@@ -41,6 +41,7 @@ contextBridge.exposeInMainWorld('OpsLynk', {
 
   // ── SCREENSHOT ─────────────────────────────────────────────────────────────
   captureScreenshotPreview: () => ipcRenderer.invoke('capture-screenshot-preview'),
+  requestPeerScreenshot:    (data) => ipcRenderer.invoke('request-peer-screenshot', data),
 
   // ── DEVICE ─────────────────────────────────────────────────────────────────
   getDeviceId: () => ipcRenderer.invoke('get-device-id'),

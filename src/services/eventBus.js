@@ -46,6 +46,9 @@ const EVENTS = {
   PEER_HEARTBEAT   : 'peer:heartbeat',
   PEER_STALE       : 'peer:stale',
 
+  // Remote screenshot
+  PEER_SCREENSHOT  : 'peer:screenshot',
+
   // Profile
   PROFILE_UPDATED  : 'system:profileUpdated',
 };
