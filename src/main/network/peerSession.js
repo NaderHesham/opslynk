@@ -76,12 +76,12 @@ function createPeerSession({
   }
 
   function emitPeerJoined(peer) {
+    peer.online = true;
+    peer.lastHeartbeat = Date.now();
     stopReconnect(peer.id);
     bus.emit(EVENTS.DEVICE_JOINED, peerToSafe(peer));
     updateTrayMenu();
-    if (hasAdminAccess(peer.role)) {
-      startHeartbeat(peer.id);
-    }
+    startHeartbeat(peer.id);
   }
 
   function emitPeerLeft(id) {
@@ -96,6 +96,15 @@ function createPeerSession({
     broadcastToRenderer('peer:offline', { peerId: id });
     bus.emit(EVENTS.DEVICE_LEFT, { id });
     updateTrayMenu();
+  }
+
+  function recoverPeers() {
+    triggerDiscovery();
+    for (const [, peer] of state.peers) {
+      const readyState = peer.ws?.readyState;
+      if (readyState === 0 || readyState === 1) continue;
+      if (peer.ip && peer.port) wsNet.connectToPeer(peer);
+    }
   }
 
   async function start() {
@@ -127,7 +136,7 @@ function createPeerSession({
     triggerDiscovery();
   }
 
-  return { start };
+  return { start, recoverPeers };
 }
 
 module.exports = { createPeerSession };

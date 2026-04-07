@@ -17,9 +17,9 @@ function hasLiveNetwork() {
   return false;
 }
 
-const STALE_THRESHOLD = 4_000;
+const STALE_THRESHOLD = 10_000;
 
-function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer }) {
+function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer, onNetworkRestored }) {
   function startNetworkMonitor() {
     state.networkOnline = hasLiveNetwork();
 
@@ -35,6 +35,9 @@ function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer }) {
           peer.ws = null;
           bus.emit(EVENTS.DEVICE_LEFT, { id });
         }
+      }
+      if (state.networkOnline) {
+        try { onNetworkRestored?.(); } catch {}
       }
       bus.emit(EVENTS.NETWORK_STATUS, { online: state.networkOnline });
     }, 2500);

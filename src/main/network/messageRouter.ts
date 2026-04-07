@@ -105,10 +105,25 @@ export function createMessageRouter({
       let peer = state.peers.get(p.id);
       const wasOnline = !!peer?.online;
       if (!peer) {
-        peer = { ...p, ip: remoteIp, port: p.port || wsNet.CHAT_PORT_BASE, ws, online: true, lastSeen: Date.now() };
+        peer = {
+          ...p,
+          ip: remoteIp,
+          port: p.port || wsNet.CHAT_PORT_BASE,
+          ws,
+          online: true,
+          lastSeen: Date.now(),
+          lastHeartbeat: Date.now()
+        };
         state.peers.set(p.id, peer);
       } else {
-        Object.assign(peer, { ...p, ip: remoteIp, ws, online: true, lastSeen: Date.now() });
+        Object.assign(peer, {
+          ...p,
+          ip: remoteIp,
+          ws,
+          online: true,
+          lastSeen: Date.now(),
+          lastHeartbeat: Date.now()
+        });
       }
       if (!peer) return;
       bus.emit(wasOnline ? EVENTS.DEVICE_UPDATED : EVENTS.DEVICE_JOINED, peerToSafe(peer));

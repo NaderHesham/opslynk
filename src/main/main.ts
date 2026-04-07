@@ -71,6 +71,16 @@ function ensureControlProfile(): void {
     if (!state.myProfile.username || /^device-/i.test(state.myProfile.username)) {
       state.myProfile.username = CONTROL_USERNAME;
     }
+    return;
+  }
+
+  state.myProfile.role = 'user';
+  const currentTitle = String(state.myProfile.title || '').trim();
+  if (
+    !currentTitle ||
+    ['Super Administrator', 'Administrator', 'Super Admin', 'Admin', 'User'].includes(currentTitle)
+  ) {
+    state.myProfile.title = 'Team Member';
   }
 }
 
@@ -150,8 +160,6 @@ const { handleP2PMessage } = createMessageRouter({
   captureScreenshot: () => captureScreenshot(state.mainWindow)
 });
 
-const { startNetworkMonitor } = createNetworkMonitor({ state: owners.sessionState, bus, EVENTS, broadcastToRenderer });
-
 const peerSession = createPeerSession({
   state: owners.sessionState,
   wsNet,
@@ -165,6 +173,14 @@ const peerSession = createPeerSession({
   broadcastToRenderer,
   handleP2PMessage,
   flushPendingHelpRequests
+});
+
+const { startNetworkMonitor } = createNetworkMonitor({
+  state: owners.sessionState,
+  bus,
+  EVENTS,
+  broadcastToRenderer,
+  onNetworkRestored: peerSession.recoverPeers
 });
 
 const adminModule = createAdminModule({

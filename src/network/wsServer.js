@@ -47,13 +47,13 @@ function startWsServer(port) {
     const tryPort = p => {
       const server = http.createServer();
       const wss    = new WebSocket.Server({ server, maxPayload: 50 * 1024 * 1024 });
+      server.once('error', () => tryPort(p + 1));
       server.listen(p, '0.0.0.0', () => {
         _myPortRef.value = p;
         wsServer         = wss;
         wss.on('connection', handleIncomingWS);
         resolve(p);
       });
-      server.on('error', () => tryPort(p + 1));
     };
     tryPort(port);
   });

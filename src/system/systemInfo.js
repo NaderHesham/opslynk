@@ -4,13 +4,27 @@
 const os              = require('os');
 const { execFileSync } = require('child_process');
 
-function getPrimaryNetworkInfo() {
+function getLanInterfaces() {
   const ifaces = os.networkInterfaces();
+  const results = [];
   for (const iface of Object.values(ifaces)) {
     for (const addr of iface || []) {
-      if (addr && addr.family === 'IPv4' && !addr.internal) {
-        return { ip: addr.address || null, mac: addr.mac || null };
-      }
+      if (!addr || addr.internal || addr.family !== 'IPv4') continue;
+      results.push({
+        address: addr.address || null,
+        netmask: addr.netmask || null,
+        mac: addr.mac || null
+      });
+    }
+  }
+  return results;
+}
+
+function getPrimaryNetworkInfo() {
+  const ifaces = getLanInterfaces();
+  for (const addr of ifaces) {
+    if (addr && addr.address) {
+      return { ip: addr.address || null, mac: addr.mac || null };
     }
   }
   return { ip: null, mac: null };
@@ -106,6 +120,7 @@ function getLiveMetrics() {
 }
 
 module.exports = {
+  getLanInterfaces,
   getPrimaryNetworkInfo,
   getDiskInfo,
   getHardwareInfo,
