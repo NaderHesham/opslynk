@@ -3,7 +3,7 @@ async function loadAccounts() {
       const countEl   = document.getElementById('acct-count');
       const addBtn    = document.getElementById('acct-add-btn');
       if (!listEl) return;
-      listEl.innerHTML = '<div style="color:var(--txt2);font-size:12px;padding:8px 0;">Loading…</div>';
+      listEl.innerHTML = '<div class="acct-state">Loading...</div>';
 
       try {
         const users = await IPC.auth.listUsers();
@@ -15,43 +15,37 @@ async function loadAccounts() {
         if (saOpt) saOpt.style.display = isSA ? '' : 'none';
 
         if (!users.length) {
-          listEl.innerHTML = '<div style="color:var(--txt3);font-size:12px;padding:8px 0;">No accounts found.</div>';
+          listEl.innerHTML = '<div class="acct-state empty">No accounts found.</div>';
           return;
         }
 
-        listEl.innerHTML = `
-          <table style="width:100%;border-collapse:collapse;font-size:12px;">
-            <thead>
-              <tr style="color:var(--txt3);border-bottom:1px solid var(--border);">
-                <th style="text-align:left;padding:6px 10px 8px 0;font-weight:600;">Username</th>
-                <th style="text-align:left;padding:6px 10px 8px;font-weight:600;">Role</th>
-                <th style="text-align:left;padding:6px 10px 8px;font-weight:600;">Created</th>
-                ${isSA ? '<th style="text-align:right;padding:6px 0 8px 10px;font-weight:600;">Actions</th>' : ''}
-              </tr>
-            </thead>
-            <tbody>
-              ${users.map(u => {
-                const isSelf   = u.id === _acctCurrentUserId;
-                const isSAUser = u.role === 'super_admin';
-                const created  = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—';
-                const roleBadge = u.role === 'super_admin'
-                  ? '<span style="background:rgba(88,166,255,.12);color:#58a6ff;border:1px solid rgba(88,166,255,.25);border-radius:3px;font-size:10px;padding:1px 6px;font-family:monospace;">SUPER ADMIN</span>'
-                  : '<span style="background:rgba(139,125,255,.1);color:#8b7dff;border:1px solid rgba(139,125,255,.2);border-radius:3px;font-size:10px;padding:1px 6px;font-family:monospace;">ADMIN</span>';
-                const actions = isSA ? `
-                  <td style="text-align:right;padding:8px 0 8px 10px;">
-                    <button class="btns" style="font-size:11px;padding:3px 10px;" onclick="acctDelete('${u.id}','${esc(u.username)}')" ${isSelf || isSAUser ? 'disabled title="Cannot delete"' : ''}>Delete</button>
-                  </td>` : '';
-                return `<tr style="border-bottom:1px solid var(--border);">
-                  <td style="padding:10px 10px 10px 0;color:var(--txt);font-weight:500;">${esc(u.username)}${isSelf ? ' <span style="color:var(--txt3);font-size:10px;">(you)</span>' : ''}</td>
-                  <td style="padding:10px;">${roleBadge}</td>
-                  <td style="padding:10px;color:var(--txt2);">${created}</td>
-                  ${actions}
-                </tr>`;
-              }).join('')}
-            </tbody>
-          </table>`;
+        listEl.innerHTML = `<div class="acct-card-list">${users.map(u => {
+          const isSelf = u.id === _acctCurrentUserId;
+          const isSAUser = u.role === 'super_admin';
+          const created = u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '-';
+          const initial = esc((u.username || '?')[0]?.toUpperCase() || '?');
+          const roleClass = u.role === 'super_admin' ? 'super' : 'admin';
+          const roleLabel = u.role === 'super_admin' ? 'Super Admin' : 'Admin';
+          const actions = isSA
+            ? `<button class="btns acct-delete-btn" onclick="acctDelete('${u.id}','${esc(u.username)}')" ${isSelf || isSAUser ? 'disabled title="Cannot delete"' : ''}>Delete</button>`
+            : '';
+          return `
+          <article class="acct-card">
+            <div class="acct-card-top">
+              <div class="acct-avatar ${roleClass}">${initial}</div>
+              <div class="acct-id">
+                <div class="acct-user">${esc(u.username)}${isSelf ? ' <span class="acct-self">(you)</span>' : ''}</div>
+                <div class="acct-created">Created ${created}</div>
+              </div>
+              <span class="acct-role ${roleClass}">${roleLabel}</span>
+            </div>
+            <div class="acct-card-actions">
+              ${actions || '<span class="acct-action-placeholder">Managed by current session role</span>'}
+            </div>
+          </article>`;
+        }).join('')}</div>`;
       } catch (e) {
-        listEl.innerHTML = '<div style="color:var(--red);font-size:12px;">Failed to load accounts.</div>';
+        listEl.innerHTML = '<div class="acct-state error">Failed to load accounts.</div>';
       }
     }
 

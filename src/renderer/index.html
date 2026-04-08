@@ -11,6 +11,7 @@
 </head>
 
 <body>
+  <canvas id="bg-canvas" aria-hidden="true"></canvas>
 
   <!-- TITLEBAR -->
   <div id="titlebar">
@@ -29,7 +30,43 @@
     </div>
   </div>
 
+  <div class="theme-sw" aria-label="Theme switcher">
+    <button class="on" data-theme-option="dark" onclick="applyTheme('dark')">Dark</button>
+    <button data-theme-option="light" onclick="applyTheme('light')">Light</button>
+    <button data-theme-option="gaming" onclick="applyTheme('gaming')">Gaming</button>
+  </div>
+
   <div id="app">
+    <div id="rail">
+      <div id="tabbar" aria-label="Primary navigation">
+        <button class="tb active" data-tab="chat" onclick="switchTab('chat')" title="Chat" aria-label="Chat">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="tb atab" data-tab="broadcast" data-admin-only onclick="switchTab('broadcast')" title="Broadcast" aria-label="Broadcast">
+          <svg viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.4"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.4"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>
+        </button>
+        <button class="tb atab" data-tab="replies" data-admin-only onclick="switchTab('replies')" title="Replies" aria-label="Replies">
+          <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        </button>
+        <div class="rail-sep" aria-hidden="true"></div>
+        <button class="tb atab" data-tab="users" data-admin-only onclick="switchTab('users')" title="Users" aria-label="Users">
+          <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </button>
+        <button class="tb atab" data-tab="groups" data-admin-only onclick="switchTab('groups')" title="Groups" aria-label="Groups">
+          <svg viewBox="0 0 24 24"><path d="M3 7h18"/><path d="M6 3h12l1 4H5l1-4Z"/><path d="M5 7v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7"/><path d="M10 11h4"/><path d="M10 15h4"/></svg>
+        </button>
+        <button class="tb atab" data-tab="accounts" data-admin-only onclick="switchTab('accounts')" title="Accounts" aria-label="Accounts">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V8a5 5 0 0 1 10 0v3"/><circle cx="12" cy="16" r="1.2"/></svg>
+        </button>
+        <button class="tb atab" data-tab="help" data-admin-only onclick="switchTab('help')" id="helptabbtn" title="Help Requests" aria-label="Help Requests">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        </button>
+        <button class="tb utab" data-tab="ask" onclick="switchTab('ask')" title="Ask For Help" aria-label="Ask For Help">
+          <svg viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+        </button>
+      </div>
+    </div>
+
     <!-- SIDEBAR -->
     <div id="sidebar">
       <div id="my-profile" onclick="openProfileModal()">
@@ -40,7 +77,7 @@
         </div>
         <span style="color:var(--txt3);font-size:13px;">✏️</span>
       </div>
-      <div class="slabel">Online Now</div>
+      <div class="slabel" id="peerListHeading">Peers</div>
       <div class="peer-search-wrap">
         <input class="peer-search" id="peerSearch" type="text" placeholder="Search users..." oninput="renderPeerList()">
       </div>
@@ -49,26 +86,16 @@
 
     <!-- MAIN -->
     <div id="main">
-      <div id="tabbar">
-        <button class="tb active" data-tab="chat" onclick="switchTab('chat')">💬 Chat</button>
-        <button class="tb atab" data-tab="broadcast" data-admin-only onclick="switchTab('broadcast')">📢 Broadcast</button>
-        <button class="tb atab" data-tab="replies" data-admin-only onclick="switchTab('replies')">↩ Replies</button>
-        <button class="tb atab" data-tab="users" data-admin-only onclick="switchTab('users')">👥 Users</button>
-        <button class="tb atab" data-tab="groups" data-admin-only onclick="switchTab('groups')">🗂 Groups</button>
-        <button class="tb atab" data-tab="accounts" data-admin-only onclick="switchTab('accounts')">🔐 Accounts</button>
-        <button class="tb atab" data-tab="help" data-admin-only onclick="switchTab('help')" id="helptabbtn">🆘 Help Requests</button>
-        <button class="tb utab" data-tab="ask" onclick="switchTab('ask')">🆘 Ask For Help</button>
-      </div>
-
+      <div id="view-host">
       <!-- DASHBOARD (admin) -->
       <div class="panel" id="tab-dashboard" data-admin-only>
         <div class="dashboard-wrap">
-          <div class="dash-grid">
-            <div class="dash-stack">
+          <div class="dash-shell">
+            <div class="dash-main">
               <section class="dash-hero">
-                <div class="dash-kicker">Ops Center</div>
                 <div class="dash-head">
                   <div>
+                    <div class="dash-kicker">Ops Center</div>
                     <h2 id="dashHeadline">Admin operations at a glance</h2>
                     <p id="dashSummary">Track network presence, help queue pressure, message delivery, and rapid
                       response actions from one control surface.</p>
@@ -78,77 +105,92 @@
                     <span id="dashStatusText">Monitoring offline</span>
                   </div>
                 </div>
-                <div class="dash-metrics">
-                  <div class="metric-card">
-                    <div class="metric-label">Connected Users</div>
-                    <div class="metric-value" id="metricOnline">0</div>
-                    <div class="metric-sub" id="metricOnlineSub">No active devices yet</div>
-                    <div class="metric-trend good" id="metricOnlineTrend">Waiting for peers</div>
+              </section>
+
+              <section class="dash-metrics-row">
+                <div class="metric-card">
+                  <div class="metric-label">Connected Users</div>
+                  <div class="metric-value" id="metricOnline">0</div>
+                  <div class="metric-sub" id="metricOnlineSub">No active devices yet</div>
+                  <div class="metric-trend good" id="metricOnlineTrend">Waiting for peers</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Open Tickets</div>
+                  <div class="metric-value" id="metricHelp">0</div>
+                  <div class="metric-sub" id="metricHelpSub">No pending issues</div>
+                  <div class="metric-trend warn" id="metricHelpTrend">Queue is clear</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Saved Groups</div>
+                  <div class="metric-value" id="metricGroups">0</div>
+                  <div class="metric-sub" id="metricGroupsSub">Audience presets ready</div>
+                  <div class="metric-trend" id="metricGroupsTrend">Targeted delivery</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-label">Message Pulse</div>
+                  <div class="metric-value" id="metricActivity">0</div>
+                  <div class="metric-sub" id="metricActivitySub">Replies, broadcasts, and chats</div>
+                  <div class="metric-trend" id="metricActivityTrend">Live operations feed</div>
+                </div>
+              </section>
+
+              <section class="dash-section dash-device-section">
+                <div class="dash-section-header">
+                  <div>
+                    <div class="dash-section-title">Device Grid</div>
+                    <div class="dash-section-sub">Discovered machines with live delivery status</div>
                   </div>
-                  <div class="metric-card">
-                    <div class="metric-label">Open Tickets</div>
-                    <div class="metric-value" id="metricHelp">0</div>
-                    <div class="metric-sub" id="metricHelpSub">No pending issues</div>
-                    <div class="metric-trend warn" id="metricHelpTrend">Queue is clear</div>
-                  </div>
-                  <div class="metric-card">
-                    <div class="metric-label">Saved Groups</div>
-                    <div class="metric-value" id="metricGroups">0</div>
-                    <div class="metric-sub" id="metricGroupsSub">Audience presets ready</div>
-                    <div class="metric-trend" id="metricGroupsTrend">Targeted delivery</div>
-                  </div>
-                  <div class="metric-card">
-                    <div class="metric-label">Message Pulse</div>
-                    <div class="metric-value" id="metricActivity">0</div>
-                    <div class="metric-sub" id="metricActivitySub">Replies, broadcasts, and chats</div>
-                    <div class="metric-trend" id="metricActivityTrend">Live operations feed</div>
+                </div>
+                <div class="dash-device-grid" id="dashDeviceGrid">
+                  <div class="empty">
+                    <div class="ei">Devices</div>No discovered devices yet
                   </div>
                 </div>
               </section>
 
-              <section class="dash-section">
-                <div class="dash-section-header">
-                  <div>
-                    <div class="dash-section-title">System Signals</div>
-                    <div class="dash-section-sub">Live operational indicators from your current LAN session</div>
-                  </div>
-                </div>
-                <div class="signal-grid">
-                  <div class="signal-card">
-                    <div class="signal-top">
-                      <div>
-                        <div class="metric-label">Presence Trend</div>
-                        <div class="signal-value" id="signalPresenceValue">0%</div>
-                      </div>
-                      <div class="metric-trend good" id="signalPresenceTag">Idle</div>
+              <div class="dash-two-up">
+                <section class="dash-section">
+                  <div class="dash-section-header">
+                    <div>
+                      <div class="dash-section-title">System Signals</div>
+                      <div class="dash-section-sub">Live operational indicators from your current LAN session</div>
                     </div>
-                    <div class="signal-caption" id="signalPresenceCopy">The percentage of discovered users currently
-                      online.</div>
-                    <div class="sparkline green" id="presenceSpark"></div>
                   </div>
-                  <div class="signal-card">
-                    <div class="signal-top">
-                      <div>
-                        <div class="metric-label">Response Pressure</div>
-                        <div class="signal-value" id="signalPressureValue">Low</div>
+                  <div class="signal-grid">
+                    <div class="signal-card">
+                      <div class="signal-top">
+                        <div>
+                          <div class="metric-label">Presence Trend</div>
+                          <div class="signal-value" id="signalPresenceValue">0%</div>
+                        </div>
+                        <div class="metric-trend good" id="signalPresenceTag">Idle</div>
                       </div>
-                      <div class="metric-trend warn" id="signalPressureTag">Stable</div>
+                      <div class="signal-caption" id="signalPresenceCopy">The percentage of discovered users currently
+                        online.</div>
+                      <div class="sparkline green" id="presenceSpark"></div>
                     </div>
-                    <div class="signal-caption" id="signalPressureCopy">Measures help queue load against available
-                      online users.</div>
-                    <div class="sparkline" id="pressureSpark"></div>
+                    <div class="signal-card">
+                      <div class="signal-top">
+                        <div>
+                          <div class="metric-label">Response Pressure</div>
+                          <div class="signal-value" id="signalPressureValue">Low</div>
+                        </div>
+                        <div class="metric-trend warn" id="signalPressureTag">Stable</div>
+                      </div>
+                      <div class="signal-caption" id="signalPressureCopy">Measures help queue load against available
+                        online users.</div>
+                      <div class="sparkline" id="pressureSpark"></div>
+                    </div>
                   </div>
-                </div>
-              </section>
+                </section>
 
-              <section class="dash-section">
-                <div class="dash-section-header">
-                  <div>
-                    <div class="dash-section-title">Control Room</div>
-                    <div class="dash-section-sub">Fast paths into the actions your admins use most</div>
+                <section class="dash-section dash-coverage-card">
+                  <div class="dash-section-header">
+                    <div>
+                      <div class="dash-section-title">Fleet Coverage</div>
+                      <div class="dash-section-sub">Network reachability across discovered endpoints</div>
+                    </div>
                   </div>
-                </div>
-                <div class="ops-grid">
                   <div class="ring-card">
                     <div class="ring-wrap" id="presenceRing">
                       <div class="ring-center">
@@ -176,46 +218,55 @@
                       </div>
                     </div>
                   </div>
-                  <div class="quick-grid">
-                    <button class="quick-action" onclick="switchTab('broadcast')">
-                      <div class="quick-icon">B</div>
-                      <div class="quick-copy">
-                        <strong>Broadcast Center</strong>
-                        <span>Jump to audience targeting and priority message delivery.</span>
-                      </div>
-                    </button>
-                    <button class="quick-action" onclick="switchTab('help')">
-                      <div class="quick-icon">!</div>
-                      <div class="quick-copy">
-                        <strong>Help Queue</strong>
-                        <span>Review incoming tickets and jump directly into chat.</span>
-                      </div>
-                    </button>
-                    <button class="quick-action" onclick="switchTab('users')">
-                      <div class="quick-icon">U</div>
-                      <div class="quick-copy">
-                        <strong>User Directory</strong>
-                        <span>Inspect connected machines and export device specs.</span>
-                      </div>
-                    </button>
-                    <button class="quick-action" onclick="switchTab('groups')">
-                      <div class="quick-icon">G</div>
-                      <div class="quick-copy">
-                        <strong>Groups</strong>
-                        <span>Create saved audiences for faster, cleaner admin actions.</span>
-                      </div>
-                    </button>
+                </section>
+              </div>
+
+              <section class="dash-section">
+                <div class="dash-section-header">
+                  <div>
+                    <div class="dash-section-title">Control Room</div>
+                    <div class="dash-section-sub">Fast paths into the actions your admins use most</div>
                   </div>
+                </div>
+                <div class="quick-grid">
+                  <button class="quick-action" onclick="switchTab('broadcast')">
+                    <div class="quick-icon">B</div>
+                    <div class="quick-copy">
+                      <strong>Broadcast Center</strong>
+                      <span>Jump to audience targeting and priority message delivery.</span>
+                    </div>
+                  </button>
+                  <button class="quick-action" onclick="switchTab('help')">
+                    <div class="quick-icon">!</div>
+                    <div class="quick-copy">
+                      <strong>Help Queue</strong>
+                      <span>Review incoming tickets and jump directly into chat.</span>
+                    </div>
+                  </button>
+                  <button class="quick-action" onclick="switchTab('users')">
+                    <div class="quick-icon">U</div>
+                    <div class="quick-copy">
+                      <strong>User Directory</strong>
+                      <span>Inspect connected machines and export device specs.</span>
+                    </div>
+                  </button>
+                  <button class="quick-action" onclick="switchTab('groups')">
+                    <div class="quick-icon">G</div>
+                    <div class="quick-copy">
+                      <strong>Groups</strong>
+                      <span>Create saved audiences for faster, cleaner admin actions.</span>
+                    </div>
+                  </button>
                 </div>
               </section>
             </div>
 
-            <div class="dash-stack">
-              <section class="dash-section">
-                <div class="dash-section-header">
+            <aside class="dash-side">
+              <section class="dash-side-card">
+                <div class="dash-side-head">
                   <div>
-                    <div class="dash-section-title">Live Status</div>
-                    <div class="dash-section-sub">Immediate health checks for this device and session</div>
+                    <div class="dash-side-title">Live Status</div>
+                    <div class="dash-side-sub">Session health checks</div>
                   </div>
                 </div>
                 <div class="mini-list" id="dashMiniList">
@@ -229,13 +280,27 @@
                 </div>
               </section>
 
-              <section class="dash-section" style="flex:1;min-height:420px;">
-                <div class="dash-section-header">
+              <section class="dash-side-card">
+                <div class="dash-side-head">
                   <div>
-                    <div class="dash-section-title">Activity Timeline</div>
-                    <div class="dash-section-sub">Newest operational events surface here automatically</div>
+                    <div class="dash-side-title">Alerts</div>
+                    <div class="dash-side-sub">Issues requiring attention</div>
                   </div>
-                  <button class="ubtn" onclick="clearDashboardActivity()">Clear Feed</button>
+                </div>
+                <div class="dash-alert-list" id="dashAlertList">
+                  <div class="empty">
+                    <div class="ei">Alerts</div>No active alerts
+                  </div>
+                </div>
+              </section>
+
+              <section class="dash-side-card dash-side-timeline">
+                <div class="dash-side-head">
+                  <div>
+                    <div class="dash-side-title">Activity Timeline</div>
+                    <div class="dash-side-sub">Auto-surfacing operational events</div>
+                  </div>
+                  <button class="ubtn" onclick="clearDashboardActivity()">Clear</button>
                 </div>
                 <div class="timeline" id="dashTimeline">
                   <div class="empty">
@@ -243,7 +308,7 @@
                   </div>
                 </div>
               </section>
-            </div>
+            </aside>
           </div>
         </div>
       </div>
@@ -277,7 +342,7 @@
 
       <!-- BROADCAST (admin) -->
       <div class="panel" id="tab-broadcast" data-admin-only>
-        <div class="pscroll">
+        <div class="pscroll ops-view ops-view-broadcast">
           <div class="broadcast-page">
             <div class="broadcast-page-header">
               <div class="broadcast-page-header-left">
@@ -431,7 +496,7 @@
 
       <!-- REPLIES (admin) -->
       <div class="panel" id="tab-replies" data-admin-only>
-        <div class="pscroll">
+        <div class="pscroll ops-view ops-view-replies">
           <div class="ptitle">↩ User Replies</div>
           <div id="replieslist">
             <div class="empty">
@@ -443,7 +508,7 @@
 
       <!-- USERS (admin) -->
       <div class="panel" id="tab-users" data-admin-only>
-        <div class="pscroll">
+        <div class="pscroll ops-view ops-view-users">
           <div class="ptitle">👥 Connected Users</div>
           <div class="psub" style="margin-bottom:12px;">Search, filter, and inspect endpoints with a more operational
             view</div>
@@ -468,7 +533,7 @@
       </div>
 
       <div class="panel" id="tab-groups" data-admin-only>
-        <div class="pscroll">
+        <div class="pscroll ops-view ops-view-groups">
           <div class="ptitle">🗂 Groups</div>
           <div class="psub">Create clean user groups here, review members, then target them from Broadcast</div>
           <div class="group-card">
@@ -488,13 +553,13 @@
 
       <!-- ACCOUNTS (admin) -->
       <div class="panel" id="tab-accounts" data-admin-only>
-        <div class="pscroll">
+        <div class="pscroll ops-view ops-view-accounts">
           <div class="ptitle">🔐 Admin Accounts</div>
           <div class="psub" style="margin-bottom:16px;">Manage admin and super-admin accounts. Only super admins can create or delete accounts.</div>
 
           <!-- Add User Form (super_admin only) -->
-          <div class="group-card" id="acct-add-form" style="display:none; margin-bottom:18px;">
-            <div style="font-size:13px; font-weight:600; margin-bottom:12px; color:var(--txt);">Add New Account</div>
+          <div class="group-card acct-form-card" id="acct-add-form" style="display:none; margin-bottom:18px;">
+            <div class="acct-form-title">Add New Account</div>
             <div class="inline-setting">
               <label for="acctNewUser">Username</label>
               <input id="acctNewUser" type="text" placeholder="Username" autocomplete="off">
@@ -518,7 +583,7 @@
           </div>
 
           <!-- Actions bar -->
-          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+          <div class="acct-toolbar">
             <span style="font-size:12px; color:var(--txt2);" id="acct-count">Loading…</span>
             <button class="btnp" id="acct-add-btn" onclick="acctToggleForm(true)" style="display:none;">+ Add Account</button>
           </div>
@@ -531,7 +596,7 @@
 
       <!-- HELP REQUESTS (admin) -->
       <div class="panel" id="tab-help" data-admin-only>
-        <div class="pscroll">
+        <div class="pscroll ops-view ops-view-help">
           <div class="ptitle">🆘 Help Requests</div>
           <div class="psub" style="margin-bottom:12px;">Triage incoming issues with filters, status context, and quicker
             handoff into chat</div>
@@ -634,6 +699,7 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
   </div>
 
@@ -669,8 +735,8 @@
 
   <!-- PROFILE MODAL -->
   <div class="moverlay" id="profmodal">
-    <div class="mbox">
-      <h3>✏️ Edit Profile</h3>
+      <div class="mbox">
+        <h3>✏️ Edit Profile</h3>
       <div
         style="display:flex;align-items:center;gap:11px;margin-bottom:16px;padding:11px;background:var(--input);border-radius:9px;">
         <div class="av s44" id="profprev"></div>
@@ -687,12 +753,32 @@
           <button class="btng" type="button" onclick="removeAvatar()">Remove</button>
         </div>
       </div>
-      <div class="mfield"><label>Job Title / Status</label><input id="modtitle" placeholder="e.g. Senior Engineer…">
-      </div>
-      <div class="mfield"><label>Display Name</label><input id="modname" placeholder="Your name"></div>
-      <div class="mfield"><label>Avatar Color</label>
-        <div class="swatches" id="swatches"></div>
-      </div>
+        <div class="mfield"><label>Job Title / Status</label><input id="modtitle" placeholder="e.g. Senior Engineer…">
+        </div>
+        <div class="mfield"><label>Display Name</label><input id="modname" placeholder="Your name"></div>
+        <div class="group-card profacct-card" id="profacct-card" style="display:none;">
+          <div class="profacct-head">My Account</div>
+          <div class="profacct-copy">Manage your personal Super Admin identity and password from this profile surface.</div>
+          <div class="mfield">
+            <label for="profCurrentPw">Current Password</label>
+            <input id="profCurrentPw" type="password" placeholder="Current password">
+          </div>
+          <div class="mfield">
+            <label for="profNewPw">New Password</label>
+            <input id="profNewPw" type="password" placeholder="New password">
+          </div>
+          <div class="mfield">
+            <label for="profConfirmPw">Confirm New Password</label>
+            <input id="profConfirmPw" type="password" placeholder="Confirm new password">
+          </div>
+          <div class="mactions acct-self-actions">
+            <button class="btnp" type="button" onclick="changeMyPasswordFromProfile()">Update Password</button>
+          </div>
+          <div class="acct-self-msg" id="profacct-msg" style="display:none;"></div>
+        </div>
+        <div class="mfield"><label>Avatar Color</label>
+          <div class="swatches" id="swatches"></div>
+        </div>
       <div class="admin-note">
         <div>
           <strong id="admin-note-title">Control Mode</strong>
@@ -763,42 +849,12 @@
       <div class="sett-body">
         <div class="sett-section-label">Appearance — Choose Theme</div>
 
-        <div class="theme-grid">
-          <!-- Dark Theme -->
-          <div class="theme-card active" id="tc-dark" onclick="applyTheme('dark')">
-            <div class="theme-preview tp-dark">
-              <div class="tp-bar"><div class="tp-dot"></div><div class="tp-dot"></div><div class="tp-dot"></div></div>
-              <div class="tp-body">
-                <div class="tp-sidebar"></div>
-                <div class="tp-main"></div>
-              </div>
-            </div>
-            <div class="theme-card-label">Dark</div>
+        <div class="sett-theme-status" aria-live="polite">
+          <div>
+            <div class="sett-theme-title">Theme</div>
+            <div class="sett-theme-copy">Use the header controls to switch between Dark, Light, and Gaming.</div>
           </div>
-
-          <!-- White Theme -->
-          <div class="theme-card" id="tc-white" onclick="applyTheme('white')">
-            <div class="theme-preview tp-white">
-              <div class="tp-bar"><div class="tp-dot"></div><div class="tp-dot"></div><div class="tp-dot"></div></div>
-              <div class="tp-body">
-                <div class="tp-sidebar"></div>
-                <div class="tp-main"></div>
-              </div>
-            </div>
-            <div class="theme-card-label">Light</div>
-          </div>
-
-          <!-- Gaming Theme -->
-          <div class="theme-card" id="tc-gaming" onclick="applyTheme('gaming')">
-            <div class="theme-preview tp-gaming">
-              <div class="tp-bar"><div class="tp-dot"></div><div class="tp-dot"></div><div class="tp-dot"></div></div>
-              <div class="tp-body">
-                <div class="tp-sidebar"></div>
-                <div class="tp-main"></div>
-              </div>
-            </div>
-            <div class="theme-card-label">Gaming</div>
-          </div>
+          <div class="sett-theme-pill" id="settings-theme-value">Dark</div>
         </div>
 
         <div class="sett-divider"></div>

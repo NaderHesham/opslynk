@@ -3,6 +3,7 @@
 // All messages are AES-256-GCM encrypted after ECDH key exchange.
 
 const http      = require('http');
+const net       = require('net');
 const WebSocket = require('ws');
 const { v4: uuidv4 } = require('uuid');
 const { generateKeyPair, deriveSharedKey, encrypt, decrypt } = require('../services/encryptionService');
@@ -43,20 +44,31 @@ function init(deps) {
 
 // ── SERVER ────────────────────────────────────────────────────────────────────
 function startWsServer(port) {
-  return new Promise(resolve => {
-    const tryPort = p => {
-      const server = http.createServer();
-      const wss    = new WebSocket.Server({ server, maxPayload: 50 * 1024 * 1024 });
-      server.once('error', () => tryPort(p + 1));
-      server.listen(p, '0.0.0.0', () => {
-        _myPortRef.value = p;
-        wsServer         = wss;
-        wss.on('connection', handleIncomingWS);
-        resolve(p);
-      });
-    };
-    tryPort(port);
+  const findAvailablePort = p => new Promise(resolve => {
+    const probe = net.createServer();
+    probe.unref();
+    probe.once('error', err => {
+      if (err && (err.code === 'EADDRINUSE' || err.code === 'EACCES')) {
+        resolve(findAvailablePort(p + 1));
+        return;
+      }
+      throw err;
+    });
+    probe.listen({ port: p, host: '0.0.0.0', exclusive: true }, () => {
+      probe.close(() => resolve(p));
+    });
   });
+
+  return findAvailablePort(port).then(freePort => new Promise(resolve => {
+    const server = http.createServer();
+    const wss    = new WebSocket.Server({ server, maxPayload: 50 * 1024 * 1024 });
+    server.listen(freePort, '0.0.0.0', () => {
+      _myPortRef.value = freePort;
+      wsServer         = wss;
+      wss.on('connection', handleIncomingWS);
+      resolve(freePort);
+    });
+  }));
 }
 
 function cleanupSocket(ws) {

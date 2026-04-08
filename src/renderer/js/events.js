@@ -17,7 +17,6 @@ function setupEvents() {
         if (peers[peerId]) {
           if (systemInfo)   peers[peerId].systemInfo   = systemInfo;
           if (liveMetrics)  peers[peerId].liveMetrics  = liveMetrics;
-          // Refresh peer list if currently visible
           const active = document.querySelector('.panel.active');
           if (active?.id === 'tab-users' || active?.id === 'tab-dashboard') { renderPeerList(); renderUsersTab(); }
         }
@@ -45,7 +44,7 @@ function setupEvents() {
 
       IPC.on('chat:failed', ({ msgId }) => {
         const el = document.querySelector(`.msg-status[data-msgid="${msgId}"]`);
-        if (el) { el.textContent = '✗'; el.classList.add('failed'); el.title = 'Failed to deliver'; }
+        if (el) { el.textContent = '✕'; el.classList.add('failed'); el.title = 'Failed to deliver'; }
       });
 
       IPC.on('network:ack', ({ fromId, broadcastId, username }) => {
@@ -59,7 +58,7 @@ function setupEvents() {
       IPC.on('network:broadcastReply', ({ fromId, text, broadcastId, username }) => {
         const rl = document.getElementById('replieslist'); const re = rl.querySelector('.empty'); if (re) re.remove();
         const c = document.createElement('div'); c.className = 'rcard';
-        c.innerHTML = `<div class="rfrom">💬 ${esc(username || '?')}</div><div class="rtxt">${esc(text)}</div><div class="rts">${new Date().toLocaleTimeString()}</div>`;
+        c.innerHTML = `<div class="reply-card-head"><div><div class="rfrom">${esc(username || '?')}</div><div class="reply-card-sub">Broadcast response</div></div><div class="rts">${new Date().toLocaleTimeString()}</div></div><div class="rtxt">${esc(text)}</div><div class="reply-card-actions"><button class="ubtn" onclick="openChat('${fromId}')">Open Chat</button></div>`;
         rl.prepend(c);
         const rb = document.querySelector('[data-tab="replies"]'); if (rb && !rb.querySelector('.tbadge')) rb.insertAdjacentHTML('beforeend', '<span class="tbadge">!</span>');
         beep(440, 0.12);
@@ -112,17 +111,15 @@ function setupEvents() {
       });
 
       IPC.on('user:helpRequest', req => { appendHelpCard(req); });
-      IPC.on('user:helpAcked', () => showToast('✅ Admin Responded', 'Your help request was acknowledged!'));
+      IPC.on('user:helpAcked', () => showToast('Admin Responded', 'Your help request was acknowledged!'));
 
       IPC.on('ui:focusHelpRequest', ({ reqId }) => { switchTab('help'); setTimeout(() => focusHelpRequest(reqId), 60); });
       IPC.on('ui:playSound', ({ type }) => { if (type === 'message') beep(660, 0.1); else if (type === 'broadcast') beep(520, 0.18); else if (type === 'help') { beep(330, 0.25); setTimeout(() => beep(440, 0.25), 220); } });
       IPC.on('ui:gotoTab', tab => switchTab(tab));
 
-      // Screen lock feedback — keeps admin UI in sync when lock/unlock completes
       IPC.on('admin:screenLocked', () => setLockUi(true));
       IPC.on('admin:screenUnlocked', () => setLockUi(false));
 
-      // Show persistent device ID in profile modal if element exists
       IPC.getDeviceId?.().then(id => {
         console.log('[OpsLynk] get-device-id returned:', id);
         const el = document.getElementById('device-id-display');

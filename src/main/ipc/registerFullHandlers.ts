@@ -13,6 +13,7 @@ const authService = require('../../../src/services/authService') as {
   createSuperAdmin: (u: string, p: string)                            => Promise<{ success: boolean; error?: string; user?: unknown }>;
   login:            (u: string, p: string)                            => Promise<{ success: boolean; error?: string; user?: unknown }>;
   createUser:       (u: string, p: string, r: string)                 => Promise<{ success: boolean; error?: string; user?: unknown }>;
+  updateSelfProfile:(id: string, username: string)                     => { success: boolean; error?: string; user?: unknown };
   changePassword:   (id: string, cur: string, next: string)           => Promise<{ success: boolean; error?: string }>;
   deleteUser:       (id: string, rid: string)                         => { success: boolean; error?: string };
   listUsers:        ()                                                 => unknown[];
@@ -28,8 +29,10 @@ export function registerFullHandlers(deps: RegisterDeps): void {
     onLoginSuccess: (user: unknown) => {
       const u = user as { id?: string; username?: string; role?: string } | null;
       if (u && deps.state.myProfile) {
+        (deps.state.myProfile as unknown as { authUserId?: string }).authUserId = u.id;
         if (u.role)     deps.state.myProfile.role     = u.role as import('../../shared/types/runtime').UserRole;
         if (u.username) deps.state.myProfile.username = u.username;
+        deps.storage.saveProfile(deps.state.myProfile);
       }
       deps.updateTrayMenu();
     }

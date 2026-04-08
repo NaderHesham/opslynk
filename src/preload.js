@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld('OpsLynk', {
     setup:          (data) => ipcRenderer.invoke('auth:setup', data),
     login:          (data) => ipcRenderer.invoke('auth:login', data),
     createUser:     (data) => ipcRenderer.invoke('auth:create-user', data),
+    updateSelfProfile: (data) => ipcRenderer.invoke('auth:update-self-profile', data),
     changePassword: (data) => ipcRenderer.invoke('auth:change-password', data),
     deleteUser:     (data) => ipcRenderer.invoke('auth:delete-user', data),
     listUsers:      ()     => ipcRenderer.invoke('auth:list-users'),

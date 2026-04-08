@@ -23,7 +23,7 @@
     }
 
 body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background:
         radial-gradient(circle at top right, rgba(88, 166, 255, .16), transparent 26%),
         radial-gradient(circle at top left, rgba(139, 125, 255, .12), transparent 24%),
@@ -32,7 +32,87 @@ body {
       color: var(--txt);
       height: 100vh;
       overflow: hidden;
-      user-select: none
+      user-select: none;
+      position: relative;
+      -webkit-font-smoothing: antialiased
+    }
+
+body::before,
+body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0
+    }
+
+#bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: .95
+    }
+
+body::before {
+      background:
+        radial-gradient(circle at 16% 18%, color-mix(in srgb, var(--gold-s) 80%, transparent), transparent 26%),
+        radial-gradient(circle at 84% 14%, color-mix(in srgb, var(--cyan-s) 78%, transparent), transparent 24%),
+        radial-gradient(circle at 28% 84%, color-mix(in srgb, var(--green-s) 72%, transparent), transparent 22%);
+      opacity: .95;
+      animation: shellAmbient 18s ease-in-out infinite alternate
+    }
+
+body::after {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .02), transparent 22%, transparent 78%, rgba(0, 0, 0, .05)),
+        radial-gradient(circle at 50% -10%, rgba(255, 255, 255, .04), transparent 38%);
+      opacity: .8
+    }
+
+.theme-sw {
+      position: fixed;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 40;
+      display: flex;
+      gap: 3px;
+      padding: 3px;
+      border-radius: 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+      -webkit-app-region: no-drag;
+      pointer-events: auto
+    }
+
+.theme-sw button {
+      font-family: inherit;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--txt2);
+      cursor: pointer;
+      transition: all .15s;
+      -webkit-app-region: no-drag;
+      pointer-events: auto
+    }
+
+.theme-sw button:hover {
+      color: var(--txt);
+      background: var(--hover)
+    }
+
+.theme-sw button.on {
+      background: var(--gold-s);
+      color: var(--accent);
+      border-color: var(--gold-b)
     }
 
 #titlebar {
@@ -45,7 +125,9 @@ body {
       backdrop-filter: blur(18px);
       -webkit-app-region: drag;
       gap: 10px;
-      flex-shrink: 0
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2
     }
 
 .logo {
@@ -68,27 +150,141 @@ body {
     }
 
 #conn-pill {
-      font-size: 10px;
-      padding: 2px 9px;
-      border-radius: 20px;
-      font-weight: 600;
-      letter-spacing: .2px;
-      background: #0f1f14;
-      color: var(--green);
-      border: 1px solid #1b3626;
-      transition: all .3s
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 22px;
+      padding: 2px 9px 2px 8px;
+      border-radius: 999px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .02em;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .015)),
+        color-mix(in srgb, var(--cyan-s) 58%, transparent);
+      color: var(--cyan);
+      border: 1px solid color-mix(in srgb, var(--cyan-b) 82%, transparent);
+      backdrop-filter: blur(14px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .05),
+        0 0 0 1px rgba(0, 0, 0, .03),
+        0 8px 18px rgba(8, 18, 28, .10);
+      transition: background .25s, border-color .25s, color .25s, box-shadow .25s, transform .25s
+    }
+
+#conn-pill .conn-label {
+      line-height: 1;
+      white-space: nowrap
+    }
+
+#conn-pill .conn-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: currentColor;
+      box-shadow: 0 0 10px color-mix(in srgb, currentColor 38%, transparent)
+    }
+
+#conn-pill.live .conn-dot {
+      box-shadow: 0 0 0 0 rgba(45, 212, 191, .24), 0 0 10px rgba(45, 212, 191, .22);
+      animation: connPulse 1.5s cubic-bezier(.22, .61, .36, 1) infinite
+    }
+
+#conn-pill.live {
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .05),
+        0 0 0 1px rgba(0, 0, 0, .03),
+        0 8px 18px rgba(8, 18, 28, .10),
+        0 0 18px color-mix(in srgb, var(--cyan) 10%, transparent)
     }
 
 #conn-pill.off {
-      background: #1a1014;
-      color: var(--red);
-      border-color: #321620
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, .01)),
+        color-mix(in srgb, var(--red-s) 54%, transparent);
+      color: color-mix(in srgb, var(--red) 88%, var(--amber));
+      border-color: color-mix(in srgb, var(--red-b) 72%, var(--amber-b));
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .04),
+        0 8px 18px rgba(28, 10, 14, .08),
+        0 0 16px rgba(248, 113, 113, .06)
     }
 
 #conn-pill.searching {
-      background: #23190a;
-      color: var(--amber);
-      border-color: #4a3412
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01)),
+        color-mix(in srgb, var(--cyan-s) 34%, transparent);
+      color: color-mix(in srgb, var(--cyan) 82%, var(--txt));
+      border-color: color-mix(in srgb, var(--cyan-b) 58%, transparent)
+    }
+
+#conn-pill.searching .conn-dot {
+      opacity: .9;
+      animation: connPulseSoft 2.2s ease-out infinite
+    }
+
+#conn-pill.off .conn-dot {
+      opacity: .95;
+      box-shadow: 0 0 0 0 rgba(248, 113, 113, .22), 0 0 10px rgba(248, 113, 113, .18);
+      animation: connPulseAlert 1.35s cubic-bezier(.22, .61, .36, 1) infinite
+    }
+
+@keyframes connPulse {
+      0% {
+        opacity: .82;
+        box-shadow: 0 0 0 0 rgba(45, 212, 191, .24), 0 0 10px rgba(45, 212, 191, .22);
+        transform: scale(1)
+      }
+
+      35% {
+        opacity: 1;
+        box-shadow: 0 0 0 5px rgba(45, 212, 191, .10), 0 0 14px rgba(45, 212, 191, .28);
+        transform: scale(1.08)
+      }
+
+      100% {
+        opacity: .82;
+        box-shadow: 0 0 0 0 rgba(45, 212, 191, 0), 0 0 10px rgba(45, 212, 191, .18);
+        transform: scale(1)
+      }
+    }
+
+@keyframes connPulseSoft {
+      0% {
+        opacity: .75;
+        transform: scale(1)
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.04)
+      }
+
+      100% {
+        opacity: .75;
+        transform: scale(1)
+      }
+    }
+
+@keyframes connPulseAlert {
+      0% {
+        opacity: .82;
+        box-shadow: 0 0 0 0 rgba(248, 113, 113, .24), 0 0 8px rgba(248, 113, 113, .16);
+        transform: scale(1)
+      }
+
+      35% {
+        opacity: 1;
+        box-shadow: 0 0 0 4px rgba(248, 113, 113, .10), 0 0 10px rgba(248, 113, 113, .22);
+        transform: scale(1.08)
+      }
+
+      100% {
+        opacity: .82;
+        box-shadow: 0 0 0 0 rgba(248, 113, 113, 0), 0 0 8px rgba(248, 113, 113, .14);
+        transform: scale(1)
+      }
     }
 
 .spacer {
@@ -128,7 +324,21 @@ body {
 
 #app {
       display: flex;
-      height: calc(100vh - 38px)
+      height: calc(100vh - 38px);
+      position: relative;
+      z-index: 1
+    }
+
+#rail {
+      width: 54px;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0
     }
 
 #sidebar {
@@ -138,21 +348,27 @@ body {
       border-right: 1px solid var(--border);
       backdrop-filter: blur(20px);
       display: flex;
-      flex-direction: column
+      flex-direction: column;
+      padding: 14px 12px 10px;
+      gap: 8px
     }
 
 #my-profile {
-      padding: 13px 13px 11px;
-      border-bottom: 1px solid var(--border);
+      padding: 8px 9px;
+      border-radius: 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 9px;
+      gap: 8px;
       cursor: pointer;
-      transition: background .15s
+      transition: background .15s, border-color .15s, transform .15s
     }
 
 #my-profile:hover {
-      background: var(--hover)
+      background: var(--hover);
+      border-color: color-mix(in srgb, var(--border) 70%, var(--gold-b));
+      transform: translateY(-1px)
     }
 
 #my-profile .meta {
@@ -161,44 +377,72 @@ body {
     }
 
 #my-profile .mname {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
       display: flex;
       align-items: center;
       gap: 6px;
-      flex-wrap: wrap
+      flex-wrap: nowrap;
+      min-width: 0
+    }
+
+#my-profile .mname-text {
+      min-width: 0;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%
+    }
+
+#my-profile .rbadge {
+      flex-shrink: 0;
+      padding: 2px 6px;
+      font-size: 7px;
+      line-height: 1;
+      max-width: none
+    }
+
+#my-profile > span:last-child {
+      flex-shrink: 0;
+      width: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center
     }
 
 #my-profile .mtitle {
-      font-size: 10px;
+      font-size: 9px;
       color: var(--txt2);
       margin-top: 1px
     }
 
 .slabel {
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 700;
-      letter-spacing: 1.8px;
+      letter-spacing: .1em;
       color: var(--txt3);
-      padding: 10px 13px 5px;
+      padding: 5px 0 3px;
       text-transform: uppercase
     }
 
+.peer-subhead {
+      padding-top: 10px
+    }
+
 .peer-search-wrap {
-      padding: 4px 10px 0
+      padding: 0
     }
 
 .peer-search {
       width: 100%;
-      border: 1px solid rgba(125, 140, 178, .18);
-      background: rgba(14, 18, 27, .9);
+      border: 1px solid var(--border);
+      background: var(--input);
       color: var(--txt);
-      border-radius: 12px;
-      padding: 10px 12px;
-      font-size: 12px;
+      border-radius: 7px;
+      padding: 6px 9px;
+      font-size: 10px;
       outline: none;
       transition: border-color .16s ease, box-shadow .16s ease, background .16s ease
     }
@@ -208,15 +452,15 @@ body {
     }
 
 .peer-search:focus {
-      border-color: rgba(224, 181, 57, .5);
-      background: rgba(18, 23, 33, .96);
-      box-shadow: 0 0 0 3px rgba(224, 181, 57, .12)
+      border-color: var(--b3);
+      background: color-mix(in srgb, var(--input) 90%, transparent);
+      box-shadow: none
     }
 
 #peer-list {
       flex: 1;
       overflow-y: auto;
-      padding: 2px 10px 12px
+      padding: 0 0 4px
     }
 
 #peer-list::-webkit-scrollbar {
@@ -236,13 +480,28 @@ body {
       min-width: 0
     }
 
+#view-host {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden
+    }
+
 #tabbar {
       display: flex;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(20px);
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      width: 100%;
+      background: transparent;
+      border-bottom: none;
+      backdrop-filter: none;
       flex-shrink: 0;
-      overflow-x: auto
+      overflow-x: visible;
+      overflow-y: auto;
+      padding: 0 0 8px
     }
 
 #tabbar::-webkit-scrollbar {
@@ -250,33 +509,67 @@ body {
     }
 
 .tb {
-      padding: 0 16px;
-      height: 42px;
+      width: 36px;
+      min-width: 36px;
+      height: 36px;
       border: none;
       background: transparent;
       color: var(--txt2);
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      font-size: 12px;
+      font-family: inherit;
+      font-size: 16px;
       font-weight: 500;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
+      border-radius: 9px;
       transition: all .15s;
-      white-space: nowrap;
       display: flex;
       align-items: center;
-      gap: 5px
+      justify-content: center;
+      gap: 0;
+      white-space: nowrap;
+      line-height: 1;
+      flex-shrink: 0;
+      position: relative
     }
 
 .tb:hover {
+      background: var(--b);
       color: var(--txt)
     }
 
 .tb.active {
       color: var(--accent);
-      border-bottom-color: var(--accent)
+      background: var(--gold-s);
+      box-shadow: inset 0 0 0 1px var(--gold-b)
+    }
+
+.tb svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: stroke .15s, transform .15s
+    }
+
+.tb:hover svg,
+.tb.active svg {
+      transform: scale(1.02)
+    }
+
+.rail-sep {
+      width: 22px;
+      height: 1px;
+      margin: 5px 0;
+      background: var(--border);
+      flex-shrink: 0
     }
 
 .tb .tbadge {
+      position: absolute;
+      top: 6px;
+      right: 5px;
       background: var(--red);
       color: #fff;
       font-size: 9px;
@@ -318,4 +611,16 @@ body {
         radial-gradient(circle at top left, var(--body-bg-2), transparent 24%),
         radial-gradient(circle at bottom left, var(--body-bg-3), transparent 22%),
         var(--bg) !important;
+    }
+
+@keyframes shellAmbient {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: .88
+      }
+
+      100% {
+        transform: translate3d(0, -10px, 0) scale(1.03);
+        opacity: 1
+      }
     }

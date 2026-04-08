@@ -27,6 +27,8 @@ const IPC = {
   auth: {
     listUsers: () => window.OpsLynk.auth.listUsers(),
     createUser: data => window.OpsLynk.auth.createUser(data),
+    updateSelfProfile: data => window.OpsLynk.auth.updateSelfProfile(data),
+    changePassword: data => window.OpsLynk.auth.changePassword(data),
     deleteUser: data => window.OpsLynk.auth.deleteUser(data)
   },
   on: (channel, handler) => window.OpsLynk.on(channel, handler),

@@ -28,23 +28,42 @@ function renderGroupUI() {
       const select = document.getElementById('bcgroup');
       if (!membersWrap || !groupsWrap || !select) return;
       const sorted = getSortedPeers();
+
       membersWrap.innerHTML = sorted.length ? sorted.map(peer => `
     <label class="member-check">
       <input type="checkbox" value="${peer.id}">
-      <span>${esc(peer.username)}</span>
+      <div class="member-check-body">
+        <div class="member-check-top">
+          <span class="member-check-avatar" style="background:${COLORS[Math.abs(hc(peer.username || '?')) % COLORS.length]}">${esc((peer.username || '?')[0].toUpperCase())}</span>
+          <div>
+            <div class="member-check-name">${esc(peer.username)}</div>
+            <div class="member-check-sub">${esc(peer.systemInfo?.ip || getPeerDisplayTitle(peer))}</div>
+          </div>
+        </div>
+        <div class="member-check-tags">
+          <span class="member-check-tag ${peer.online ? 'online' : 'offline'}">${peer.online ? 'Online' : 'Offline'}</span>
+          <span class="member-check-tag role">${esc(hasAdminAccess(peer.role) ? 'Admin' : 'User')}</span>
+        </div>
+      </div>
     </label>
-  `).join('') : '<div class="group-meta">No connected users yet.</div>';
+  `).join('') : '<div class="group-empty-state">No connected users yet.</div>';
+
       groupsWrap.innerHTML = userGroups.length ? userGroups.map(group => {
         const memberNames = group.memberIds.map(id => peers[id]?.username).filter(Boolean);
         return `
-    <div class="group-row">
-      <div>
-        <div style="font-size:12px;font-weight:700;">${esc(group.name)}</div>
-        <div class="group-meta">${group.memberIds.length} member(s)</div>
+    <article class="group-row">
+      <div class="group-row-copy">
+        <div class="group-row-head">
+          <div class="group-row-title">${esc(group.name)}</div>
+          <div class="group-row-meta">${group.memberIds.length} member(s)</div>
+        </div>
         <div class="group-members">${esc(memberNames.length ? memberNames.join(', ') : 'No members currently online')}</div>
       </div>
-      <button class="ubtn" onclick="deleteGroup('${group.id}')">Delete</button>
-    </div>`;
-      }).join('') : '<div class="group-meta">No saved groups yet.</div>';
+      <div class="group-row-actions">
+        <button class="ubtn" onclick="deleteGroup('${group.id}')">Delete</button>
+      </div>
+    </article>`;
+      }).join('') : '<div class="group-empty-state">No saved groups yet.</div>';
+
       select.innerHTML = `<option value="">All Users</option>` + userGroups.map(group => `<option value="${group.id}">${esc(group.name)}</option>`).join('');
     }

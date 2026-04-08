@@ -5,7 +5,9 @@ function ensureDashboardTabButton() {
       const btn = document.createElement('button');
       btn.className = 'tb atab';
       btn.dataset.tab = 'dashboard';
-      btn.textContent = 'Dashboard';
+      btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="3" y="14" width="7" height="4" rx="1"/><rect x="14" y="11" width="7" height="7" rx="1"/></svg>';
+      btn.title = 'Dashboard';
+      btn.setAttribute('aria-label', 'Dashboard');
       btn.onclick = () => switchTab('dashboard');
       const chatBtn = bar.querySelector('[data-tab="chat"]');
       if (chatBtn?.nextSibling) bar.insertBefore(btn, chatBtn.nextSibling);
@@ -62,7 +64,7 @@ function renderMiniChart(values, variant = '') {
         <polyline class="line" points="${polyline}"></polyline>
         <circle class="point" cx="${last[0]}" cy="${last[1]}" r="4"></circle>
       </svg>
-    </div>`;
+    </article>`;
     }
 
 function pushDashboardSeries(key, value) {
@@ -90,16 +92,89 @@ function clearDashboardActivity() {
       renderDashboard();
     }
 
+function renderDashboardDeviceGrid(items) {
+      if (!items.length) return '<div class="empty"><div class="ei">Devices</div>No discovered devices yet</div>';
+      return items.slice(0, 6).map(peer => {
+        const label = (peer.username || '?').trim();
+        const initial = esc(label[0]?.toUpperCase() || '?');
+        const hostname = peer.systemInfo?.hostname || getPeerDisplayTitle(peer);
+        const ip = peer.systemInfo?.ip || 'IP unavailable';
+        const availabilityClass = peer.online ? 'online' : 'offline';
+        const availabilityLabel = peer.online ? 'Online' : 'Offline';
+        const roleClass = hasAdminAccess(peer.role) ? 'admin' : 'user';
+        const roleLabel = hasAdminAccess(peer.role) ? 'Admin' : 'User';
+        const deliveryClass = peer.online ? 'online' : 'pending';
+        const deliveryLabel = peer.online ? 'Reachable' : 'Pending';
+        const fillColor = peer.online ? 'var(--green)' : 'var(--amber)';
+        const fillWidth = peer.online ? 100 : 34;
+        return `
+      <article class="dash-device-card ${availabilityClass}">
+        <div class="dash-device-top">
+          <div class="dash-device-avatar" style="background:${COLORS[Math.abs(hc(label)) % COLORS.length]}">${initial}</div>
+          <div>
+            <div class="dash-device-name">${esc(label)}</div>
+            <div class="dash-device-ip">${esc(hostname)} · ${esc(ip)}</div>
+          </div>
+        </div>
+        <div class="dash-device-tags">
+          <span class="dash-device-tag ${availabilityClass}">${availabilityLabel}</span>
+          <span class="dash-device-tag ${roleClass}">${roleLabel}</span>
+          <span class="dash-device-tag ${deliveryClass}">${deliveryLabel}</span>
+        </div>
+        <div class="dash-device-bar">
+          <div class="dash-device-bar-fill" style="width:${fillWidth}%;background:${fillColor};"></div>
+        </div>
+      </article>`;
+      }).join('');
+    }
+
+function renderDashboardAlerts(helpCards, offlinePeers) {
+      const alerts = [];
+
+      if (helpCards.length) {
+        const urgentCard = helpCards.find(card => card.dataset.priority === 'urgent');
+        const card = urgentCard || helpCards[0];
+        alerts.push({
+          level: card.dataset.priority === 'urgent' ? 'danger' : 'warn',
+          title: `Help request · ${card.dataset.username || 'User'}`,
+          copy: card.dataset.description || 'A user is waiting for admin assistance.',
+          meta: card.dataset.machine || 'Awaiting action'
+        });
+      }
+
+      if (offlinePeers.length) {
+        const peer = offlinePeers[0];
+        alerts.push({
+          level: 'danger',
+          title: `Peer offline · ${peer.username || 'Unknown device'}`,
+          copy: 'This device is currently unavailable for broadcasts, direct replies, and remote assistance.',
+          meta: peer.systemInfo?.hostname || peer.systemInfo?.ip || getPeerDisplayTitle(peer)
+        });
+      }
+
+      if (!alerts.length) return '<div class="empty"><div class="ei">Alerts</div>No active alerts</div>';
+
+      return alerts.slice(0, 2).map(item => `
+      <article class="dash-alert-card ${item.level}">
+        <div class="dash-alert-title">${esc(item.title)}</div>
+        <div class="dash-alert-copy">${esc(item.copy)}</div>
+        <div class="dash-alert-meta">${esc(item.meta)}</div>
+      </article>`).join('');
+    }
+
 function renderDashboard() {
-      const online = getSortedPeers().filter(p => p.online).length;
-      const total = getSortedPeers().length;
+      const sortedPeers = getSortedPeers();
+      const online = sortedPeers.filter(p => p.online).length;
+      const total = sortedPeers.length;
       const offline = Math.max(0, total - online);
-      const admins = getSortedPeers().filter(p => p.role === 'admin').length;
-      const openHelp = document.querySelectorAll('#helplist .hcard:not([style*="opacity"])').length;
+      const offlinePeers = sortedPeers.filter(p => !p.online);
+      const admins = sortedPeers.filter(p => p.role === 'admin').length;
+      const openHelpCards = [...document.querySelectorAll('#helplist .hcard:not([style*="opacity"])')];
+      const openHelp = openHelpCards.length;
       const presencePercent = total ? Math.round((online / total) * 100) : 0;
       const activityCount = dashboardActivity.length;
       const responsePressure = online ? Math.round((openHelp / online) * 100) : (openHelp ? 100 : 0);
-      const urgentCount = document.querySelectorAll('#helplist .hcard.urgent:not([style*="opacity"])').length;
+      const urgentCount = openHelpCards.filter(card => card.dataset.priority === 'urgent').length;
       pushDashboardSeries('presence', presencePercent);
       pushDashboardSeries('pressure', responsePressure);
 
@@ -158,6 +233,8 @@ function renderDashboard() {
 
       setHtml('presenceSpark', renderMiniChart(dashboardSeries.presence, 'green'));
       setHtml('pressureSpark', renderMiniChart(dashboardSeries.pressure, ''));
+      setHtml('dashDeviceGrid', renderDashboardDeviceGrid(sortedPeers));
+      setHtml('dashAlertList', renderDashboardAlerts(openHelpCards, offlinePeers));
 
       const miniList = document.getElementById('dashMiniList');
       if (miniList) {
@@ -211,7 +288,7 @@ function renderMyProfile() {
       const meForAvatar = _appMode === 'client' ? { ...me, role: 'user' } : me;
       applyAvatar(av, meForAvatar);
       const badge = _appMode !== 'client' ? roleBadgeHTML(me.role) : '';
-      document.getElementById('myname').innerHTML = `${esc(me.username)} ${badge}`;
+      document.getElementById('myname').innerHTML = `<span class="mname-text">${esc(me.username)}</span>${badge}`;
       document.getElementById('mytitle').textContent = getPeerDisplayTitle(me);
       const isSuper = _appMode !== 'client' && isSuperAdminRole(me.role);
       document.getElementById('admin-badge').textContent = isSuper ? 'CONTROL' : 'READY';
@@ -234,27 +311,36 @@ function applyRoleState() {
 
 function renderPeerList() {
       const list = document.getElementById('peer-list');
+      const heading = document.getElementById('peerListHeading');
       const peerCountEl = document.getElementById('broadcast-peer-count') || document.getElementById('peer-count');
       const search = getSidebarSearchValue();
       const totalPeers = getSortedPeers().length;
       if (peerCountEl) peerCountEl.textContent = `${totalPeers} peer${totalPeers === 1 ? '' : 's'}`;
       list.innerHTML = '';
       const sorted = getSortedPeers().filter(p => matchesPeerSearch(p, search));
+      if (heading) heading.textContent = `Online · ${sorted.filter(p => p.online).length}`;
       if (!sorted.length && search) {
+        if (heading) heading.textContent = 'Search';
         list.innerHTML = '<div style="padding:18px 13px;text-align:center;color:var(--txt3);font-size:11px;">No users match your search.</div>';
         return;
       }
       if (!sorted.length) {
+        if (heading) heading.textContent = 'Online · 0';
         list.innerHTML = '<div style="padding:18px 13px;text-align:center;color:var(--txt3);font-size:11px;">No peers found on LAN<br><span style="font-size:10px;animation:pulse 1.5s infinite;display:inline-block;margin-top:4px;">Searching…</span></div>';
         return;
       }
-      sorted.forEach(p => {
+      const onlinePeers = sorted.filter(p => p.online);
+      const offlinePeers = sorted.filter(p => !p.online);
+      const renderPeerCard = p => {
         const roleBadge = roleBadgeHTML(p.role);
         const subtitle = esc(getPeerDisplayTitle(p));
         const el = document.createElement('div');
         el.className = 'pi' + (p.role === 'super_admin' ? ' super-card' : '') + (p.id === activePeerId ? ' active' : '');
         el.dataset.pid = p.id; el.onclick = () => openChat(p.id);
         const u = unread[p.id] || 0;
+        const sideTag = p.online
+          ? (u ? `<div class="ubadge">${u}</div>` : '<span class="peer-state-tag ack">LIVE</span>')
+          : `<span class="peer-state-tag ${hasAdminAccess(p.role) ? 'pending' : 'off'}">${hasAdminAccess(p.role) ? 'PEND' : 'OFF'}</span>`;
         el.innerHTML = `
       ${avatarHTML(p, 's32')}
       <div class="pmeta">
@@ -265,11 +351,19 @@ function renderPeerList() {
       </div>
       <div class="ptrail">
         <span class="pstatus-dot ${p.online ? '' : 'off'}" aria-label="${p.online ? 'Online' : 'Offline'}"><span class="mini-state"></span></span>
-        ${u ? `<div class="ubadge">${u}</div>` : ''}
+        ${sideTag}
       </div>
     `;
         list.appendChild(el);
-      });
+      };
+      onlinePeers.forEach(renderPeerCard);
+      if (offlinePeers.length) {
+        const offlineHeading = document.createElement('div');
+        offlineHeading.className = 'slabel peer-subhead';
+        offlineHeading.textContent = `Offline · ${offlinePeers.length}`;
+        list.appendChild(offlineHeading);
+        offlinePeers.forEach(renderPeerCard);
+      }
     }
 
 function renderUsersTab() {
@@ -293,48 +387,63 @@ function renderUsersTab() {
         if (sort === 'role') return roleRank(b.role) - roleRank(a.role) || Number(b.online) - Number(a.online) || String(a.username || '').localeCompare(String(b.username || ''));
         return comparePeers(a, b);
       });
-      list.innerHTML = filtered.length ? `<div class="users-grid">${filtered.map(p => {
+      list.innerHTML = filtered.length ? `<div class="directory-grid">${filtered.map(p => {
         const lm = p.liveMetrics;
         const cpuPct = lm?.cpuPct ?? null;
         const ramPct = lm?.ramUsedPct ?? null;
+        const initials = esc(String(p.username || '?').slice(0, 2).toUpperCase());
+        const hostname = esc(p.systemInfo?.hostname || '-');
+        const ip = esc(p.systemInfo?.ip || '-');
+        const os = esc(p.systemInfo?.version || p.systemInfo?.os || '-');
+        const device = esc(p.systemInfo?.modelName || p.systemInfo?.manufacturer || '-');
+        const cpuModel = esc(p.systemInfo?.cpuModel || '-');
+        const ram = esc(p.systemInfo?.ramGb ? `${p.systemInfo.ramGb} GB` : '-');
+        const diskFree = esc(p.systemInfo?.disk?.freeGb ? `${p.systemInfo.disk.freeGb} GB` : '-');
+        const roleLabel = hasAdminAccess(p.role) ? 'Admin' : 'User';
         const metricsHTML = lm ? `
-      <div class="umetrics">
-        <div class="umetric-row">
-          <span class="umetric-label">CPU</span>
-          <div class="umetric-bar"><div class="umetric-fill cpu${cpuPct > 80 ? ' hot' : ''}" style="width:${cpuPct}%"></div></div>
-          <span class="umetric-val">${cpuPct}%</span>
+      <div class="directory-metrics">
+        <div class="directory-metric-row">
+          <span class="directory-metric-label">CPU</span>
+          <div class="directory-metric-bar"><div class="directory-metric-fill cpu${cpuPct > 80 ? ' hot' : ''}" style="width:${cpuPct}%"></div></div>
+          <span class="directory-metric-val">${cpuPct}%</span>
         </div>
-        <div class="umetric-row">
-          <span class="umetric-label">RAM</span>
-          <div class="umetric-bar"><div class="umetric-fill ram${ramPct > 85 ? ' hot' : ''}" style="width:${ramPct}%"></div></div>
-          <span class="umetric-val">${ramPct}%</span>
+        <div class="directory-metric-row">
+          <span class="directory-metric-label">RAM</span>
+          <div class="directory-metric-bar"><div class="directory-metric-fill ram${ramPct > 85 ? ' hot' : ''}" style="width:${ramPct}%"></div></div>
+          <span class="directory-metric-val">${ramPct}%</span>
         </div>
       </div>` : '';
         const captureBtn = (p.online && !hasAdminAccess(p.role) && _appMode === 'admin')
           ? `<button class="ubtn" onclick="requestScreenshot('${p.id}')">Capture</button>` : '';
         return `
-    <div class="urow">
-      <div class="uhead">
-        ${avatarHTML(p, 's44')}
-        <div class="ubio">
-          <div class="uname">${esc(p.username)} ${roleBadgeHTML(p.role)}</div>
-          <div class="usub">${esc(getPeerDisplayTitle(p))}</div>
+    <article class="directory-card${p.online ? '' : ' offline'}">
+      <div class="directory-top">
+        <div class="directory-avatar">${initials}</div>
+        <div class="directory-id">
+          <div class="directory-name">${esc(p.username)} ${roleBadgeHTML(p.role)}</div>
+          <div class="directory-sub">${esc(getPeerDisplayTitle(p))}</div>
         </div>
-        <div class="udot ${p.online ? 'on' : 'off'}"></div>
+        <div class="directory-dot${p.online ? '' : ' off'}"></div>
       </div>
-      <div class="ustats">
-        <div class="ustat"><strong>Status</strong><span>${p.online ? 'Online' : 'Offline'}</span></div>
-        <div class="ustat"><strong>Host</strong><span>${esc(p.systemInfo?.hostname || '-')}</span></div>
-        <div class="ustat"><strong>IP</strong><span>${esc(p.systemInfo?.ip || '-')}</span></div>
+      <div class="directory-tags">
+        <span class="directory-tag ${p.online ? 'online' : 'offline'}">${p.online ? 'Online' : 'Offline'}</span>
+        <span class="directory-tag role">${roleLabel}</span>
+        <span class="directory-tag">${hostname}</span>
       </div>
-      <div class="udetails">
-        <div><strong>OS</strong><br>${esc(p.systemInfo?.version || p.systemInfo?.os || '-')}</div>
-        <div><strong>Device</strong><br>${esc(p.systemInfo?.modelName || p.systemInfo?.manufacturer || '-')}</div>
+      <div class="directory-stats">
+        <div class="directory-stat"><strong>Host</strong><span>${hostname}</span></div>
+        <div class="directory-stat"><strong>IP</strong><span>${ip}</span></div>
         <div><strong>CPU / RAM</strong><br>${esc(p.systemInfo?.cpuModel || '-')} • ${esc(p.systemInfo?.ramGb ? `${p.systemInfo.ramGb} GB` : '-')}</div>
-        <div><strong>Disk Free</strong><br>${esc(p.systemInfo?.disk?.freeGb ? `${p.systemInfo.disk.freeGb} GB` : '-')}</div>
+        <div class="directory-stat"><strong>Device</strong><span>${device}</span></div>
       </div>
       ${metricsHTML}
-      <div class="uactions">
+      <div class="directory-details">
+        <div class="directory-detail"><strong>OS</strong><span>${os}</span></div>
+        <div class="directory-detail"><strong>CPU</strong><span>${cpuModel}</span></div>
+        <div class="directory-detail"><strong>RAM</strong><span>${ram}</span></div>
+        <div class="directory-detail"><strong>Free Disk</strong><span>${diskFree}</span></div>
+      </div>
+      <div class="directory-actions">
         <button class="ubtn" onclick="openSpecsModal('${p.id}')">View Specs</button>
         <button class="ubtn" onclick="exportPeerSpecs('${p.id}','txt')">Export TXT</button>
         <button class="ubtn" onclick="openChat('${p.id}')">Open Chat</button>
@@ -352,18 +461,19 @@ function specValue(value, suffix = '') {
 function updateConnPill() {
       const cp = document.getElementById('conn-pill');
       if (!cp) return;
+      const setConnState = (label, cls) => {
+        cp.className = cls;
+        cp.innerHTML = `<span class="conn-dot" aria-hidden="true"></span><span class="conn-label">${label}</span>`;
+      };
       const onlinePeers = getSortedPeers().filter(p => p.online);
       const onlineAdmins = onlinePeers.filter(p => hasAdminAccess(p.role));
       const hasSessionPeer = _appMode === 'client' ? onlineAdmins.length > 0 : onlinePeers.length > 0;
       if (!networkReady || !networkOnline) {
-        cp.textContent = '● Disconnected';
-        cp.className = 'off';
+        setConnState('Disconnected', 'off');
       } else if (hasSessionPeer) {
-        cp.textContent = '● Connected';
-        cp.className = '';
+        setConnState('Connected', 'live');
       } else {
-        cp.textContent = '● Searching…';
-        cp.className = 'searching';
+        setConnState('Searching...', 'searching');
       }
       renderDashboard();
     }

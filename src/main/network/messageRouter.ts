@@ -57,6 +57,8 @@ export function createMessageRouter({
   onTrustDecision,
   captureScreenshot
 }: RouterDeps): { handleP2PMessage: (ws: unknown, msg: Record<string, unknown>, remoteIp: string) => void } {
+  const debugLog = (..._args: unknown[]): void => {};
+
   const checkSensitiveTrust = (msg: Record<string, unknown>, commandType: string): boolean => {
     const fromId = String(msg.fromId || '');
     const sender = state.peers.get(fromId);
@@ -82,7 +84,7 @@ export function createMessageRouter({
 
   function handleP2PMessage(ws: unknown, msg: Record<string, unknown>, remoteIp: string): void {
     const type = String(msg.type || '');
-    console.log('[ACK-DEBUG] type:', type, 'msgId:', msg.msgId);
+    debugLog('[ACK-DEBUG] type:', type, 'msgId:', msg.msgId);
 
     for (const [, peer] of state.peers) {
       if (peer.ws === ws) {
@@ -95,7 +97,7 @@ export function createMessageRouter({
 
     // Auto-ACK every incoming message so sender can track delivery
     if (msg.msgId && ws && type !== 'ack') {
-      console.log('[ACK-DEBUG] sending ACK for:', msg.msgId);
+      debugLog('[ACK-DEBUG] sending ACK for:', msg.msgId);
       wsNet.safeSend(ws, { type: 'ack', msgId: msg.msgId, fromId: state.myProfile?.id });
     }
 

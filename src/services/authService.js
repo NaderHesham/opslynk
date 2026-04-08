@@ -95,6 +95,25 @@ async function changePassword(userId, currentPassword, newPassword) {
   return { success: true };
 }
 
+function updateSelfProfile(userId, username) {
+  const normalized = String(username || '').trim();
+  if (!normalized) return { success: false, error: 'Display name is required' };
+
+  const users = loadUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) return { success: false, error: 'User not found' };
+  if (user.role !== 'super_admin') {
+    return { success: false, error: 'Only Super Admin can update this account profile' };
+  }
+
+  const existing = users.find(u => u.id !== userId && String(u.username || '').toLowerCase() === normalized.toLowerCase());
+  if (existing) return { success: false, error: 'Username already exists' };
+
+  user.username = normalized;
+  saveUsers(users);
+  return { success: true, user: sanitize(user) };
+}
+
 function deleteUser(userId, requesterId) {
   if (userId === requesterId) return { success: false, error: 'Cannot delete your own account' };
   const users  = loadUsers();
@@ -121,6 +140,7 @@ module.exports = {
   createSuperAdmin,
   login,
   createUser,
+  updateSelfProfile,
   changePassword,
   deleteUser,
   listUsers

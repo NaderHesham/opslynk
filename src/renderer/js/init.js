@@ -16,7 +16,7 @@ async function init() {
         removed.forEach(el => el.remove());
       }
 
-      me = d.profile; _acctCurrentUserId = me?.id || null; history = d.history || {};
+      me = d.profile; _acctCurrentUserId = me?.authUserId || null; history = d.history || {};
       userGroups = d.userGroups || [];
       networkReady = !!d.networkReady;
       networkOnline = typeof navigator !== 'undefined' ? navigator.onLine : !!d.networkOnline;
@@ -59,7 +59,6 @@ async function init() {
       ensureChatLayout();
       renderGroupUI();
       renderHelpRequests();
-      sanitizeVisibleText();
       updateConnPill();
       updateEmojiButton();
       renderDashboard();

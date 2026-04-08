@@ -5,6 +5,7 @@
   "author": "OpsLynk Team",
   "main": "src/main.js",
   "scripts": {
+    "prepare:portable": "node scripts/prepare-portable-build.js",
     "build:ts": "tsc -p tsconfig.main.json",
     "build:ts-main": "npm run build:ts",
     "typecheck": "tsc -p tsconfig.main.json --noEmit",
@@ -16,12 +17,12 @@
     "test:main-refactor": "node --test tests/main-refactor/*.test.js",
     "prebuild": "npm run build:ts",
     "build": "electron-builder --win --x64",
-    "build:client": "npm run build:ts && electron-builder --win portable --x64 --config.extraMetadata.main=src/main-client.js --config.artifactName=\"OpsLynk-Client-${version}.${ext}\"",
-    "build:admin": "npm run build:ts && electron-builder --win portable --x64 --config.extraMetadata.main=src/main-admin.js --config.artifactName=\"OpsLynk-Admin-${version}.${ext}\"",
+    "build:client": "npm run build:ts && npm run prepare:portable && electron-builder --win portable --x64 --config.extraMetadata.main=src/main-client.js --config.artifactName=\"OpsLynk-Client-${version}.${ext}\"",
+    "build:admin": "npm run build:ts && npm run prepare:portable && electron-builder --win portable --x64 --config.extraMetadata.main=src/main-admin.js --config.artifactName=\"OpsLynk-Admin-${version}.${ext}\"",
     "prebuild-msi": "npm run build:ts",
     "build-msi": "electron-builder --win msi --x64",
     "prebuild-portable": "npm run build:ts",
-    "build-portable": "electron-builder --win portable --x64"
+    "build-portable": "npm run prepare:portable && electron-builder --win portable --x64"
   },
   "build": {
     "appId": "com.opslynk.app",

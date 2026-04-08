@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>OpsLynk — Final Dashboard Mockup (3 Themes)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+
+/* ═══════════════════════════════════════
+   THEME SYSTEM — 3 themes via CSS vars
+   ═══════════════════════════════════════ */
+
+[data-theme="dark"] {
+  --bg:#08090e;
+  --glass:rgba(13,15,22,.62);
+  --glass2:rgba(16,19,28,.55);
+  --glass3:rgba(20,24,36,.50);
+  --frost:saturate(180%) blur(18px);
+  --b:rgba(255,255,255,.06);
+  --b2:rgba(255,255,255,.10);
+  --b3:rgba(255,255,255,.16);
+  --gold:#d4a745;
+  --gold2:#e8c56a;
+  --gold-s:rgba(212,167,69,.08);
+  --gold-b:rgba(212,167,69,.18);
+  --cyan:#3ee8e0;
+  --cyan-s:rgba(62,232,224,.07);
+  --cyan-b:rgba(62,232,224,.16);
+  --green:#34d399;
+  --green-s:rgba(52,211,153,.07);
+  --green-b:rgba(52,211,153,.16);
+  --red:#f87171;
+  --red-s:rgba(248,113,113,.07);
+  --red-b:rgba(248,113,113,.16);
+  --amber:#fbbf24;
+  --amber-s:rgba(251,191,36,.07);
+  --amber-b:rgba(251,191,36,.16);
+  --txt:#f0f2f8;
+  --txt2:#8b93a8;
+  --txt3:#464f66;
+  --particle-r:212;--particle-g:167;--particle-b:69;
+  --logo-shadow:rgba(212,167,69,.25);
+  --ring-stroke:var(--gold);
+  --ring-txt:var(--gold2);
+}
+
+[data-theme="light"] {
+  --bg:#f4f5f7;
+  --glass:rgba(255,255,255,.72);
+  --glass2:rgba(248,249,252,.65);
+  --glass3:rgba(240,242,246,.6);
+  --frost:saturate(120%) blur(18px);
+  --b:rgba(0,0,0,.06);
+  --b2:rgba(0,0,0,.10);
+  --b3:rgba(0,0,0,.16);
+  --gold:#a07828;
+  --gold2:#8a6820;
+  --gold-s:rgba(160,120,40,.07);
+  --gold-b:rgba(160,120,40,.16);
+  --cyan:#0d9488;
+  --cyan-s:rgba(13,148,136,.06);
+  --cyan-b:rgba(13,148,136,.14);
+  --green:#16a34a;
+  --green-s:rgba(22,163,74,.06);
+  --green-b:rgba(22,163,74,.14);
+  --red:#dc2626;
+  --red-s:rgba(220,38,38,.06);
+  --red-b:rgba(220,38,38,.14);
+  --amber:#d97706;
+  --amber-s:rgba(217,119,6,.06);
+  --amber-b:rgba(217,119,6,.14);
+  --txt:#1a1c22;
+  --txt2:#5f6577;
+  --txt3:#9ca3b4;
+  --particle-r:160;--particle-g:120;--particle-b:40;
+  --logo-shadow:rgba(160,120,40,.2);
+  --ring-stroke:var(--gold);
+  --ring-txt:var(--gold2);
+}
+
+[data-theme="gaming"] {
+  --bg:#0a0612;
+  --glass:rgba(16,10,28,.65);
+  --glass2:rgba(22,14,38,.58);
+  --glass3:rgba(28,18,48,.52);
+  --frost:saturate(200%) blur(18px);
+  --b:rgba(180,120,255,.08);
+  --b2:rgba(180,120,255,.14);
+  --b3:rgba(180,120,255,.22);
+  --gold:#c084fc;
+  --gold2:#d8b4fe;
+  --gold-s:rgba(192,132,252,.08);
+  --gold-b:rgba(192,132,252,.2);
+  --cyan:#22d3ee;
+  --cyan-s:rgba(34,211,238,.07);
+  --cyan-b:rgba(34,211,238,.18);
+  --green:#4ade80;
+  --green-s:rgba(74,222,128,.07);
+  --green-b:rgba(74,222,128,.16);
+  --red:#fb7185;
+  --red-s:rgba(251,113,133,.07);
+  --red-b:rgba(251,113,133,.16);
+  --amber:#facc15;
+  --amber-s:rgba(250,204,21,.07);
+  --amber-b:rgba(250,204,21,.16);
+  --txt:#f5f0ff;
+  --txt2:#a78bcc;
+  --txt3:#5c4580;
+  --particle-r:192;--particle-g:132;--particle-b:252;
+  --logo-shadow:rgba(192,132,252,.3);
+  --ring-stroke:var(--gold);
+  --ring-txt:var(--gold2);
+}
+
+/* ═══ BASE ═══ */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',system-ui,sans-serif;background:var(--bg);color:var(--txt);height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased;transition:background .4s,color .3s}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+.shell{position:relative;z-index:1;display:grid;grid-template-columns:54px 1fr;grid-template-rows:44px 1fr;height:100vh}
+
+/* ═══ THEME SWITCHER (demo only) ═══ */
+.theme-sw{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:99;display:flex;gap:3px;padding:3px;border-radius:8px;background:var(--glass);backdrop-filter:var(--frost);border:1px solid var(--b)}
+.theme-sw button{font-family:'Outfit',sans-serif;font-size:9px;font-weight:600;padding:4px 12px;border-radius:5px;border:none;cursor:pointer;transition:all .15s;background:transparent;color:var(--txt2)}
+.theme-sw button.on{background:var(--gold-s);color:var(--gold);border:1px solid var(--gold-b)}
+
+/* ═══ TITLEBAR ═══ */
+.tb{grid-column:1/-1;display:flex;align-items:center;padding:0 16px;background:var(--glass);backdrop-filter:var(--frost);border-bottom:1px solid var(--b);gap:10px;transition:background .3s}
+.lm{width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,var(--gold),var(--gold2));box-shadow:0 0 14px var(--logo-shadow);transition:all .3s}
+.lt{font-size:12px;font-weight:700;letter-spacing:-.01em;color:var(--gold);transition:color .3s}
+.ls{font-size:8px;color:var(--txt3);font-weight:700;letter-spacing:.7px;text-transform:uppercase;margin-left:3px}
+.tbs{flex:1}
+.cp{display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:16px;border:1px solid var(--cyan-b);font-size:9px;font-weight:600;color:var(--cyan);transition:all .3s}
+.cp i{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);animation:p 2s ease-in-out infinite;display:inline-block}
+@keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}
+.wbs{display:flex;margin-left:10px}
+.wbs span{width:34px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--txt3);font-size:14px;cursor:pointer;transition:color .15s}
+.wbs span:hover{color:var(--txt2)}
+
+/* ═══ RAIL ═══ */
+.rail{grid-row:2;display:flex;flex-direction:column;align-items:center;padding:10px 0;background:var(--glass);backdrop-filter:var(--frost);border-right:1px solid var(--b);gap:3px;transition:background .3s}
+.ri{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .12s;position:relative}
+.ri svg{width:16px;height:16px;stroke:var(--txt3);stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;transition:stroke .15s}
+.ri:hover{background:var(--b)}
+.ri:hover svg{stroke:var(--txt2)}
+.ri.on{background:var(--gold-s);border:1px solid var(--gold-b)}
+.ri.on svg{stroke:var(--gold)}
+.ri .n{position:absolute;top:5px;right:5px;width:5px;height:5px;border-radius:50%;background:var(--red);border:1.5px solid var(--bg)}
+.rs{width:22px;height:1px;background:var(--b);margin:5px 0}
+
+/* ═══ CONTENT AREA ═══ */
+.ct{grid-row:2;display:flex;overflow:hidden}
+
+/* ═══ SIDEBAR — COLLAPSIBLE ═══ */
+.sb{width:210px;min-width:210px;background:var(--glass);backdrop-filter:var(--frost);border-right:1px solid var(--b);padding:14px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;transition:width .3s cubic-bezier(.4,0,.2,1),min-width .3s cubic-bezier(.4,0,.2,1),padding .3s,opacity .3s,border .3s}
+.sb::-webkit-scrollbar{width:2px}
+.sb::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.sb.closed{width:0;min-width:0;padding:0;border-right:none;overflow:hidden;opacity:0}
+.sb-toggle{position:absolute;top:10px;z-index:10;width:24px;height:24px;border-radius:6px;background:var(--glass2);backdrop-filter:var(--frost);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--txt3);font-size:11px}
+.sb-toggle:hover{background:var(--glass3);color:var(--txt2);border-color:var(--b2)}
+.sb-toggle.open{left:222px}
+.sb-toggle.open::after{content:'◂'}
+.sb-toggle.collapsed{left:6px}
+.sb-toggle.collapsed::after{content:'▸'}
+
+.up{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:10px;background:var(--glass2);border:1px solid var(--b);transition:background .3s}
+.ua{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--bg);transition:all .3s}
+.un{font-size:12px;font-weight:600}
+.ur{font-size:9px;color:var(--txt2);margin-top:1px}
+.ub{display:inline-block;font-size:7px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 5px;border-radius:3px;background:var(--gold-s);color:var(--gold);border:1px solid var(--gold-b);margin-top:2px;transition:all .3s}
+.si{width:100%;padding:6px 9px;border-radius:7px;background:var(--glass3);border:1px solid var(--b);color:var(--txt);font-size:10px;font-family:'Outfit',sans-serif;outline:none;transition:all .2s}
+.si:focus{border-color:var(--b3)}
+.si::placeholder{color:var(--txt3)}
+.sl{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin:5px 0 3px}
+.pr{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;cursor:pointer;transition:background .12s}
+.pr:hover{background:var(--b)}
+.pa{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;position:relative;flex-shrink:0}
+.pd{position:absolute;bottom:-1px;right:-1px;width:7px;height:7px;border-radius:50%;border:1.5px solid var(--bg);transition:border-color .3s}
+.pn{font-size:10px;font-weight:500}
+.ps{font-size:8px;color:var(--txt3)}
+.ptag{font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px;margin-left:auto}
+
+/* ═══ MAIN ═══ */
+.mn-wrap{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden}
+.mn{flex:1;overflow-y:auto;padding:18px;background:transparent}
+.mn::-webkit-scrollbar{width:3px}
+.mn::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* Hero */
+.hero{padding:20px 22px 18px;border-radius:16px;background:var(--glass);backdrop-filter:var(--frost);border:1px solid var(--b);position:relative;overflow:hidden;margin-bottom:14px;transition:background .3s,border-color .3s}
+.hero::after{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,var(--gold-s),transparent 60%);pointer-events:none;transition:all .3s}
+.ht{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.hk{font-size:8px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:5px;transition:color .3s}
+.hh{font-size:20px;font-weight:800;letter-spacing:-.03em;line-height:1.2}
+.hp{font-size:11px;color:var(--txt2);line-height:1.55;margin-top:5px;max-width:400px}
+.hc{display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;background:var(--cyan-s);border:1px solid var(--cyan-b);font-size:10px;font-weight:500;color:var(--cyan);white-space:nowrap;flex-shrink:0;transition:all .3s}
+
+/* Metrics */
+.mrow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.mc{padding:13px 14px;border-radius:13px;background:var(--glass);backdrop-filter:var(--frost);border:1px solid var(--b);transition:all .2s;position:relative;overflow:hidden}
+.mc:hover{border-color:var(--b3);transform:translateY(-2px)}
+.ml{font-size:8px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--txt3);margin-bottom:6px}
+.mv{font-size:24px;font-weight:900;letter-spacing:-.05em;font-family:'Space Mono',monospace}
+.ms{font-size:9px;color:var(--txt3);margin-top:4px}
+.mt{display:inline-flex;align-items:center;gap:3px;margin-top:8px;font-size:8px;font-weight:700;padding:2px 7px;border-radius:5px;transition:all .3s}
+.tg{background:var(--green-s);color:var(--green);border:1px solid var(--green-b)}
+.ta{background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b)}
+.tc{background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)}
+.tgo{background:var(--gold-s);color:var(--gold);border:1px solid var(--gold-b)}
+
+/* Device Grid */
+.dg{margin-bottom:14px}
+.dg-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.dg-t{font-size:13px;font-weight:700}
+.dg-s{font-size:9px;color:var(--txt3);margin-top:1px}
+.dg-f{display:flex;gap:3px}
+.fp{font-size:8px;font-weight:600;padding:3px 8px;border-radius:5px;border:1px solid var(--b);background:transparent;color:var(--txt3);cursor:pointer;font-family:'Outfit',sans-serif;transition:all .12s}
+.fp:hover{border-color:var(--b2);color:var(--txt2)}
+.fp.on{background:var(--gold-s);border-color:var(--gold-b);color:var(--gold)}
+.dgg{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:8px}
+.dv{padding:12px;border-radius:12px;background:var(--glass);backdrop-filter:var(--frost);border:1px solid var(--b);transition:all .18s;cursor:pointer}
+.dv:hover{border-color:var(--b3);transform:translateY(-1px)}
+.dv-t{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.dv-a{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;flex-shrink:0}
+.dv-n{font-size:11px;font-weight:600}
+.dv-ip{font-size:8px;color:var(--txt3);font-family:'Space Mono',monospace}
+.dv-m{display:flex;gap:4px;flex-wrap:wrap}
+.dv-tag{font-size:7px;font-weight:700;padding:1px 5px;border-radius:3px}
+.dv-b{margin-top:8px;height:3px;border-radius:2px;background:var(--b);overflow:hidden}
+.dv-bf{height:100%;border-radius:2px;transition:width .5s ease}
+
+/* Two col */
+.tc2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sc{padding:14px;border-radius:13px;background:var(--glass);backdrop-filter:var(--frost);border:1px solid var(--b);transition:background .3s,border-color .3s}
+.sct{font-size:12px;font-weight:700;margin-bottom:1px}
+.scs{font-size:9px;color:var(--txt3);margin-bottom:10px}
+.sr{display:flex;justify-content:space-between;align-items:flex-start}
+.sv{font-size:20px;font-weight:900;font-family:'Space Mono',monospace;letter-spacing:-.03em}
+.sbar{height:3px;border-radius:2px;background:var(--b);margin-top:10px;overflow:hidden}
+.sbf{height:100%;border-radius:2px}
+.rbo{display:flex;align-items:center;gap:14px;margin-top:6px}
+.rst{display:flex;gap:12px}
+.rv{font-size:15px;font-weight:800;font-family:'Space Mono',monospace}
+.rl{font-size:7px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+
+/* Quick Actions */
+.qa{padding:14px;border-radius:13px;background:var(--glass);backdrop-filter:var(--frost);border:1px solid var(--b);margin-bottom:14px;transition:background .3s}
+.qg{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.qb{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;background:var(--glass3);border:1px solid var(--b);cursor:pointer;transition:all .15s}
+.qb:hover{border-color:var(--b3);transform:translateY(-1px)}
+.qi{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
+.ql{font-size:10px;font-weight:600}
+.qd{font-size:8px;color:var(--txt3);margin-top:1px}
+
+/* ═══ RIGHT PANEL ═══ */
+.rp{width:310px;min-width:310px;background:var(--glass);backdrop-filter:var(--frost);border-left:1px solid var(--b);display:flex;flex-direction:column;overflow:hidden;transition:background .3s}
+.rps{padding:13px;border-bottom:1px solid var(--b)}
+.rps:last-child{border-bottom:none;flex:1;overflow-y:auto}
+.rps:last-child::-webkit-scrollbar{width:2px}
+.rps:last-child::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+.rpt{font-size:11px;font-weight:700;margin-bottom:1px}
+.rpsu{font-size:8px;color:var(--txt3);margin-bottom:9px}
+.hi{display:flex;align-items:flex-start;gap:8px;padding:6px 0}
+.hdo{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.hl{font-size:10px;font-weight:500}
+.hde{font-size:8px;color:var(--txt3)}
+.alc{padding:10px 12px;border-radius:10px;border:1px solid;margin-bottom:7px}
+.alt{font-size:10px;font-weight:600}
+.ald{font-size:8px;margin-top:2px;opacity:.7}
+.alti{font-size:7px;margin-top:3px;opacity:.5}
+.tlh{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+.clr{font-size:8px;font-weight:600;color:var(--txt3);padding:3px 8px;border-radius:5px;border:1px solid var(--b);background:transparent;cursor:pointer;font-family:'Outfit',sans-serif;transition:all .12s}
+.clr:hover{border-color:var(--b2);color:var(--txt2)}
+.tli{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--b)}
+.tli:last-child{border-bottom:none}
+.tic{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
+.tit{font-size:10px;font-weight:600}
+.tid{font-size:8px;color:var(--txt3);margin-top:1px}
+.tidl{font-size:7px;font-weight:700;padding:1px 4px;border-radius:3px;margin-top:2px;display:inline-block}
+.tim{font-size:7px;color:var(--txt3);margin-left:auto;white-space:nowrap;padding-top:2px}
+
+/* ═══ USERS TAB PREVIEW (sub-tabs demo) ═══ */
+.users-demo{display:none;flex:1;flex-direction:column;overflow:hidden}
+.users-demo.show{display:flex}
+.sub-tabs{display:flex;gap:3px;padding:12px 18px 0;background:var(--glass);backdrop-filter:var(--frost);border-bottom:1px solid var(--b)}
+.sub-tab{font-size:10px;font-weight:600;padding:7px 14px;border-radius:7px 7px 0 0;border:1px solid transparent;border-bottom:none;cursor:pointer;color:var(--txt3);transition:all .12s;font-family:'Outfit',sans-serif;background:transparent}
+.sub-tab:hover{color:var(--txt2)}
+.sub-tab.on{background:var(--gold-s);color:var(--gold);border-color:var(--b)}
+.sub-content{flex:1;padding:18px;overflow-y:auto;font-size:11px;color:var(--txt2);line-height:1.6}
+
+/* tab switching */
+.dash-view{display:flex;flex:1;overflow:hidden}
+.dash-view.hide{display:none}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- Theme Switcher (demo) -->
+<div class="theme-sw">
+  <button class="on" onclick="setTheme('dark')">Dark</button>
+  <button onclick="setTheme('light')">Light</button>
+  <button onclick="setTheme('gaming')">Gaming</button>
+</div>
+
+<canvas id="bg"></canvas>
+
+<div class="shell">
+
+  <!-- TITLEBAR -->
+  <div class="tb">
+    <div class="lm"></div>
+    <span class="lt">OpsLynk</span>
+    <span class="ls">LAN</span>
+    <div class="tbs"></div>
+    <div class="cp"><i></i> Connected</div>
+    <div class="wbs"><span>⚙</span><span>─</span><span>□</span><span>✕</span></div>
+  </div>
+
+  <!-- RAIL -->
+  <div class="rail">
+    <div class="ri on" title="Dashboard" onclick="showView('dash')">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="3" y="14" width="7" height="4" rx="1"/><rect x="14" y="11" width="7" height="7" rx="1"/></svg>
+    </div>
+    <div class="ri" title="Chat">
+      <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div class="ri" title="Broadcast">
+      <svg viewBox="0 0 24 24"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.4"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.4"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/></svg>
+    </div>
+    <div class="ri" title="Replies">
+      <svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+    </div>
+    <div class="rs"></div>
+    <div class="ri" title="Users" onclick="showView('users')">
+      <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div class="ri" title="Help">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="n"></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="ct">
+
+    <!-- SIDEBAR -->
+    <div class="sb" id="sidebar">
+      <div class="up">
+        <div class="ua">N</div>
+        <div>
+          <div class="un">Nader</div>
+          <div class="ur">IT Specialist</div>
+          <div class="ub">Super Admin</div>
+        </div>
+      </div>
+      <input class="si" placeholder="Search users..."/>
+      <div class="sl">Online · 2</div>
+      <div class="pr">
+        <div class="pa" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff">M<div class="pd" style="background:var(--green)"></div></div>
+        <div><div class="pn">Manar Nabil</div><div class="ps">192.168.1.45</div></div>
+        <div class="ptag" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">ACK</div>
+      </div>
+      <div class="pr">
+        <div class="pa" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff">A<div class="pd" style="background:var(--green)"></div></div>
+        <div><div class="pn">Ahmed Samir</div><div class="ps">192.168.1.52</div></div>
+        <div class="ptag" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">ACK</div>
+      </div>
+      <div class="sl" style="margin-top:4px">Offline · 2</div>
+      <div class="pr" style="opacity:.4">
+        <div class="pa" style="background:linear-gradient(135deg,#22c55e,#06b6d4);color:#fff">S<div class="pd" style="background:var(--txt3)"></div></div>
+        <div><div class="pn">Sara Mahmoud</div><div class="ps">Last seen 14:22</div></div>
+        <div class="ptag" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">OFF</div>
+      </div>
+      <div class="pr" style="opacity:.4">
+        <div class="pa" style="background:linear-gradient(135deg,#14b8a6,#3b82f6);color:#fff">K<div class="pd" style="background:var(--txt3)"></div></div>
+        <div><div class="pn">Khaled Youssef</div><div class="ps">Last seen 09:15</div></div>
+        <div class="ptag" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b)">PEND</div>
+      </div>
+    </div>
+
+    <!-- MAIN WRAP -->
+    <div class="mn-wrap">
+      <div id="sbToggle" class="sb-toggle open" onclick="toggleSidebar()"></div>
+
+      <!-- DASHBOARD VIEW -->
+      <div class="dash-view" id="dashView">
+        <div class="mn">
+          <div class="hero">
+            <div class="ht">
+              <div>
+                <div class="hk">Ops Center</div>
+                <div class="hh">Admin operations at a glance</div>
+                <div class="hp">Track network presence, help queue pressure, message delivery, and rapid response actions from one control surface.</div>
+              </div>
+              <div class="hc"><i></i> Monitoring live</div>
+            </div>
+          </div>
+
+          <div class="mrow">
+            <div class="mc"><div class="ml">Connected users</div><div class="mv" style="color:var(--green)">2</div><div class="ms">2 offline of 4 discovered</div><div class="mt tg">50% fleet</div></div>
+            <div class="mc"><div class="ml">Open tickets</div><div class="mv" style="color:var(--amber)">1</div><div class="ms">1 help request awaiting</div><div class="mt ta">Needs attention</div></div>
+            <div class="mc"><div class="ml">Delivery rate</div><div class="mv" style="color:var(--cyan)">87%</div><div class="ms">Sent / Delivered / Failed</div><div class="mt tc">13 / 11 / 2</div></div>
+            <div class="mc"><div class="ml">Message pulse</div><div class="mv" style="color:var(--gold)">6</div><div class="ms">Recent admin events</div><div class="mt tgo">Timeline live</div></div>
+          </div>
+
+          <div class="dg">
+            <div class="dg-h">
+              <div><div class="dg-t">Device grid</div><div class="dg-s">Discovered machines with live delivery status</div></div>
+              <div class="dg-f"><button class="fp on">All</button><button class="fp">Online</button><button class="fp">Offline</button></div>
+            </div>
+            <div class="dgg">
+              <div class="dv">
+                <div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff">M</div><div><div class="dv-n">Manar Nabil</div><div class="dv-ip">192.168.1.45</div></div></div>
+                <div class="dv-m"><span class="dv-tag" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">Online</span><span class="dv-tag" style="background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)">User</span><span class="dv-tag" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">Delivered</span></div>
+                <div class="dv-b"><div class="dv-bf" style="width:100%;background:var(--green)"></div></div>
+              </div>
+              <div class="dv">
+                <div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff">A</div><div><div class="dv-n">Ahmed Samir</div><div class="dv-ip">192.168.1.52</div></div></div>
+                <div class="dv-m"><span class="dv-tag" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">Online</span><span class="dv-tag" style="background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)">User</span><span class="dv-tag" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">Delivered</span></div>
+                <div class="dv-b"><div class="dv-bf" style="width:100%;background:var(--green)"></div></div>
+              </div>
+              <div class="dv" style="opacity:.6">
+                <div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,#22c55e,#06b6d4);color:#fff">S</div><div><div class="dv-n">Sara Mahmoud</div><div class="dv-ip">192.168.1.78</div></div></div>
+                <div class="dv-m"><span class="dv-tag" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">Offline</span><span class="dv-tag" style="background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)">User</span><span class="dv-tag" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">Failed</span></div>
+                <div class="dv-b"><div class="dv-bf" style="width:0%;background:var(--red)"></div></div>
+              </div>
+              <div class="dv" style="opacity:.7">
+                <div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,#14b8a6,#3b82f6);color:#fff">K</div><div><div class="dv-n">Khaled Youssef</div><div class="dv-ip">192.168.1.91</div></div></div>
+                <div class="dv-m"><span class="dv-tag" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">Offline</span><span class="dv-tag" style="background:var(--gold-s);color:var(--gold);border:1px solid var(--gold-b)">Admin</span><span class="dv-tag" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b)">Pending</span></div>
+                <div class="dv-b"><div class="dv-bf" style="width:40%;background:var(--amber)"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tc2">
+            <div class="sc">
+              <div class="sct">System signals</div><div class="scs">Live operational indicators</div>
+              <div style="margin-bottom:12px">
+                <div class="sr"><div><div class="ml" style="margin-bottom:3px">Presence trend</div><div class="sv" style="color:var(--green)">50%</div></div><div class="mt tg" style="margin-top:0">Healthy</div></div>
+                <div class="sbar"><div class="sbf" style="width:50%;background:var(--green)"></div></div>
+              </div>
+              <div>
+                <div class="sr"><div><div class="ml" style="margin-bottom:3px">Response pressure</div><div class="sv">Low</div></div><div class="mt ta" style="margin-top:0">1 open</div></div>
+                <div class="sbar"><div class="sbf" style="width:18%;background:var(--amber)"></div></div>
+              </div>
+            </div>
+            <div class="sc">
+              <div class="sct">Fleet coverage</div><div class="scs">Network reachability</div>
+              <div class="rbo">
+                <svg width="68" height="68" viewBox="0 0 68 68">
+                  <circle cx="34" cy="34" r="26" fill="none" stroke="var(--b)" stroke-width="5"/>
+                  <circle cx="34" cy="34" r="26" fill="none" stroke="var(--ring-stroke)" stroke-width="5" stroke-dasharray="82 82" stroke-linecap="round" transform="rotate(-90 34 34)"/>
+                  <text x="34" y="32" text-anchor="middle" fill="var(--ring-txt)" font-size="13" font-weight="800" font-family="'Space Mono',monospace">50%</text>
+                  <text x="34" y="44" text-anchor="middle" fill="var(--txt3)" font-size="6" font-weight="700" letter-spacing=".08em">COVERAGE</text>
+                </svg>
+                <div class="rst">
+                  <div><div class="rv" style="color:var(--green)">2</div><div class="rl">Reachable</div></div>
+                  <div><div class="rv" style="color:var(--txt3)">2</div><div class="rl">Offline</div></div>
+                  <div><div class="rv" style="color:var(--gold)">1</div><div class="rl">Admins</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="qa">
+            <div class="sct" style="margin-bottom:1px">Control room</div><div class="scs">Fast paths into admin actions</div>
+            <div class="qg">
+              <div class="qb"><div class="qi" style="background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)">B</div><div><div class="ql">Broadcast center</div><div class="qd">Audience targeting & delivery</div></div></div>
+              <div class="qb"><div class="qi" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b)">!</div><div><div class="ql">Help queue</div><div class="qd">Review tickets & chat</div></div></div>
+              <div class="qb"><div class="qi" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">U</div><div><div class="ql">User directory</div><div class="qd">Machines & specs</div></div></div>
+              <div class="qb"><div class="qi" style="background:var(--gold-s);color:var(--gold);border:1px solid var(--gold-b)">G</div><div><div class="ql">Groups</div><div class="qd">Saved audiences</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="rp">
+          <div class="rps">
+            <div class="rpt">Live status</div><div class="rpsu">Session health checks</div>
+            <div class="hi"><div class="hdo" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div><div class="hl">LAN connectivity healthy</div><div class="hde">Ready to discover and route</div></div></div>
+            <div class="hi"><div class="hdo" style="background:var(--amber);box-shadow:0 0 6px var(--amber)"></div><div><div class="hl">1 help request pending</div><div class="hde">Manar Nabil · 18:41</div></div></div>
+            <div class="hi"><div class="hdo" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div><div><div class="hl">2 of 4 peers reachable</div><div class="hde">2 endpoints offline</div></div></div>
+            <div class="hi"><div class="hdo" style="background:var(--cyan);box-shadow:0 0 6px var(--cyan)"></div><div><div class="hl">Delivery rate: 87%</div><div class="hde">2 messages failed</div></div></div>
+          </div>
+          <div class="rps">
+            <div class="rpt">Alerts</div><div class="rpsu">Issues requiring attention</div>
+            <div class="alc" style="background:var(--amber-s);border-color:var(--amber-b)"><div class="alt" style="color:var(--amber)">Help request · Manar Nabil</div><div class="ald" style="color:var(--amber)">"Can't access shared printer on floor 2"</div><div class="alti" style="color:var(--amber)">18:41 · Waiting 4 min</div></div>
+            <div class="alc" style="background:var(--red-s);border-color:var(--red-b)"><div class="alt" style="color:var(--red)">Delivery failed · Sara Mahmoud</div><div class="ald" style="color:var(--red)">"Server maintenance" not received</div><div class="alti" style="color:var(--red)">18:38 · Retry queued</div></div>
+          </div>
+          <div class="rps" style="flex:1;overflow-y:auto">
+            <div class="tlh"><div><div class="rpt">Activity timeline</div><div class="rpsu">Auto-surfacing events</div></div><button class="clr">Clear</button></div>
+            <div class="tli"><div class="tic" style="background:var(--amber-s);color:var(--amber)">?</div><div><div class="tit">Help request received</div><div class="tid">Manar Nabil · Printer issue</div></div><div class="tim">18:41</div></div>
+            <div class="tli"><div class="tic" style="background:var(--cyan-s);color:var(--cyan)">B</div><div><div class="tit">Broadcast sent</div><div class="tid">"Server maintenance" → All</div><div class="tidl" style="background:var(--amber-s);color:var(--amber);border:1px solid var(--amber-b)">2 ok · 2 fail</div></div><div class="tim">18:38</div></div>
+            <div class="tli"><div class="tic" style="background:var(--red-s);color:var(--red)">↓</div><div><div class="tit">Peer went offline</div><div class="tid">Sara Mahmoud</div></div><div class="tim">18:35</div></div>
+            <div class="tli"><div class="tic" style="background:var(--green-s);color:var(--green)">↑</div><div><div class="tit">Peer discovered</div><div class="tid">Ahmed Samir</div></div><div class="tim">18:30</div></div>
+            <div class="tli"><div class="tic" style="background:var(--gold-s);color:var(--gold)">⚡</div><div><div class="tit">Session started</div><div class="tid">Admin initialized</div></div><div class="tim">18:28</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- USERS VIEW (with sub-tabs: Directory / Groups / Accounts) -->
+      <div class="users-demo" id="usersView">
+        <div class="sub-tabs">
+          <div class="sub-tab on" onclick="subTab(this,'dir')">Directory</div>
+          <div class="sub-tab" onclick="subTab(this,'grp')">Groups</div>
+          <div class="sub-tab" onclick="subTab(this,'acc')">Accounts</div>
+        </div>
+        <div class="sub-content" id="subDir">
+          <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--txt)">User Directory</div>
+          <div style="color:var(--txt3);font-size:10px;margin-bottom:16px">All discovered devices — inspect, export specs, manage roles</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div class="dv"><div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,#a855f7,#ec4899);color:#fff">M</div><div><div class="dv-n">Manar Nabil</div><div class="dv-ip">192.168.1.45</div></div></div><div class="dv-m"><span class="dv-tag" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">Online</span><span class="dv-tag" style="background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)">User</span></div></div>
+            <div class="dv"><div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff">A</div><div><div class="dv-n">Ahmed Samir</div><div class="dv-ip">192.168.1.52</div></div></div><div class="dv-m"><span class="dv-tag" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">Online</span><span class="dv-tag" style="background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)">User</span></div></div>
+            <div class="dv" style="opacity:.6"><div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,#22c55e,#06b6d4);color:#fff">S</div><div><div class="dv-n">Sara Mahmoud</div><div class="dv-ip">192.168.1.78</div></div></div><div class="dv-m"><span class="dv-tag" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">Offline</span><span class="dv-tag" style="background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)">User</span></div></div>
+          </div>
+        </div>
+        <div class="sub-content" id="subGrp" style="display:none">
+          <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--txt)">Groups</div>
+          <div style="color:var(--txt3);font-size:10px;margin-bottom:16px">Create saved audiences for faster, targeted admin actions</div>
+          <div style="padding:40px;text-align:center;color:var(--txt3);font-size:11px;border:1px dashed var(--b);border-radius:12px">No groups created yet — create your first group to target broadcasts</div>
+        </div>
+        <div class="sub-content" id="subAcc" style="display:none">
+          <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--txt)">Accounts</div>
+          <div style="color:var(--txt3);font-size:10px;margin-bottom:16px">Manage admin accounts, roles, and permissions</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="dv"><div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,var(--gold2),var(--gold));color:var(--bg)">N</div><div><div class="dv-n">Nader</div><div class="dv-ip">IT Specialist</div></div></div><div class="dv-m"><span class="dv-tag" style="background:var(--gold-s);color:var(--gold);border:1px solid var(--gold-b)">Super Admin</span></div></div>
+            <div class="dv"><div class="dv-t"><div class="dv-a" style="background:linear-gradient(135deg,#14b8a6,#3b82f6);color:#fff">K</div><div><div class="dv-n">Khaled Youssef</div><div class="dv-ip">Network Engineer</div></div></div><div class="dv-m"><span class="dv-tag" style="background:var(--cyan-s);color:var(--cyan);border:1px solid var(--cyan-b)">Admin</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var c=document.getElementById('bg'),x=c.getContext('2d'),W,H,pts=[];
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight;pts=[];for(var i=0;i<80;i++)pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.15,vy:(Math.random()-.5)*.15,r:Math.random()*1.2+.3,o:Math.random()*.2+.04})}
+resize();addEventListener('resize',resize);
+function draw(){
+  x.clearRect(0,0,W,H);
+  var s=getComputedStyle(document.body);
+  var pr=s.getPropertyValue('--particle-r').trim(),pg=s.getPropertyValue('--particle-g').trim(),pb=s.getPropertyValue('--particle-b').trim();
+  for(var i=0;i<pts.length;i++){
+    var p=pts[i];p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1;
+    x.beginPath();x.arc(p.x,p.y,p.r,0,Math.PI*2);
+    x.fillStyle='rgba('+pr+','+pg+','+pb+','+p.o+')';x.fill();
+    for(var j=i+1;j<pts.length;j++){
+      var q=pts[j],dx=p.x-q.x,dy=p.y-q.y,d=dx*dx+dy*dy;
+      if(d<16000){x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.strokeStyle='rgba('+pr+','+pg+','+pb+','+(0.025*(1-d/16000))+')';x.lineWidth=.5;x.stroke()}
+    }
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+function setTheme(t){
+  document.body.setAttribute('data-theme',t);
+  document.querySelectorAll('.theme-sw button').forEach(function(b){b.classList.toggle('on',b.textContent.toLowerCase()===t)});
+}
+
+function toggleSidebar(){
+  var sb=document.getElementById('sidebar'),btn=document.getElementById('sbToggle');
+  sb.classList.toggle('closed');
+  if(sb.classList.contains('closed')){btn.className='sb-toggle collapsed'}
+  else{btn.className='sb-toggle open'}
+}
+
+function showView(v){
+  document.getElementById('dashView').classList.toggle('hide',v!=='dash');
+  document.getElementById('usersView').classList.toggle('show',v==='users');
+  document.querySelectorAll('.rail .ri').forEach(function(r){r.classList.remove('on')});
+  if(v==='dash')document.querySelectorAll('.rail .ri')[0].classList.add('on');
+  if(v==='users')document.querySelectorAll('.rail .ri')[4].classList.add('on');
+}
+
+function subTab(el,id){
+  document.querySelectorAll('.sub-tab').forEach(function(t){t.classList.remove('on')});
+  el.classList.add('on');
+  document.getElementById('subDir').style.display=id==='dir'?'':'none';
+  document.getElementById('subGrp').style.display=id==='grp'?'':'none';
+  document.getElementById('subAcc').style.display=id==='acc'?'':'none';
+}
+</script>
+</body>
+</html>

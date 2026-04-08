@@ -5,6 +5,7 @@ interface AuthService {
   createSuperAdmin: (username: string, password: string)                  => Promise<{ success: boolean; error?: string; user?: unknown }>;
   login:            (username: string, password: string)                  => Promise<{ success: boolean; error?: string; user?: unknown }>;
   createUser:       (username: string, password: string, role: string)    => Promise<{ success: boolean; error?: string; user?: unknown }>;
+  updateSelfProfile:(userId: string, username: string)                    => { success: boolean; error?: string; user?: unknown };
   changePassword:   (userId: string, current: string, next: string)       => Promise<{ success: boolean; error?: string }>;
   deleteUser:       (userId: string, requesterId: string)                 => { success: boolean; error?: string };
   listUsers:        ()                                                     => unknown[];
@@ -33,6 +34,9 @@ export function registerAuthHandlers({ ipcMain, authService, onLoginSuccess }: A
 
   ipcMain.handle('auth:create-user',     async (_e, p: { username: string; password: string; role: string }) =>
     authService.createUser(p.username, p.password, p.role));
+
+  ipcMain.handle('auth:update-self-profile', (_e, p: { userId: string; username: string }) =>
+    authService.updateSelfProfile(p.userId, p.username));
 
   ipcMain.handle('auth:change-password', async (_e, p: { userId: string; currentPassword: string; newPassword: string }) =>
     authService.changePassword(p.userId, p.currentPassword, p.newPassword));

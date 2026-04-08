@@ -7,10 +7,10 @@ async function submitHelp() {
       btn.disabled = false;
       const fb = document.getElementById('helpsent');
       const admins = result.sent;
-      const ssNote = result.hasScreenshot ? ' · Screenshot attached 📸' : '';
+      const ssNote = result.hasScreenshot ? ' · Screenshot attached' : '';
       fb.textContent = admins > 0
-        ? `✅ Request sent to ${admins} admin${admins > 1 ? 's' : ''}${ssNote}. They'll respond shortly!`
-        : `⚠️ No admins online right now. Your request will be delivered when one connects.`;
+        ? `Request sent to ${admins} admin${admins > 1 ? 's' : ''}${ssNote}. They'll respond shortly.`
+        : 'No admins are online right now. Your request will be delivered when one connects.';
       fb.style.display = 'block';
       document.getElementById('helpdesc').value = '';
       ssInclude = false; ssBase64 = null; ssCaptured = false;
@@ -48,14 +48,14 @@ async function captureSSPreview() {
           document.getElementById('ssprevsize').textContent = fmtBytes(result.size || 0);
           document.getElementById('ssprevwrap').classList.add('show');
         } else {
-          showToast('⚠️ Screenshot Failed', 'Could not capture screen. Check permissions.', 'warn');
+          showToast('Screenshot Failed', 'Could not capture screen. Check permissions.', 'warn');
           ssInclude = false; ssCaptured = false;
           document.getElementById('sschk').classList.remove('on'); document.getElementById('sschk').textContent = '';
           document.getElementById('sstoggle').classList.remove('active');
         }
       } catch (e) {
         loading.classList.remove('show');
-        showToast('⚠️ Screenshot Error', e.message || 'Unknown error', 'warn');
+        showToast('Screenshot Error', e.message || 'Unknown error', 'warn');
       }
     }
 
@@ -77,7 +77,7 @@ function appendHelpCard(req) {
       if (existing) existing.remove();
       const empty = list.querySelector('.empty, .empty-glass'); if (empty) empty.remove();
       const ts = req.timestamp ? new Date(req.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-      const card = document.createElement('div');
+      const card = document.createElement('article');
       card.className = `hcard ${req.priority || 'medium'}`;
       card.id = 'hc-' + req.reqId;
       card.dataset.priority = req.priority || 'medium';
@@ -87,29 +87,33 @@ function appendHelpCard(req) {
       card.dataset.description = req.description || '';
       const hasScreenshot = !!req.screenshotB64;
       const ssHtml = hasScreenshot ? `
-    <div>
+    <div class="help-shot">
       <img class="ss-thumb" src="data:image/png;base64,${req.screenshotB64}" alt="screenshot" onclick="openLightbox(this.src)">
-      <div class="ss-meta" style="margin-top:4px;">ðŸ“¸ Screenshot Â· ${fmtBytes(req.screenshotSize || 0)}</div>
+      <div class="ss-meta">Screenshot · ${fmtBytes(req.screenshotSize || 0)}</div>
     </div>` : '';
       const acked = req.status === 'acked';
       card.innerHTML = `
-    <div class="hcard-hdr">
-      <div class="av s32" style="background:${COLORS[Math.abs(hc(req.username || '?')) % COLORS.length]}">${(req.username || '?')[0].toUpperCase()}</div>
-      <div style="flex:1">
-        <div style="font-size:12px;font-weight:600;">${esc(req.username)}</div>
-        <div class="hmeta" style="margin-top:2px;">
-          <span class="mtag">${esc(req.machine || '')}</span>
-          <span>${acked ? 'Acknowledged' : 'Awaiting action'}</span>
+    <div class="help-card-head">
+      <div class="help-card-user">
+        <div class="help-card-avatar" style="background:${COLORS[Math.abs(hc(req.username || '?')) % COLORS.length]}">${(req.username || '?')[0].toUpperCase()}</div>
+        <div>
+          <div class="help-card-name">${esc(req.username)}</div>
+          <div class="help-card-meta">
+            <span class="mtag">${esc(req.machine || '')}</span>
+            <span>${acked ? 'Acknowledged' : 'Awaiting action'}</span>
+          </div>
         </div>
       </div>
-      <div class="hcard-banner">
+      <div class="help-card-banner">
         <span class="pbadge ${req.priority || 'medium'}">${(req.priority || '').toUpperCase()}</span>
-        <span style="font-size:10px;color:var(--txt3);">${ts}</span>
+        <span class="help-card-time">${ts}</span>
       </div>
     </div>
-    <div class="hdesc">${esc(req.description)}</div>
-    ${ssHtml}
-    <div class="hactions">
+    <div class="help-card-body">
+      <div class="hdesc">${esc(req.description)}</div>
+      ${ssHtml}
+    </div>
+    <div class="help-card-actions">
       ${acked ? '<span class="bsm done">Acknowledged</span>' : `<button class="bsm pr" onclick="ackHelp('${req.reqId}','${req.fromId}',this)">Acknowledge</button>`}
       <button class="bsm gh" onclick="openChat('${req.fromId}')">Open Chat</button>
     </div>`;
@@ -128,7 +132,7 @@ async function ackHelp(reqId, fromId, btn) {
       if (card) {
         card.style.opacity = '.4';
         card.dataset.status = 'acked';
-        const actions = card.querySelector('.hactions');
+        const actions = card.querySelector('.help-card-actions');
         if (actions) actions.innerHTML = '<span class="bsm done">Acknowledged</span>';
         card.classList.remove('focus');
       }
