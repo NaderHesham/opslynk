@@ -40,10 +40,9 @@
       display: flex;
       flex-direction: column;
       gap: 0;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01)),
-        color-mix(in srgb, var(--glass) 70%, transparent);
+      background: var(--glass);
       backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost);
       border-left: 1px solid var(--b);
       overflow: hidden
     }
@@ -92,10 +91,9 @@
       overflow: hidden;
       padding: 20px 22px 18px;
       border-radius: 16px;
-      background:
-        linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01)),
-        color-mix(in srgb, var(--glass) 74%, transparent);
+      background: var(--glass);
       backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost);
       border: 1px solid var(--b);
       box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, .05),
@@ -869,8 +867,8 @@
 .help-stat {
       padding: 11px 13px;
       border-radius: 14px;
-      background: rgba(17, 22, 31, .84);
-      border: 1px solid rgba(89, 98, 126, .14);
+      background: var(--glass2);
+      border: 1px solid var(--b);
       min-width: 104px
     }
 
@@ -1012,8 +1010,8 @@
     }
 
 .broadcast-card {
-      background: #1a1d27;
-      border: 1px solid #2a2d3a;
+      background: var(--glass);
+      border: 1px solid var(--b);
       border-radius: 14px;
       padding: 20px;
       margin-bottom: 16px;
@@ -1023,7 +1021,7 @@
 .broadcast-label {
       font-size: 11px;
       font-weight: 700;
-      color: #6b7a94;
+      color: var(--txt3);
       letter-spacing: .08em;
       text-transform: uppercase;
       margin-bottom: 8px
@@ -1050,7 +1048,7 @@
 
 .broadcast-inline span {
       font-size: 13px;
-      color: #6b7a94
+      color: var(--txt3)
     }
 
 .broadcast-inline select,
@@ -1060,9 +1058,9 @@
 
 .broadcast-field input,
     .broadcast-field select {
-      background: #0f1117;
-      border: 1px solid #2a2d3a;
-      color: #e2e8f0;
+      background: var(--glass3);
+      border: 1px solid var(--b);
+      color: var(--txt);
       border-radius: 9px;
       padding: 9px 11px;
       font-size: 14px;
@@ -1072,7 +1070,7 @@
 
 .broadcast-field input:focus,
     .broadcast-field select:focus {
-      border-color: #3b82f6
+      border-color: var(--b3)
     }
 
 .broadcast-field input[type=number] {
@@ -1083,7 +1081,7 @@
 .broadcast-priority-label {
       font-size: 11px;
       font-weight: 700;
-      color: #6b7a94;
+      color: var(--txt3);
       letter-spacing: .08em;
       text-transform: uppercase;
       margin: 6px 0 10px
@@ -1097,8 +1095,8 @@
     }
 
 .broadcast-prio {
-      background: #1a1d27;
-      border: 1px solid #2a2d3a;
+      background: var(--glass);
+      border: 1px solid var(--b);
       border-radius: 12px;
       padding: 14px 16px;
       display: flex;
@@ -1151,7 +1149,7 @@
 .broadcast-prio span {
       display: block;
       font-size: 12px;
-      color: #73829c;
+      color: var(--txt3);
       margin-top: 3px
     }
 
@@ -1182,14 +1180,14 @@
 
 .broadcast-divider {
       border: none;
-      border-top: 1px solid #262b37;
+      border-top: 1px solid var(--b);
       margin: 14px 0
     }
 
 .broadcast-section-title {
       font-size: 13px;
       font-weight: 600;
-      color: #a4b1c8;
+      color: var(--txt2);
       margin-bottom: 10px;
       display: flex;
       align-items: center;
@@ -1218,9 +1216,9 @@
     }
 
 .broadcast-section-toggle {
-      border: 1px solid rgba(132, 146, 173, .18);
-      background: rgba(255, 255, 255, .03);
-      color: #d6e0f2;
+      border: 1px solid var(--b);
+      background: var(--glass2);
+      color: var(--txt);
       border-radius: 10px;
       padding: 8px 12px;
       font-size: 12px;
@@ -1232,7 +1230,7 @@
     }
 
 .broadcast-section-toggle:hover {
-      background: rgba(255, 255, 255, .06)
+      background: var(--glass3)
     }
 
 .broadcast-section-toggle::after {
@@ -1246,8 +1244,8 @@
     }
 
 .broadcast-extra {
-      background: #151720;
-      border: 1px solid #2a2d3a;
+      background: var(--glass);
+      border: 1px solid var(--b);
       border-radius: 14px;
       padding: 16px
     }
@@ -1255,13 +1253,13 @@
 .broadcast-extra h4 {
       font-size: 13px;
       font-weight: 600;
-      color: #e2e8f0;
+      color: var(--txt);
       margin-bottom: 4px
     }
 
 .broadcast-extra p {
       font-size: 12px;
-      color: #73829c;
+      color: var(--txt2);
       margin-bottom: 12px;
       line-height: 1.5
     }
@@ -1276,12 +1274,12 @@
 
 .broadcast-ack-title {
       font-size: 13px;
-      color: #a4b1c8
+      color: var(--txt2)
     }
 
 .broadcast-ack-hint {
       font-size: 12px;
-      color: #5e6b84
+      color: var(--txt3)
     }
 
 /* Step 6: remaining view migrations */
@@ -1385,7 +1383,7 @@
 #tab-chat #chat-hdr {
       height: 64px;
       padding: 0 18px;
-      background: color-mix(in srgb, var(--glass2) 88%, transparent);
+      background: var(--glass);
       border-bottom: 1px solid var(--b)
     }
 
@@ -1398,7 +1396,7 @@
 
 #tab-chat #inputarea {
       padding: 14px 16px 16px;
-      background: color-mix(in srgb, var(--glass2) 90%, transparent);
+      background: var(--glass);
       border-top: 1px solid var(--b)
     }
 
@@ -1460,7 +1458,8 @@
       border-radius: 12px;
       background: var(--glass);
       border: 1px solid var(--b);
-      backdrop-filter: var(--frost)
+      backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost)
     }
 
 .users-workspace-tab {
@@ -1606,7 +1605,7 @@
 .profacct-card {
       margin: 10px 0 12px;
       border-radius: 16px;
-      background: color-mix(in srgb, var(--glass2) 88%, transparent);
+      background: var(--glass2);
       border: 1px solid var(--b)
     }
 

@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>OpsLynk — Final Dashboard Mockup (3 Themes)</title>
+<title>OpsLynk — Final Dashboard Mockup (2 Themes)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
 
 /* ═══════════════════════════════════════
-   THEME SYSTEM — 3 themes via CSS vars
+   THEME SYSTEM — 2 themes via CSS vars
    ═══════════════════════════════════════ */
 
 [data-theme="dark"] {
@@ -74,40 +74,6 @@
   --txt3:#9ca3b4;
   --particle-r:160;--particle-g:120;--particle-b:40;
   --logo-shadow:rgba(160,120,40,.2);
-  --ring-stroke:var(--gold);
-  --ring-txt:var(--gold2);
-}
-
-[data-theme="gaming"] {
-  --bg:#0a0612;
-  --glass:rgba(16,10,28,.65);
-  --glass2:rgba(22,14,38,.58);
-  --glass3:rgba(28,18,48,.52);
-  --frost:saturate(200%) blur(18px);
-  --b:rgba(180,120,255,.08);
-  --b2:rgba(180,120,255,.14);
-  --b3:rgba(180,120,255,.22);
-  --gold:#c084fc;
-  --gold2:#d8b4fe;
-  --gold-s:rgba(192,132,252,.08);
-  --gold-b:rgba(192,132,252,.2);
-  --cyan:#22d3ee;
-  --cyan-s:rgba(34,211,238,.07);
-  --cyan-b:rgba(34,211,238,.18);
-  --green:#4ade80;
-  --green-s:rgba(74,222,128,.07);
-  --green-b:rgba(74,222,128,.16);
-  --red:#fb7185;
-  --red-s:rgba(251,113,133,.07);
-  --red-b:rgba(251,113,133,.16);
-  --amber:#facc15;
-  --amber-s:rgba(250,204,21,.07);
-  --amber-b:rgba(250,204,21,.16);
-  --txt:#f5f0ff;
-  --txt2:#a78bcc;
-  --txt3:#5c4580;
-  --particle-r:192;--particle-g:132;--particle-b:252;
-  --logo-shadow:rgba(192,132,252,.3);
   --ring-stroke:var(--gold);
   --ring-txt:var(--gold2);
 }
@@ -299,7 +265,6 @@ canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
 <div class="theme-sw">
   <button class="on" onclick="setTheme('dark')">Dark</button>
   <button onclick="setTheme('light')">Light</button>
-  <button onclick="setTheme('gaming')">Gaming</button>
 </div>
 
 <canvas id="bg"></canvas>

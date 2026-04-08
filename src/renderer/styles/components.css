@@ -339,10 +339,9 @@
   position: relative;
   padding: 13px 14px;
   border-radius: 13px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01)),
-    color-mix(in srgb, var(--glass) 76%, transparent);
+  background: var(--glass);
   backdrop-filter: var(--frost);
+  -webkit-backdrop-filter: var(--frost);
   border: 1px solid var(--b);
   overflow: hidden;
   box-shadow:
@@ -427,10 +426,9 @@
 .signal-card {
   padding: 14px;
   border-radius: 16px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .01)),
-    color-mix(in srgb, var(--glass2) 78%, transparent);
+  background: var(--glass);
   backdrop-filter: var(--frost);
+  -webkit-backdrop-filter: var(--frost);
   border: 1px solid var(--b);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .05),
@@ -461,11 +459,10 @@
   margin-top: 14px;
   padding: 8px 10px;
   border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(255, 255, 255, .01)),
-    color-mix(in srgb, var(--glass3) 72%, transparent);
+  background: var(--glass2);
   border: 1px solid color-mix(in srgb, var(--b2) 85%, transparent);
-  backdrop-filter: blur(14px)
+  backdrop-filter: var(--frost);
+  -webkit-backdrop-filter: var(--frost)
 }
 
 .mini-chart {
@@ -615,7 +612,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--b);
-  background: var(--glass3);
+  background: var(--glass);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -626,7 +623,7 @@
 .quick-action:hover {
   transform: translateY(-1px);
   border-color: var(--b3);
-  background: color-mix(in srgb, var(--glass3) 92%, transparent);
+  background: var(--glass2);
   box-shadow: none
 }
 
@@ -741,10 +738,9 @@
 .presence-card {
   padding: 10px 12px;
   border-radius: 12px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .01)),
-    color-mix(in srgb, var(--glass2) 74%, transparent);
-  backdrop-filter: blur(14px);
+  background: var(--glass2);
+  backdrop-filter: var(--frost);
+  -webkit-backdrop-filter: var(--frost);
   border: 1px solid var(--b)
 }
 
@@ -1637,15 +1633,16 @@ textarea.binput:focus {
   flex-wrap: wrap;
   padding: 14px 16px;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(18, 23, 33, .88), rgba(14, 18, 26, .82));
-  border: 1px solid rgba(89, 98, 126, .18);
-  backdrop-filter: blur(16px)
+  background: var(--glass);
+  border: 1px solid var(--b);
+  backdrop-filter: var(--frost);
+  -webkit-backdrop-filter: var(--frost)
 }
 
 .filterbar input,
 .filterbar select {
-  background: rgba(19, 24, 34, .88);
-  border: 1px solid rgba(89, 98, 126, .18);
+  background: var(--glass3);
+  border: 1px solid var(--b);
   color: var(--txt);
   border-radius: 12px;
   padding: 10px 12px;
@@ -1660,8 +1657,8 @@ textarea.binput:focus {
 
 .filterbar input:focus,
 .filterbar select:focus {
-  border-color: rgba(88, 166, 255, .42);
-  box-shadow: 0 0 0 4px rgba(88, 166, 255, .08)
+  border-color: var(--b3);
+  box-shadow: 0 0 0 1px var(--b2)
 }
 
 .filter-pills {
@@ -1698,8 +1695,8 @@ textarea.binput:focus {
 }
 
 .urow {
-  background: linear-gradient(180deg, rgba(19, 24, 35, .92), rgba(13, 16, 24, .9));
-  border: 1px solid rgba(89, 98, 126, .18);
+  background: var(--glass);
+  border: 1px solid var(--b);
   border-radius: 20px;
   padding: 16px;
   display: flex;
@@ -1755,8 +1752,8 @@ textarea.binput:focus {
 .ustat {
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(17, 22, 31, .84);
-  border: 1px solid rgba(89, 98, 126, .14)
+  background: var(--glass2);
+  border: 1px solid var(--b)
 }
 
 .ustat strong {
@@ -1788,8 +1785,8 @@ textarea.binput:focus {
   color: var(--txt2);
   line-height: 1.5;
   padding: 10px 12px;
-  background: rgba(16, 21, 30, .76);
-  border: 1px solid rgba(89, 98, 126, .12);
+  background: var(--glass2);
+  border: 1px solid var(--b);
   border-radius: 12px
 }
 
@@ -2017,8 +2014,8 @@ textarea.binput:focus {
 }
 
 .hcard {
-  background: linear-gradient(180deg, rgba(18, 23, 34, .94), rgba(13, 17, 25, .9));
-  border: 1px solid rgba(89, 98, 126, .18);
+  background: var(--glass);
+  border: 1px solid var(--b);
   border-radius: 20px;
   padding: 16px;
   display: flex;
@@ -2072,7 +2069,7 @@ textarea.binput:focus {
 .empty-glass {
   padding: 40px 26px;
   border-radius: 20px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(0, 0, 0, .05)), var(--cmp-surface);
+  background: var(--glass);
   border: 1px solid var(--cmp-border);
   box-shadow: var(--cmp-shadow-sm);
   text-align: center;
@@ -2714,17 +2711,17 @@ textarea.binput:focus {
   width: 100%;
   min-height: 88px;
   resize: vertical;
-  background: #0f1117;
-  border: 1px solid #2a2d3a;
+  background: var(--glass3);
+  border: 1px solid var(--b);
   border-radius: 10px;
-  color: #e2e8f0;
+  color: var(--txt);
   font-size: 14px;
   padding: 12px 13px;
   outline: none
 }
 
 #tab-broadcast .broadcast-card textarea.binput:focus {
-  border-color: #3b82f6
+  border-color: var(--b3)
 }
 
 #tab-broadcast .broadcast-card .inline-setting.broadcast-inline {
@@ -2736,23 +2733,23 @@ textarea.binput:focus {
 }
 
 #tab-broadcast .broadcast-card .inline-setting.broadcast-inline label {
-  color: #a4b1c8;
+  color: var(--txt2);
   font-size: 12px;
   font-weight: 700
 }
 
 #tab-broadcast .broadcast-card .inline-setting.broadcast-inline span {
   grid-column: 2;
-  color: #6b7a94;
+  color: var(--txt3);
   font-size: 12px
 }
 
 #tab-broadcast .broadcast-card .inline-setting.broadcast-inline input,
 #tab-broadcast .broadcast-card .inline-setting.broadcast-inline select {
   grid-column: 2;
-  background: #0f1117;
-  border: 1px solid #2a2d3a;
-  color: #e2e8f0;
+  background: var(--glass3);
+  border: 1px solid var(--b);
+  color: var(--txt);
   border-radius: 9px;
   padding: 9px 11px;
   font-size: 14px;
@@ -2819,7 +2816,7 @@ textarea.binput:focus {
   display: block;
   margin-top: 2px;
   font-size: 12px;
-  color: #73829c
+  color: var(--txt3)
 }
 
 #tab-broadcast .mactions .btnp {
@@ -2865,14 +2862,14 @@ textarea.binput:focus {
 }
 
 #tab-broadcast .broadcast-extra .inline-setting.broadcast-inline label {
-  color: #a4b1c8;
+  color: var(--txt2);
   font-size: 12px;
   font-weight: 700
 }
 
 #tab-broadcast .broadcast-extra .inline-setting.broadcast-inline span {
   grid-column: 2;
-  color: #6b7a94;
+  color: var(--txt3);
   font-size: 12px
 }
 
@@ -2917,7 +2914,7 @@ textarea.binput:focus {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: #a4b1c8
+  color: var(--txt2)
 }
 
 #tab-broadcast .broadcast-ack-wrap .ackul {
@@ -3087,15 +3084,14 @@ textarea.binput:focus {
 #tab-broadcast .broadcast-card-v2 {
   width: 100%;
   box-sizing: border-box;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .015)),
-    color-mix(in srgb, var(--glass) 68%, transparent);
-  border: 1px solid color-mix(in srgb, var(--b2) 85%, transparent);
+  background: var(--glass);
+  border: 1px solid var(--b);
   border-radius: var(--bc-radius-lg);
   padding: 18px 18px 16px;
   margin-bottom: 0;
   transition: border-color 0.2s, box-shadow 0.2s;
   backdrop-filter: var(--frost);
+  -webkit-backdrop-filter: var(--frost);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .05),
     0 12px 26px rgba(0, 0, 0, .1);
@@ -4247,28 +4243,6 @@ textarea.binput:focus {
 
 .tp-white .tp-dot {
   background: #2563eb;
-}
-
-.tp-gaming {
-  background: #0e1428;
-}
-
-.tp-gaming .tp-bar {
-  background: rgba(6, 8, 18, .92);
-  border-bottom: 1px solid rgba(212, 175, 55, .22);
-}
-
-.tp-gaming .tp-sidebar {
-  background: rgba(7, 9, 20, .82);
-  border-right: 1px solid rgba(212, 175, 55, .14);
-}
-
-.tp-gaming .tp-main {
-  background: #0e1428;
-}
-
-.tp-gaming .tp-dot {
-  background: #d4af37;
 }
 
 .tp-bar {

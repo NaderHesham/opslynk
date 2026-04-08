@@ -1,35 +1,15 @@
 :root {
       --rail-w: 54px;
       --sidebar-w: 226px;
-      --bg: #06070b;
-      --panel: rgba(14, 18, 27, .72);
-      --card: rgba(20, 25, 36, .78);
-      --input: rgba(25, 31, 45, .7);
-      --border: rgba(107, 125, 177, .18);
-      --hover: rgba(34, 41, 60, .86);
-      --accent: #58a6ff;
-      --violet: #8b7dff;
-      --green: #19c37d;
-      --amber: #f8b84e;
-      --red: #ff6b7d;
-      --txt: #eef4ff;
-      --txt2: #9aa9c6;
-      --txt3: #54627d;
       --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
-      --admin-glow: rgba(88, 166, 255, 0.24);
-      --admin-wash: rgba(26, 35, 64, 0.78);
-      --teal: #22c55e;
-      --body-bg-1: rgba(88, 166, 255, .16);
-      --body-bg-2: rgba(139, 125, 255, .12);
-      --body-bg-3: rgba(25, 195, 125, .08);
     }
 
 body {
       font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background:
-        radial-gradient(circle at top right, rgba(88, 166, 255, .16), transparent 26%),
-        radial-gradient(circle at top left, rgba(139, 125, 255, .12), transparent 24%),
-        radial-gradient(circle at bottom left, rgba(25, 195, 125, .08), transparent 22%),
+        radial-gradient(circle at 82% 16%, color-mix(in srgb, var(--body-bg-2) 88%, transparent), transparent 16%),
+        radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--body-bg-1) 86%, transparent), transparent 15%),
+        radial-gradient(circle at 76% 84%, color-mix(in srgb, var(--body-bg-3) 80%, transparent), transparent 15%),
         var(--bg);
       color: var(--txt);
       height: 100vh;
@@ -86,7 +66,8 @@ body::after {
       border-radius: 8px;
       background: var(--panel);
       border: 1px solid var(--border);
-      backdrop-filter: blur(18px);
+      backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost);
       -webkit-app-region: no-drag;
       pointer-events: auto
     }
@@ -124,7 +105,8 @@ body::after {
       padding: 0 14px;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
-      backdrop-filter: blur(18px);
+      backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost);
       -webkit-app-region: drag;
       gap: 10px;
       flex-shrink: 0;
@@ -336,7 +318,8 @@ body::after {
       flex-shrink: 0;
       background: var(--panel);
       border-right: 1px solid var(--border);
-      backdrop-filter: blur(20px);
+      backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -348,7 +331,8 @@ body::after {
       flex-shrink: 0;
       background: var(--panel);
       border-right: 1px solid var(--border);
-      backdrop-filter: blur(20px);
+      backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost);
       display: flex;
       flex-direction: column;
       padding: 14px 12px 10px;
@@ -447,6 +431,8 @@ body::after {
       padding: 6px 9px;
       font-size: 10px;
       outline: none;
+      backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost);
       transition: border-color .16s ease, box-shadow .16s ease, background .16s ease
     }
 
@@ -499,6 +485,7 @@ body::after {
       justify-content: center;
       cursor: pointer;
       backdrop-filter: var(--frost);
+      -webkit-backdrop-filter: var(--frost);
       transition: left .28s ease, background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease
     }
 

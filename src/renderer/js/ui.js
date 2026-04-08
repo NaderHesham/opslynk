@@ -47,8 +47,8 @@ function showToast(title, body, type = '') {
 function beep(f = 440, d = 0.12, v = 0.3) { try { const c = new AudioContext(), o = c.createOscillator(), g = c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value = f; g.gain.setValueAtTime(v, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d); o.start(); o.stop(c.currentTime + d); } catch { } }
 
 function applyTheme(theme) {
-  setTheme(theme);
-  const activeTheme = theme === 'white' ? 'light' : theme;
+  const activeTheme = normalizeTheme(theme);
+  setTheme(activeTheme);
   document.querySelectorAll('.theme-sw [data-theme-option]').forEach(btn => {
     btn.classList.toggle('on', btn.dataset.themeOption === activeTheme);
   });
@@ -56,7 +56,7 @@ function applyTheme(theme) {
   if (themeValue) {
     themeValue.textContent = activeTheme.charAt(0).toUpperCase() + activeTheme.slice(1);
   }
-  try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch {}
+  try { localStorage.setItem(THEME_STORAGE_KEY, activeTheme); } catch {}
 }
 
 window.applyTheme = applyTheme;
@@ -64,8 +64,7 @@ window.applyTheme = applyTheme;
 function initThemeSwitcher() {
   document.querySelectorAll('.theme-sw [data-theme-option]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const theme = btn.dataset.themeOption === 'light' ? 'light' : btn.dataset.themeOption;
-      applyTheme(theme);
+      applyTheme(btn.dataset.themeOption);
     });
   });
 }

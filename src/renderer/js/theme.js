@@ -2,8 +2,13 @@ const THEME_STORAGE_KEY = 'opslynk-theme';
 const SIDEBAR_STORAGE_KEY = 'opslynk-sidebar-collapsed';
 let bgAnimationStarted = false;
 
+function normalizeTheme(theme) {
+  if (theme === 'white') return 'light';
+  return theme === 'dark' || theme === 'light' ? theme : 'dark';
+}
+
 function setTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', normalizeTheme(theme));
 }
 
 function toggleSidebar() {
@@ -24,7 +29,9 @@ function syncSidebarToggle() {
 }
 
 try {
-  setTheme(localStorage.getItem(THEME_STORAGE_KEY) || 'dark');
+  const savedTheme = normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY));
+  setTheme(savedTheme);
+  localStorage.setItem(THEME_STORAGE_KEY, savedTheme);
 } catch {
   setTheme('dark');
 }
