@@ -17,6 +17,7 @@ async function init() {
       }
 
       me = d.profile; _acctCurrentUserId = me?.authUserId || null; history = d.history || {};
+      currentHostname = d.hostname || '';
       userGroups = d.userGroups || [];
       networkReady = !!d.networkReady;
       networkOnline = typeof navigator !== 'undefined' ? navigator.onLine : !!d.networkOnline;
@@ -61,6 +62,7 @@ async function init() {
       renderHelpRequests();
       updateConnPill();
       updateEmojiButton();
+      switchTab(_appMode === 'client' ? 'chat' : 'dashboard');
       renderDashboard();
     }
 

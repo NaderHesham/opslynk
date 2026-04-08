@@ -1,18 +1,18 @@
 :root,
 :root[data-theme="dark"] {
       /* Mockup-aligned theme vocabulary */
-      --bg: #08090e;
-      --glass: rgba(13, 15, 22, .62);
-      --glass2: rgba(16, 19, 28, .55);
-      --glass3: rgba(20, 24, 36, .50);
+      --bg: #040608;
+      --glass: rgba(11, 15, 24, .6);
+      --glass2: rgba(14, 19, 30, .54);
+      --glass3: rgba(17, 23, 36, .49);
       --frost: saturate(180%) blur(18px);
       --b: rgba(255, 255, 255, .06);
-      --b2: rgba(255, 255, 255, .10);
-      --b3: rgba(255, 255, 255, .16);
-      --gold: #d4a745;
-      --gold2: #e8c56a;
-      --gold-s: rgba(212, 167, 69, .08);
-      --gold-b: rgba(212, 167, 69, .18);
+      --b2: rgba(255, 255, 255, .09);
+      --b3: rgba(255, 255, 255, .14);
+      --gold: #aa966c;
+      --gold2: #bcad8d;
+      --gold-s: rgba(170, 150, 108, .04);
+      --gold-b: rgba(170, 150, 108, .10);
       --cyan: #3ee8e0;
       --cyan-s: rgba(62, 232, 224, .07);
       --cyan-b: rgba(62, 232, 224, .16);
@@ -26,19 +26,19 @@
       --amber-s: rgba(251, 191, 36, .07);
       --amber-b: rgba(251, 191, 36, .16);
       --txt: #f0f2f8;
-      --txt2: #8b93a8;
-      --txt3: #464f66;
-      --particle-r: 212;
-      --particle-g: 167;
-      --particle-b: 69;
-      --logo-shadow: rgba(212, 167, 69, .25);
+      --txt2: #8792ab;
+      --txt3: #45506a;
+      --particle-r: 170;
+      --particle-g: 150;
+      --particle-b: 108;
+      --logo-shadow: rgba(170, 150, 108, .11);
       --ring-stroke: var(--gold);
       --ring-txt: var(--gold2);
 
       /* Background primitives consumed by the existing shell */
-      --body-bg-1: rgba(212, 167, 69, .08);
-      --body-bg-2: rgba(62, 232, 224, .06);
-      --body-bg-3: rgba(52, 211, 153, .05);
+      --body-bg-1: rgba(170, 150, 108, .014);
+      --body-bg-2: rgba(62, 232, 224, .018);
+      --body-bg-3: rgba(52, 211, 153, .016);
       --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
 
       /* Legacy aliases preserved for existing selectors */
@@ -52,6 +52,33 @@
       --teal: var(--cyan);
       --admin-glow: var(--gold-b);
       --admin-wash: var(--glass3);
+    }
+
+[data-theme="dark"] body {
+      background:
+        radial-gradient(circle at 82% 16%, color-mix(in srgb, var(--body-bg-2) 88%, transparent), transparent 16%),
+        radial-gradient(circle at 18% 16%, color-mix(in srgb, var(--body-bg-1) 86%, transparent), transparent 15%),
+        radial-gradient(circle at 76% 84%, color-mix(in srgb, var(--body-bg-3) 80%, transparent), transparent 15%),
+        var(--bg) !important;
+    }
+
+[data-theme="dark"] body::before {
+      background:
+        radial-gradient(circle at 15% 18%, color-mix(in srgb, var(--gold-s) 22%, transparent), transparent 16%),
+        radial-gradient(circle at 84% 14%, color-mix(in srgb, var(--cyan-s) 28%, transparent), transparent 16%),
+        radial-gradient(circle at 78% 82%, color-mix(in srgb, var(--green-s) 24%, transparent), transparent 14%);
+      opacity: .28;
+    }
+
+[data-theme="dark"] body::after {
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .01), transparent 18%, transparent 82%, rgba(0, 0, 0, .09)),
+        radial-gradient(circle at 50% -10%, rgba(255, 255, 255, .02), transparent 28%);
+      opacity: .46;
+    }
+
+[data-theme="dark"] #bg-canvas {
+      opacity: .42;
     }
 
 :root[data-theme="light"],

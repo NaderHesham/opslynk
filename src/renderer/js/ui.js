@@ -1,10 +1,42 @@
 function switchTab(t) {
-      document.querySelectorAll('#rail .tb, #tabbar .tb').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
-      document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t));
-      if (t === 'chat') ensureChatLayout();
-      if (t === 'dashboard') renderDashboard();
-      if (t === 'accounts') loadAccounts();
+      let targetTab = t;
+      let workspaceTab = null;
+      if (t === 'groups' || t === 'accounts') {
+        targetTab = 'users';
+        workspaceTab = t;
+      } else if (t === 'users') {
+        workspaceTab = 'directory';
+      }
+
+      document.querySelectorAll('#rail .tb, #tabbar .tb').forEach(b => {
+        const buttonTab = b.dataset.tab;
+        const isUsersFamily = targetTab === 'users' && (buttonTab === 'users' || buttonTab === 'groups' || buttonTab === 'accounts');
+        b.classList.toggle('active', isUsersFamily ? buttonTab === 'users' : buttonTab === targetTab);
+      });
+      document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + targetTab));
+
+      if (workspaceTab) setUsersWorkspaceTab(workspaceTab);
+      if (targetTab === 'chat') ensureChatLayout();
+      if (targetTab === 'dashboard') renderDashboard();
+      if (targetTab === 'users' && (workspaceTab === 'accounts' || t === 'accounts')) loadAccounts();
     }
+
+function setUsersWorkspaceTab(tab) {
+      const normalized = tab === 'users' ? 'directory' : tab;
+      document.querySelectorAll('.users-workspace-tab').forEach(btn => {
+        const isActive = btn.id === `usersWorkspaceTab-${normalized}`;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+      });
+      document.querySelectorAll('.users-workspace-panel').forEach(panel => {
+        const isActive = panel.id === `usersWorkspacePanel-${normalized}`;
+        panel.classList.toggle('active', isActive);
+        panel.hidden = !isActive;
+      });
+      if (normalized === 'accounts') loadAccounts();
+}
+
+window.setUsersWorkspaceTab = setUsersWorkspaceTab;
 
 function showToast(title, body, type = '') {
       const t = document.createElement('div'); t.className = 'toast' + (type ? ' ' + type : '');

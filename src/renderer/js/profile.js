@@ -1,5 +1,5 @@
 function openProfileModal() {
-      document.getElementById('modname').value = me.username || '';
+      document.getElementById('modname').value = getCurrentUserDisplayName(me);
       document.getElementById('modtitle').value = me.title || '';
       const acctCard = document.getElementById('profacct-card');
       if (acctCard) acctCard.style.display = (_appMode !== 'client' && me?.role === 'super_admin') ? '' : 'none';
@@ -15,7 +15,7 @@ function openProfileModal() {
       });
       modalAvatar = me.avatar || null;
       const a = document.getElementById('profprev'); applyAvatar(a, { ...me, avatar: modalAvatar, role: _appMode === 'client' ? 'user' : me.role });
-      document.getElementById('profprevname').innerHTML = `${esc(me.username)} ${_appMode !== 'client' ? roleBadgeHTML(me.role) : ''}`;
+      document.getElementById('profprevname').innerHTML = `${esc(getCurrentUserDisplayName(me))} ${_appMode !== 'client' ? roleBadgeHTML(me.role) : ''}`;
       document.getElementById('profprevtitle').textContent = me.title || 'No title set';
       document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('sel', s.dataset.color === me.color));
       document.getElementById('profmodal').classList.add('show');
@@ -45,7 +45,7 @@ async function saveProfile() {
       }
       me = await IPC.updateProfile({ username: nextUsername, title, color, avatar: modalAvatar });
       const askUser = document.getElementById('afh-user');
-      if (askUser) askUser.textContent = me.username || '';
+      if (askUser) askUser.textContent = getCurrentUserDisplayName(me);
       renderMyProfile(); closeProfileModal();
     }
 

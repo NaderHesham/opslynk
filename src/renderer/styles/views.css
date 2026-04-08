@@ -215,6 +215,37 @@
       margin-top: 2px
     }
 
+.dash-filter-pills {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px
+    }
+
+.dash-filter-pill {
+      border: 1px solid var(--b);
+      background: transparent;
+      color: var(--txt3);
+      border-radius: 6px;
+      padding: 4px 9px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color .15s ease, background .15s ease, color .15s ease
+    }
+
+.dash-filter-pill:hover {
+      border-color: var(--b2);
+      color: var(--txt2)
+    }
+
+.dash-filter-pill.active {
+      background: var(--gold-s);
+      border-color: var(--gold-b);
+      color: var(--gold)
+    }
+
 .dash-device-grid {
       display: grid;
       grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1410,22 +1441,100 @@
       box-shadow: 0 14px 28px rgba(0, 0, 0, .12)
     }
 
+.users-workspace-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 14px
+    }
+
+.users-workspace-copy {
+      margin-bottom: 0 !important
+    }
+
+.users-workspace-tabs {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px;
+      width: fit-content;
+      border-radius: 12px;
+      background: var(--glass);
+      border: 1px solid var(--b);
+      backdrop-filter: var(--frost)
+    }
+
+.users-workspace-tab {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--txt2);
+      border-radius: 9px;
+      padding: 7px 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, color .15s ease
+    }
+
+.users-workspace-tab:hover {
+      color: var(--txt);
+      background: var(--hover)
+    }
+
+.users-workspace-tab.active {
+      background: var(--gold-s);
+      color: var(--gold);
+      border-color: var(--gold-b)
+    }
+
+.users-workspace-panel {
+      display: none
+    }
+
+.users-workspace-panel.active {
+      display: block
+    }
+
+.users-workspace-panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px
+    }
+
+.users-workspace-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--txt)
+    }
+
+.users-workspace-sub {
+      margin-top: 4px;
+      font-size: 10px;
+      color: var(--txt3)
+    }
+
 #tab-groups .group-card,
-#tab-accounts .group-card {
+#tab-accounts .group-card,
+#tab-users .group-card {
       border-radius: 18px;
       background: var(--glass);
       border: 1px solid var(--b);
       backdrop-filter: var(--frost)
     }
 
-#tab-groups .member-checks {
+#tab-groups .member-checks,
+#tab-users .member-checks {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 10px;
       margin-top: 12px
     }
 
-#tab-groups .member-check {
+#tab-groups .member-check,
+#tab-users .member-check {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -1435,13 +1544,15 @@
       border: 1px solid var(--b)
     }
 
-#tab-groups .group-list {
+#tab-groups .group-list,
+#tab-users .group-list {
       display: grid;
       gap: 10px;
       margin-top: 14px
     }
 
-#tab-groups .group-row {
+#tab-groups .group-row,
+#tab-users .group-row {
       display: flex;
       align-items: flex-start;
       justify-content: space-between;
@@ -1452,7 +1563,8 @@
       border: 1px solid var(--b)
     }
 
-#tab-groups .group-members {
+#tab-groups .group-members,
+#tab-users .group-members {
       margin-top: 6px;
       font-size: 11px;
       color: var(--txt2);
@@ -1486,7 +1598,8 @@
       box-shadow: 0 0 0 1px var(--gold-b), 0 18px 36px rgba(0, 0, 0, .16)
     }
 
-#tab-accounts .acct-form-card {
+#tab-accounts .acct-form-card,
+#tab-users .acct-form-card {
       margin-bottom: 18px
     }
 
@@ -1534,14 +1647,16 @@
       color: var(--red)
     }
 
-#tab-accounts .acct-form-title {
+#tab-accounts .acct-form-title,
+#tab-users .acct-form-title {
       margin-bottom: 12px;
       font-size: 13px;
       font-weight: 700;
       color: var(--txt)
     }
 
-#tab-accounts .acct-toolbar {
+#tab-accounts .acct-toolbar,
+#tab-users .acct-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -1549,26 +1664,31 @@
       margin-bottom: 14px
     }
 
-#tab-accounts .acct-toolbar #acct-count {
+#tab-accounts .acct-toolbar #acct-count,
+#tab-users .acct-toolbar #acct-count {
       font-size: 12px;
       color: var(--txt2)
     }
 
-#tab-accounts .acct-state {
+#tab-accounts .acct-state,
+#tab-users .acct-state {
       padding: 14px 0;
       font-size: 12px;
       color: var(--txt2)
     }
 
-#tab-accounts .acct-state.empty {
+#tab-accounts .acct-state.empty,
+#tab-users .acct-state.empty {
       color: var(--txt3)
     }
 
-#tab-accounts .acct-state.error {
+#tab-accounts .acct-state.error,
+#tab-users .acct-state.error {
       color: var(--red)
     }
 
-#tab-accounts .acct-table {
+#tab-accounts .acct-table,
+#tab-users .acct-table {
       width: 100%;
       border-collapse: collapse;
       font-size: 12px;
@@ -1578,46 +1698,57 @@
       overflow: hidden
     }
 
-#tab-accounts .acct-table thead tr {
+#tab-accounts .acct-table thead tr,
+#tab-users .acct-table thead tr {
       color: var(--txt3);
       border-bottom: 1px solid var(--b)
     }
 
-#tab-accounts .acct-table th {
+#tab-accounts .acct-table th,
+#tab-users .acct-table th {
       text-align: left;
       padding: 12px 14px;
       font-weight: 700
     }
 
 #tab-accounts .acct-table th.actions,
-#tab-accounts .acct-table td.actions {
+#tab-accounts .acct-table td.actions,
+#tab-users .acct-table th.actions,
+#tab-users .acct-table td.actions {
       text-align: right
     }
 
-#tab-accounts .acct-table tbody tr {
+#tab-accounts .acct-table tbody tr,
+#tab-users .acct-table tbody tr {
       border-bottom: 1px solid var(--b)
     }
 
-#tab-accounts .acct-table tbody tr:last-child {
+#tab-accounts .acct-table tbody tr:last-child,
+#tab-users .acct-table tbody tr:last-child {
       border-bottom: none
     }
 
-#tab-accounts .acct-table td {
+#tab-accounts .acct-table td,
+#tab-users .acct-table td {
       padding: 13px 14px
     }
 
-#tab-accounts .acct-user {
+#tab-accounts .acct-user,
+#tab-users .acct-user {
       color: var(--txt);
       font-weight: 600
     }
 
 #tab-accounts .acct-self,
-#tab-accounts .acct-created {
+#tab-accounts .acct-created,
+#tab-users .acct-self,
+#tab-users .acct-created {
       color: var(--txt3);
       font-size: 10px
     }
 
-#tab-accounts .acct-role {
+#tab-accounts .acct-role,
+#tab-users .acct-role {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -1632,20 +1763,23 @@
       white-space: nowrap
     }
 
-#tab-accounts .acct-role.admin {
+#tab-accounts .acct-role.admin,
+#tab-users .acct-role.admin {
       background: rgba(139, 125, 255, .10);
       color: #8b7dff;
       border-color: rgba(139, 125, 255, .22)
     }
 
-#tab-accounts .acct-role.super {
+#tab-accounts .acct-role.super,
+#tab-users .acct-role.super {
       background: var(--gold-s);
       color: var(--gold);
       border-color: var(--gold-b);
       box-shadow: none
     }
 
-#tab-accounts .acct-delete-btn {
+#tab-accounts .acct-delete-btn,
+#tab-users .acct-delete-btn {
       font-size: 11px;
       padding: 3px 10px
     }
@@ -1683,12 +1817,15 @@
 
       #tab-users .users-grid,
       #tab-replies #replieslist,
-      #tab-groups .member-checks {
+      #tab-groups .member-checks,
+      #tab-users .member-checks {
         grid-template-columns: 1fr
       }
 
       #tab-accounts .acct-toolbar,
-      #tab-groups .group-row {
+      #tab-groups .group-row,
+      #tab-users .acct-toolbar,
+      #tab-users .group-row {
         flex-direction: column;
         align-items: stretch
       }
@@ -2100,7 +2237,8 @@
       flex-wrap: wrap
     }
 
-#tab-groups .group-card {
+#tab-groups .group-card,
+#tab-users .group-card {
       padding: 18px
     }
 

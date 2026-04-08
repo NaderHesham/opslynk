@@ -1,17 +1,5 @@
 function ensureDashboardTabButton() {
-      if (_appMode === 'client') return;
-      const bar = document.getElementById('tabbar');
-      if (!bar || bar.querySelector('[data-tab="dashboard"]')) return;
-      const btn = document.createElement('button');
-      btn.className = 'tb atab';
-      btn.dataset.tab = 'dashboard';
-      btn.innerHTML = '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="3" y="14" width="7" height="4" rx="1"/><rect x="14" y="11" width="7" height="7" rx="1"/></svg>';
-      btn.title = 'Dashboard';
-      btn.setAttribute('aria-label', 'Dashboard');
-      btn.onclick = () => switchTab('dashboard');
-      const chatBtn = bar.querySelector('[data-tab="chat"]');
-      if (chatBtn?.nextSibling) bar.insertBefore(btn, chatBtn.nextSibling);
-      else bar.appendChild(btn);
+      return;
     }
 
 function animateCounter(id, value, suffix = '') {
@@ -92,9 +80,22 @@ function clearDashboardActivity() {
       renderDashboard();
     }
 
+function setDashboardDeviceFilter(filter) {
+      dashboardDeviceFilter = filter;
+      document.querySelectorAll('.dash-filter-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.id === `dashFilter-${filter}`);
+      });
+      renderDashboard();
+}
+
 function renderDashboardDeviceGrid(items) {
-      if (!items.length) return '<div class="empty"><div class="ei">Devices</div>No discovered devices yet</div>';
-      return items.slice(0, 6).map(peer => {
+      const filtered = items.filter(peer => (
+        dashboardDeviceFilter === 'online' ? peer.online
+          : dashboardDeviceFilter === 'offline' ? !peer.online
+          : true
+      ));
+      if (!filtered.length) return '<div class="empty"><div class="ei">Devices</div>No devices match the current filter</div>';
+      return filtered.slice(0, 6).map(peer => {
         const label = (peer.username || '?').trim();
         const initial = esc(label[0]?.toUpperCase() || '?');
         const hostname = peer.systemInfo?.hostname || getPeerDisplayTitle(peer);
@@ -195,9 +196,9 @@ function renderDashboard() {
       setText('metricHelpSub', openHelp ? `${urgentCount} urgent, ${Math.max(0, openHelp - urgentCount)} standard` : 'No pending issues');
       setText('metricHelpTrend', openHelp ? `Response load ${responsePressure}%` : 'Queue is clear');
 
-      animateCounter('metricGroups', userGroups.length);
-      setText('metricGroupsSub', userGroups.length ? `${userGroups.reduce((sum, group) => sum + (group.memberIds?.length || 0), 0)} saved member links` : 'Audience presets ready');
-      setText('metricGroupsTrend', userGroups.length ? 'Targeted delivery ready' : 'Create your first group');
+      animateCounter('metricGroups', presencePercent, '%');
+      setText('metricGroupsSub', total ? `${online} of ${total} endpoints are currently reachable` : 'Fleet reachability for live sends');
+      setText('metricGroupsTrend', total ? (presencePercent >= 75 ? 'Ready to broadcast' : presencePercent >= 40 ? 'Partial delivery path' : 'Limited delivery path') : 'Waiting for peers');
 
       animateCounter('metricActivity', activityCount);
       setText('metricActivitySub', activityCount ? 'Recent admin-side events are being tracked' : 'Replies, broadcasts, and chats');
@@ -286,9 +287,10 @@ function renderDashboard() {
 function renderMyProfile() {
       const av = document.getElementById('myav');
       const meForAvatar = _appMode === 'client' ? { ...me, role: 'user' } : me;
+      const currentUserName = getCurrentUserDisplayName(me);
       applyAvatar(av, meForAvatar);
       const badge = _appMode !== 'client' ? roleBadgeHTML(me.role) : '';
-      document.getElementById('myname').innerHTML = `<span class="mname-text">${esc(me.username)}</span>${badge}`;
+      document.getElementById('myname').innerHTML = `<span class="mname-text">${esc(currentUserName)}</span>${badge}`;
       document.getElementById('mytitle').textContent = getPeerDisplayTitle(me);
       const isSuper = _appMode !== 'client' && isSuperAdminRole(me.role);
       document.getElementById('admin-badge').textContent = isSuper ? 'CONTROL' : 'READY';

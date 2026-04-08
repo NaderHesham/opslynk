@@ -1,4 +1,5 @@
 const THEME_STORAGE_KEY = 'opslynk-theme';
+const SIDEBAR_STORAGE_KEY = 'opslynk-sidebar-collapsed';
 let bgAnimationStarted = false;
 
 function setTheme(theme) {
@@ -7,6 +8,19 @@ function setTheme(theme) {
 
 function toggleSidebar() {
   document.body.classList.toggle('sidebar-collapsed');
+  syncSidebarToggle();
+  try {
+    localStorage.setItem(SIDEBAR_STORAGE_KEY, document.body.classList.contains('sidebar-collapsed') ? '1' : '0');
+  } catch {}
+}
+
+function syncSidebarToggle() {
+  const btn = document.getElementById('sidebar-toggle');
+  const collapsed = document.body.classList.contains('sidebar-collapsed');
+  if (!btn) return;
+  btn.classList.toggle('collapsed', collapsed);
+  btn.classList.toggle('open', !collapsed);
+  btn.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
 }
 
 try {
@@ -14,6 +28,12 @@ try {
 } catch {
   setTheme('dark');
 }
+
+try {
+  if (localStorage.getItem(SIDEBAR_STORAGE_KEY) === '1') {
+    document.body.classList.add('sidebar-collapsed');
+  }
+} catch {}
 
 function initLiveBackground() {
   if (bgAnimationStarted) return;
@@ -87,6 +107,24 @@ function initLiveBackground() {
       ctx.fill();
     });
 
+    for (let i = 0; i < particles.length; i += 1) {
+      for (let j = i + 1; j < particles.length; j += 1) {
+        const a = particles[i];
+        const b = particles[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq > 18000) continue;
+        const alpha = 0.028 * (1 - (distSq / 18000));
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = `rgba(${theme.r}, ${theme.g}, ${theme.b}, ${alpha})`;
+        ctx.stroke();
+      }
+    }
+
     rafId = window.requestAnimationFrame(draw);
   }
 
@@ -107,7 +145,11 @@ function initLiveBackground() {
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initLiveBackground, { once: true });
+  document.addEventListener('DOMContentLoaded', () => {
+    syncSidebarToggle();
+    initLiveBackground();
+  }, { once: true });
 } else {
+  syncSidebarToggle();
   initLiveBackground();
 }

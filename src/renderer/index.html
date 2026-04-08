@@ -39,7 +39,10 @@
   <div id="app">
     <div id="rail">
       <div id="tabbar" aria-label="Primary navigation">
-        <button class="tb active" data-tab="chat" onclick="switchTab('chat')" title="Chat" aria-label="Chat">
+        <button class="tb atab" data-tab="dashboard" data-admin-only onclick="switchTab('dashboard')" title="Dashboard" aria-label="Dashboard">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="4" rx="1"/><rect x="3" y="14" width="7" height="4" rx="1"/><rect x="14" y="11" width="7" height="7" rx="1"/></svg>
+        </button>
+        <button class="tb" data-tab="chat" onclick="switchTab('chat')" title="Chat" aria-label="Chat">
           <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </button>
         <button class="tb atab" data-tab="broadcast" data-admin-only onclick="switchTab('broadcast')" title="Broadcast" aria-label="Broadcast">
@@ -51,12 +54,6 @@
         <div class="rail-sep" aria-hidden="true"></div>
         <button class="tb atab" data-tab="users" data-admin-only onclick="switchTab('users')" title="Users" aria-label="Users">
           <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        </button>
-        <button class="tb atab" data-tab="groups" data-admin-only onclick="switchTab('groups')" title="Groups" aria-label="Groups">
-          <svg viewBox="0 0 24 24"><path d="M3 7h18"/><path d="M6 3h12l1 4H5l1-4Z"/><path d="M5 7v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7"/><path d="M10 11h4"/><path d="M10 15h4"/></svg>
-        </button>
-        <button class="tb atab" data-tab="accounts" data-admin-only onclick="switchTab('accounts')" title="Accounts" aria-label="Accounts">
-          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V8a5 5 0 0 1 10 0v3"/><circle cx="12" cy="16" r="1.2"/></svg>
         </button>
         <button class="tb atab" data-tab="help" data-admin-only onclick="switchTab('help')" id="helptabbtn" title="Help Requests" aria-label="Help Requests">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
@@ -86,6 +83,7 @@
 
     <!-- MAIN -->
     <div id="main">
+      <button id="sidebar-toggle" class="sidebar-toggle open" type="button" onclick="toggleSidebar()" aria-label="Collapse sidebar"></button>
       <div id="view-host">
       <!-- DASHBOARD (admin) -->
       <div class="panel" id="tab-dashboard" data-admin-only>
@@ -121,10 +119,10 @@
                   <div class="metric-trend warn" id="metricHelpTrend">Queue is clear</div>
                 </div>
                 <div class="metric-card">
-                  <div class="metric-label">Saved Groups</div>
+                  <div class="metric-label">Delivery Readiness</div>
                   <div class="metric-value" id="metricGroups">0</div>
-                  <div class="metric-sub" id="metricGroupsSub">Audience presets ready</div>
-                  <div class="metric-trend" id="metricGroupsTrend">Targeted delivery</div>
+                  <div class="metric-sub" id="metricGroupsSub">Fleet reachability for live sends</div>
+                  <div class="metric-trend" id="metricGroupsTrend">Waiting for peers</div>
                 </div>
                 <div class="metric-card">
                   <div class="metric-label">Message Pulse</div>
@@ -139,6 +137,11 @@
                   <div>
                     <div class="dash-section-title">Device Grid</div>
                     <div class="dash-section-sub">Discovered machines with live delivery status</div>
+                  </div>
+                  <div class="dash-filter-pills" aria-label="Device filter">
+                    <button class="dash-filter-pill active" id="dashFilter-all" type="button" onclick="setDashboardDeviceFilter('all')">All</button>
+                    <button class="dash-filter-pill" id="dashFilter-online" type="button" onclick="setDashboardDeviceFilter('online')">Online</button>
+                    <button class="dash-filter-pill" id="dashFilter-offline" type="button" onclick="setDashboardDeviceFilter('offline')">Offline</button>
                   </div>
                 </div>
                 <div class="dash-device-grid" id="dashDeviceGrid">
@@ -314,7 +317,7 @@
       </div>
 
       <!-- CHAT -->
-      <div class="panel active" id="tab-chat">
+      <div class="panel" id="tab-chat">
         <div id="chat-area">
           <div id="welcome">
             <div class="wi">⚡</div>
@@ -509,88 +512,102 @@
       <!-- USERS (admin) -->
       <div class="panel" id="tab-users" data-admin-only>
         <div class="pscroll ops-view ops-view-users">
-          <div class="ptitle">👥 Connected Users</div>
-          <div class="psub" style="margin-bottom:12px;">Search, filter, and inspect endpoints with a more operational
-            view</div>
-          <div class="filterbar">
-            <input id="userSearch" type="text" placeholder="Search by user, machine, title, IP, OS..."
-              oninput="renderUsersTab()">
-            <select id="userSort" onchange="renderUsersTab()">
-              <option value="status">Sort: Status</option>
-              <option value="name">Sort: Name</option>
-              <option value="role">Sort: Role</option>
-            </select>
-            <div class="filter-pills">
-              <button class="filter-pill active" id="userFilterAll" onclick="setUserFilter('all')">All</button>
-              <button class="filter-pill" id="userFilterOnline" onclick="setUserFilter('online')">Online</button>
-              <button class="filter-pill" id="userFilterOffline" onclick="setUserFilter('offline')">Offline</button>
-              <button class="filter-pill" id="userFilterAdmins" onclick="setUserFilter('admins')">Admins</button>
+          <div class="users-workspace-shell">
+            <div class="ptitle">👥 Users Workspace</div>
+            <div class="psub users-workspace-copy">Search, inspect, group, and manage accounts from one operational surface.</div>
+            <div class="users-workspace-tabs" role="tablist" aria-label="Users workspace">
+              <button class="users-workspace-tab active" id="usersWorkspaceTab-directory" type="button" onclick="setUsersWorkspaceTab('directory')" role="tab" aria-selected="true">Directory</button>
+              <button class="users-workspace-tab" id="usersWorkspaceTab-groups" type="button" onclick="setUsersWorkspaceTab('groups')" role="tab" aria-selected="false">Groups</button>
+              <button class="users-workspace-tab" id="usersWorkspaceTab-accounts" type="button" onclick="setUsersWorkspaceTab('accounts')" role="tab" aria-selected="false">Accounts</button>
             </div>
+
+            <section class="users-workspace-panel active" id="usersWorkspacePanel-directory" role="tabpanel" aria-labelledby="usersWorkspaceTab-directory">
+              <div class="users-workspace-panel-head">
+                <div>
+                  <div class="users-workspace-title">User Directory</div>
+                  <div class="users-workspace-sub">All discovered devices with live filters and endpoint details.</div>
+                </div>
+              </div>
+              <div class="filterbar">
+                <input id="userSearch" type="text" placeholder="Search by user, machine, title, IP, OS..."
+                  oninput="renderUsersTab()">
+                <select id="userSort" onchange="renderUsersTab()">
+                  <option value="status">Sort: Status</option>
+                  <option value="name">Sort: Name</option>
+                  <option value="role">Sort: Role</option>
+                </select>
+                <div class="filter-pills">
+                  <button class="filter-pill active" id="userFilterAll" onclick="setUserFilter('all')">All</button>
+                  <button class="filter-pill" id="userFilterOnline" onclick="setUserFilter('online')">Online</button>
+                  <button class="filter-pill" id="userFilterOffline" onclick="setUserFilter('offline')">Offline</button>
+                  <button class="filter-pill" id="userFilterAdmins" onclick="setUserFilter('admins')">Admins</button>
+                </div>
+              </div>
+              <div id="userslist"></div>
+            </section>
+
+            <section class="users-workspace-panel" id="usersWorkspacePanel-groups" role="tabpanel" aria-labelledby="usersWorkspaceTab-groups" hidden>
+              <div class="users-workspace-panel-head">
+                <div>
+                  <div class="users-workspace-title">Groups</div>
+                  <div class="users-workspace-sub">Create saved audiences, review membership, and reuse them in broadcasts.</div>
+                </div>
+              </div>
+              <div class="group-card">
+                <div class="inline-setting">
+                  <label for="groupname">Group Name</label>
+                  <input id="groupname" type="text" placeholder="e.g. Finance PCs">
+                  <span>Names must be unique</span>
+                </div>
+                <div class="member-checks" id="groupmembers"></div>
+                <div class="mactions" style="margin-top:10px;justify-content:flex-start;">
+                  <button class="btnp" onclick="saveGroup()">Save Group</button>
+                </div>
+              </div>
+              <div class="group-list" id="grouplist"></div>
+            </section>
+
+            <section class="users-workspace-panel" id="usersWorkspacePanel-accounts" role="tabpanel" aria-labelledby="usersWorkspaceTab-accounts" hidden>
+              <div class="users-workspace-panel-head">
+                <div>
+                  <div class="users-workspace-title">Accounts</div>
+                  <div class="users-workspace-sub">Manage admin and super-admin access without leaving the users workspace.</div>
+                </div>
+              </div>
+
+              <div class="group-card acct-form-card" id="acct-add-form" style="display:none; margin-bottom:18px;">
+                <div class="acct-form-title">Add New Account</div>
+                <div class="inline-setting">
+                  <label for="acctNewUser">Username</label>
+                  <input id="acctNewUser" type="text" placeholder="Username" autocomplete="off">
+                </div>
+                <div class="inline-setting" style="margin-top:8px;">
+                  <label for="acctNewPw">Password</label>
+                  <input id="acctNewPw" type="password" placeholder="Password">
+                </div>
+                <div class="inline-setting" style="margin-top:8px;">
+                  <label for="acctNewRole">Role</label>
+                  <select id="acctNewRole">
+                    <option value="admin">Admin</option>
+                    <option value="super_admin" id="acctSuperOption">Super Admin</option>
+                  </select>
+                </div>
+                <div class="mactions" style="margin-top:12px; justify-content:flex-start; gap:8px;">
+                  <button class="btnp" onclick="acctCreateUser()">Create Account</button>
+                  <button class="btns" onclick="acctToggleForm(false)">Cancel</button>
+                </div>
+                <div id="acct-form-err" style="font-size:11px; color:var(--red); margin-top:8px; display:none;"></div>
+              </div>
+
+              <div class="acct-toolbar">
+                <span style="font-size:12px; color:var(--txt2);" id="acct-count">Loading…</span>
+                <button class="btnp" id="acct-add-btn" onclick="acctToggleForm(true)" style="display:none;">+ Add Account</button>
+              </div>
+
+              <div id="acct-list"></div>
+              <div id="acct-feedback" style="font-size:12px; margin-top:10px; display:none;"></div>
+            </section>
           </div>
-          <div id="userslist"></div>
-
-        </div>
-      </div>
-
-      <div class="panel" id="tab-groups" data-admin-only>
-        <div class="pscroll ops-view ops-view-groups">
-          <div class="ptitle">🗂 Groups</div>
-          <div class="psub">Create clean user groups here, review members, then target them from Broadcast</div>
-          <div class="group-card">
-            <div class="inline-setting">
-              <label for="groupname">Group Name</label>
-              <input id="groupname" type="text" placeholder="e.g. Finance PCs">
-              <span>Names must be unique</span>
-            </div>
-            <div class="member-checks" id="groupmembers"></div>
-            <div class="mactions" style="margin-top:10px;justify-content:flex-start;">
-              <button class="btnp" onclick="saveGroup()">Save Group</button>
-            </div>
-          </div>
-          <div class="group-list" id="grouplist"></div>
-        </div>
-      </div>
-
-      <!-- ACCOUNTS (admin) -->
-      <div class="panel" id="tab-accounts" data-admin-only>
-        <div class="pscroll ops-view ops-view-accounts">
-          <div class="ptitle">🔐 Admin Accounts</div>
-          <div class="psub" style="margin-bottom:16px;">Manage admin and super-admin accounts. Only super admins can create or delete accounts.</div>
-
-          <!-- Add User Form (super_admin only) -->
-          <div class="group-card acct-form-card" id="acct-add-form" style="display:none; margin-bottom:18px;">
-            <div class="acct-form-title">Add New Account</div>
-            <div class="inline-setting">
-              <label for="acctNewUser">Username</label>
-              <input id="acctNewUser" type="text" placeholder="Username" autocomplete="off">
-            </div>
-            <div class="inline-setting" style="margin-top:8px;">
-              <label for="acctNewPw">Password</label>
-              <input id="acctNewPw" type="password" placeholder="Password">
-            </div>
-            <div class="inline-setting" style="margin-top:8px;">
-              <label for="acctNewRole">Role</label>
-              <select id="acctNewRole">
-                <option value="admin">Admin</option>
-                <option value="super_admin" id="acctSuperOption">Super Admin</option>
-              </select>
-            </div>
-            <div class="mactions" style="margin-top:12px; justify-content:flex-start; gap:8px;">
-              <button class="btnp" onclick="acctCreateUser()">Create Account</button>
-              <button class="btns" onclick="acctToggleForm(false)">Cancel</button>
-            </div>
-            <div id="acct-form-err" style="font-size:11px; color:var(--red); margin-top:8px; display:none;"></div>
-          </div>
-
-          <!-- Actions bar -->
-          <div class="acct-toolbar">
-            <span style="font-size:12px; color:var(--txt2);" id="acct-count">Loading…</span>
-            <button class="btnp" id="acct-add-btn" onclick="acctToggleForm(true)" style="display:none;">+ Add Account</button>
-          </div>
-
-          <!-- Users table -->
-          <div id="acct-list"></div>
-          <div id="acct-feedback" style="font-size:12px; margin-top:10px; display:none;"></div>
         </div>
       </div>
 

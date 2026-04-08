@@ -9,12 +9,14 @@ let ssInclude = false, ssBase64 = null, ssCaptured = false;
 let unread = {};
 let networkReady = false;
 let networkOnline = false;
+let currentHostname = '';
 let modalAvatar = null;
 let selectedSpecPeerId = null;
 let userGroups = [];
 let dashboardActivity = [];
 let dashboardSeries = { presence: [], pressure: [] };
 let counterAnimations = new Map();
+let dashboardDeviceFilter = 'all';
 let userFilter = 'all';
 let helpFilter = 'open';
 let _acctCurrentUserId = null;
@@ -33,6 +35,12 @@ const isSuperAdminRole = role => role === 'super_admin';
 const comparePeers = (a, b) => roleRank(b.role) - roleRank(a.role) || Number(b.online) - Number(a.online) || String(a.username || '').localeCompare(String(b.username || ''));
 const getRoleLabel = role => role === 'super_admin' ? 'Super Admin' : role === 'admin' ? 'Admin' : 'User';
 const isDefaultRoleTitle = title => ['Super Administrator', 'Administrator', 'User', 'Super Admin', 'Admin'].includes(String(title || '').trim());
+const getCurrentUserDisplayName = profile => {
+  const displayName = String(profile?.displayName || profile?.name || '').trim();
+  const username = String(profile?.username || '').trim();
+  const machineLabel = String(profile?.machineLabel || profile?.hostname || currentHostname || '').trim();
+  return displayName || username || machineLabel || 'OpsLynk User';
+};
 const getPeerDisplayTitle = peer => {
   const title = String(peer?.title || '').trim();
   return title && !isDefaultRoleTitle(title) ? title : getRoleLabel(peer?.role);
