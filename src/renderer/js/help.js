@@ -10,7 +10,9 @@ async function submitHelp() {
       const ssNote = result.hasScreenshot ? ' · Screenshot attached' : '';
       fb.textContent = admins > 0
         ? `Request sent to ${admins} admin${admins > 1 ? 's' : ''}${ssNote}. They'll respond shortly.`
-        : 'No admins are online right now. Your request will be delivered when one connects.';
+        : result.queued
+          ? `No admins are available yet${ssNote}. Your request is queued and will be delivered when one is discovered.`
+          : `Request is retrying delivery${ssNote}. A known admin is temporarily unavailable, so OpsLynk will keep trying automatically.`;
       fb.style.display = 'block';
       document.getElementById('helpdesc').value = '';
       ssInclude = false; ssBase64 = null; ssCaptured = false;

@@ -100,7 +100,7 @@ function createPeerSession({
       peer.online = false;
       peer.connectionState = state.networkOnline ? 'degraded' : 'offline';
     }
-    broadcastToRenderer('peer:offline', { peerId: id });
+    broadcastToRenderer(EVENTS.PEER_STALE, { peerId: id });
     bus.emit(EVENTS.DEVICE_LEFT, { id });
     updateTrayMenu();
   }

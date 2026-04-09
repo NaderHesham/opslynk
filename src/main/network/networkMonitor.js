@@ -54,7 +54,7 @@ function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer, onNetwo
           peer.connectionState = 'degraded';
           if (peer.ws) { try { peer.ws.terminate?.() ?? peer.ws.close(); } catch {} }
           peer.ws = null;
-          broadcastToRenderer?.('peer:offline', { peerId: id });
+          broadcastToRenderer?.(EVENTS.PEER_STALE, { peerId: id });
           bus.emit(EVENTS.DEVICE_LEFT, { id });
         }
       }
