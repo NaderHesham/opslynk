@@ -107,6 +107,14 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
         detail: `Renderer load failed (${errorCode}): ${errorDescription}\n${validatedURL || path.join(rendererDir, 'index.html')}`
       });
     });
+    state.mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+      if (level >= 2 || /\b(error|exception|failed|uncaught|referenceerror|typeerror)\b/i.test(message)) {
+        console.error('[OpsLynk][renderer]', { level, message, line, sourceId });
+      }
+    });
+    state.mainWindow.webContents.on('render-process-gone', (_event, details) => {
+      console.error('[OpsLynk] Renderer process exited:', details);
+    });
     state.mainWindow.loadFile(path.join(rendererDir, getStartPage()));
     state.mainWindow.once('ready-to-show', () => {
       state.mainWindow?.center();

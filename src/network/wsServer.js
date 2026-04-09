@@ -134,6 +134,7 @@ function handleIncomingWS(ws, req) {
 // ── OUTBOUND CONNECTION ───────────────────────────────────────────────────────
 function connectToPeer(peer) {
   if (peer.ws && (peer.ws.readyState === WebSocket.OPEN || peer.ws.readyState === WebSocket.CONNECTING)) return;
+  peer.connectionState = 'handshaking';
   const ws = new WebSocket(`ws://${peer.ip}:${peer.port}`, { maxPayload: 50 * 1024 * 1024 });
 
   const markOffline = () => {
@@ -141,12 +142,14 @@ function connectToPeer(peer) {
     if (peer.ws !== ws) return;
     peer.ws = null;
     peer.online = false;
+    peer.connectionState = 'degraded';
     _onPeerOffline(peer.id);
   };
 
   ws.on('open', () => {
     peer.ws       = ws;
     peer.lastSeen = Date.now();
+    peer.connectionState = 'handshaking';
 
     // Initiate ECDH: generate our keypair, send pubkey
     const ecdh = generateKeyPair();

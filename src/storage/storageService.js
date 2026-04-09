@@ -52,16 +52,17 @@ function loadState() {
       return {
         helpRequests:                Array.isArray(parsed.helpRequests)                ? parsed.helpRequests                : [],
         pendingOutgoingHelpRequests: Array.isArray(parsed.pendingOutgoingHelpRequests) ? parsed.pendingOutgoingHelpRequests : [],
+        pendingReliableMessages:     Array.isArray(parsed.pendingReliableMessages)     ? parsed.pendingReliableMessages     : [],
         userGroups:                  Array.isArray(parsed.userGroups)                  ? parsed.userGroups                  : []
       };
     }
   } catch {}
-  return { helpRequests: [], pendingOutgoingHelpRequests: [], userGroups: [] };
+  return { helpRequests: [], pendingOutgoingHelpRequests: [], pendingReliableMessages: [], userGroups: [] };
 }
 
-function saveState({ helpRequests, pendingOutgoingHelpRequests, userGroups }) {
+function saveState({ helpRequests, pendingOutgoingHelpRequests, pendingReliableMessages, userGroups }) {
   fs.writeFileSync(STATE_FILE, JSON.stringify(
-    { helpRequests, pendingOutgoingHelpRequests, userGroups },
+    { helpRequests, pendingOutgoingHelpRequests, pendingReliableMessages, userGroups },
     null, 2
   ));
 }

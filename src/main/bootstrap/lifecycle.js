@@ -21,7 +21,8 @@ function registerLifecycle({
   setRendererBridge,
   broadcastToRenderer,
   doSaveHistory,
-  doSaveState
+  doSaveState,
+  hydrateReliableTransport = () => {}
 }) {
   app.whenReady().then(async () => {
     storage.ensureDirs();
@@ -47,10 +48,12 @@ function registerLifecycle({
     const saved = storage.loadState();
     state.helpRequests = saved.helpRequests;
     state.pendingOutgoingHelpRequests = saved.pendingOutgoingHelpRequests;
+    state.pendingReliableMessages = saved.pendingReliableMessages || [];
     state.userGroups = saved.userGroups;
     state.soundEnabled = typeof state.myProfile.soundEnabled === 'boolean' ? state.myProfile.soundEnabled : true;
 
     state.chatHistory = storage.loadHistory();
+    hydrateReliableTransport();
 
     startNetworkMonitor();
     await startPeerSession();

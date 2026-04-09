@@ -1,5 +1,6 @@
 import { IPC_CHANNELS } from '../../shared/contracts/ipc';
 import type { AppRegistrarDeps } from './types';
+import { getPeerConnectionState } from '../utils/roles';
 
 export function registerAppHandlers({
   handle,
@@ -18,6 +19,7 @@ export function registerAppHandlers({
       color: p.color,
       title: p.title,
       online: p.online,
+      connectionState: getPeerConnectionState(p),
       identityVerified: !!p.identityVerified,
       identityRejected: !!p.identityRejected,
       avatar: p.avatar || null,

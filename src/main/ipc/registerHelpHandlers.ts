@@ -11,7 +11,8 @@ export function registerHelpHandlers({
   helpSvc,
   sendToPeer,
   doSaveState,
-  adminModule
+  adminModule,
+  reliableTransport
 }: HelpRegistrarDeps): void {
   handle(IPC_CHANNELS.help.SEND_HELP_REQUEST, async ({ description, priority, includeScreenshot }) => {
     const reqId = uuidv4();
@@ -38,20 +39,21 @@ export function registerHelpHandlers({
       priority,
       reqId,
       timestamp,
-      screenshotB64,
-      screenshotName,
-      screenshotSize
+        screenshotB64,
+        screenshotName,
+        screenshotSize
     };
-    const queuedRequest = { ...msg, deliveredAdminIds: [], createdAt: timestamp };
-    let sent = 0;
-    for (const [, peer] of state.peers) {
-      if (hasAdminAccess(peer.role) && helpSvc.deliverHelpRequestToAdmin(peer, queuedRequest, sendToPeer, hasAdminAccess, doSaveState)) sent++;
-    }
-    if (sent === 0) {
-      state.pendingOutgoingHelpRequests.unshift(queuedRequest);
-      doSaveState();
-    }
-    return { reqId, sent, queued: sent === 0, hasScreenshot: !!screenshotB64 };
+    const queuedRequest = { ...msg, msgId: uuidv4(), deliveredAdminIds: [], createdAt: timestamp };
+    const result = helpSvc.enqueueOrDeliverHelpRequest(
+      state.peers,
+      state.pendingOutgoingHelpRequests,
+      queuedRequest,
+      sendToPeer,
+      hasAdminAccess,
+      doSaveState,
+      reliableTransport
+    );
+    return { reqId, sent: result.sent, queued: result.queued, hasScreenshot: !!screenshotB64 };
   });
 
   handle(IPC_CHANNELS.help.CAPTURE_SCREENSHOT_PREVIEW, async () => {

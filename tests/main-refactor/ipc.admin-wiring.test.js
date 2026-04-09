@@ -46,7 +46,10 @@ function createDeps() {
     storage: { saveProfile: () => {}, loadDevices: () => ({ self: { deviceId: 'dev-1' } }) },
     wsNet: {},
     udp: { getSocket: () => ({}) },
-    helpSvc: { deliverHelpRequestToAdmin: () => false },
+    helpSvc: {
+      deliverHelpRequestToAdmin: () => false,
+      enqueueOrDeliverHelpRequest: () => ({ sent: 0, queued: true })
+    },
     bus: { emit: () => {} },
     EVENTS: { GOTO_TAB: 'goto', FOCUS_HELP: 'focus' },
     captureScreenshot: async () => null,

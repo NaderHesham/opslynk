@@ -5,6 +5,7 @@ function createPersistence({ storage, state }) {
     storage.saveState({
       helpRequests: state.helpRequests,
       pendingOutgoingHelpRequests: state.pendingOutgoingHelpRequests,
+      pendingReliableMessages: state.pendingReliableMessages,
       userGroups: state.userGroups
     });
   }

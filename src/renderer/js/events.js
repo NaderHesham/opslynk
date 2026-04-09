@@ -1,7 +1,7 @@
 function setupEvents() {
-      IPC.on('system:deviceUpdated', p => { const prev = peers[p.id]; peers[p.id] = { ...prev, ...p }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); updateConnPill(); const nameChanged = prev && prev.username !== p.username; const wentOnline = prev && !prev.online && p.online; if (nameChanged || wentOnline) addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile details changed.', p.online ? 'Online now' : 'Status refreshed'); });
-      IPC.on('system:deviceJoined', p => { peers[p.id] = { ...peers[p.id], ...p, online: true }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); updateConnPill(); addDashboardActivity('system', `${p.username || 'Peer'} came online`, 'A reachable endpoint joined the LAN session.', p.title || 'Ready'); });
-      IPC.on('system:deviceLeft', ({ id }) => { if (peers[id]) { peers[id].online = false; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); addDashboardActivity('system', `${peers[id].username || 'Peer'} went offline`, 'This endpoint is temporarily unavailable for admin actions.', peers[id].title || 'Disconnected'); } updateConnPill(); });
+      IPC.on('system:deviceUpdated', p => { const prev = peers[p.id]; peers[p.id] = { ...prev, ...p }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); updateConnPill(); const nameChanged = prev && prev.username !== p.username; const wentOnline = prev && !prev.online && p.online; if (nameChanged || wentOnline) addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile details changed.', p.online ? 'Online now' : (getPeerConnectionMeta(p).label || 'Status refreshed')); });
+      IPC.on('system:deviceJoined', p => { peers[p.id] = { ...peers[p.id], ...p, online: true, connectionState: p.connectionState || 'connected' }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); updateConnPill(); addDashboardActivity('system', `${p.username || 'Peer'} came online`, 'A reachable endpoint joined the LAN session.', p.title || 'Ready'); });
+      IPC.on('system:deviceLeft', ({ id }) => { if (peers[id]) { peers[id].online = false; peers[id].connectionState = peers[id].connectionState === 'offline' ? 'offline' : 'degraded'; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); addDashboardActivity('system', `${peers[id].username || 'Peer'} went offline`, 'This endpoint is temporarily unavailable for admin actions.', getPeerConnectionMeta(peers[id]).label); } updateConnPill(); });
 
       IPC.on('network:message', ({ peerId, message }) => {
         if (!history[peerId]) history[peerId] = [];
@@ -15,6 +15,8 @@ function setupEvents() {
 
       IPC.on('peer:heartbeat', ({ peerId, systemInfo, liveMetrics }) => {
         if (peers[peerId]) {
+          peers[peerId].connectionState = 'connected';
+          peers[peerId].online = true;
           if (systemInfo)   peers[peerId].systemInfo   = systemInfo;
           if (liveMetrics)  peers[peerId].liveMetrics  = liveMetrics;
           const active = document.querySelector('.panel.active');
@@ -30,6 +32,7 @@ function setupEvents() {
       IPC.on('peer:stale', ({ peerId }) => {
         if (peers[peerId]) {
           peers[peerId].online = false;
+          peers[peerId].connectionState = 'degraded';
           renderPeerList();
           updateActivePeerStatus();
         }
@@ -39,12 +42,22 @@ function setupEvents() {
       IPC.on('chat:delivered', ({ msgId }) => {
         console.log('[ACK-DEBUG] chat:delivered received:', msgId);
         const el = document.querySelector(`.msg-status[data-msgid="${msgId}"]`);
-        if (el) { el.textContent = '✓✓'; el.classList.add('delivered'); el.title = 'Delivered'; }
+        if (el) { el.textContent = '✓✓'; el.classList.remove('retrying', 'failed'); el.classList.add('delivered'); el.title = 'Delivered'; }
       });
 
       IPC.on('chat:failed', ({ msgId }) => {
         const el = document.querySelector(`.msg-status[data-msgid="${msgId}"]`);
-        if (el) { el.textContent = '✕'; el.classList.add('failed'); el.title = 'Failed to deliver'; }
+        if (el) { el.textContent = '✕'; el.classList.remove('retrying', 'delivered'); el.classList.add('failed'); el.title = 'Failed to deliver'; }
+      });
+
+      IPC.on('chat:retrying', ({ msgId, attempt }) => {
+        const el = document.querySelector(`.msg-status[data-msgid="${msgId}"]`);
+        if (el) {
+          el.textContent = '⋯';
+          el.classList.remove('delivered', 'failed');
+          el.classList.add('retrying');
+          el.title = `Retrying delivery (attempt ${attempt})`;
+        }
       });
 
       IPC.on('network:ack', ({ fromId, broadcastId, username }) => {

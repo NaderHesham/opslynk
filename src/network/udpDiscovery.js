@@ -61,6 +61,7 @@ function startUdpDiscovery() {
           ip      : rinfo.address,
           port    : d.port,
           ws      : null,
+          connectionState: 'discovering',
           identityVerified: false,
           identityRejected: false,
           online  : false,
@@ -81,6 +82,9 @@ function startUdpDiscovery() {
           ip        : rinfo.address,
           port      : d.port
         });
+        if (!peer.online && peer.connectionState !== 'handshaking') {
+          peer.connectionState = 'discovering';
+        }
       }
 
       if (isNew || !peer.online) _connectToPeer(peer);
@@ -123,14 +127,19 @@ function cleanStalePeers() {
       peer.lastSeen = now;
       if (!peer.online) {
         peer.online = true;
+        peer.connectionState = 'connected';
         _onPeerOnline(peer);
       }
       continue;
     }
-    if (wsState === WebSocket.CONNECTING) continue;
+    if (wsState === WebSocket.CONNECTING) {
+      peer.connectionState = 'handshaking';
+      continue;
+    }
     if (now - peer.lastSeen > PEER_TIMEOUT && peer.online) {
       peer.online = false;
       peer.ws = null;
+      peer.connectionState = 'degraded';
       _onPeerOffline(id);
     }
   }

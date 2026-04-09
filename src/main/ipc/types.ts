@@ -2,6 +2,17 @@ import type { BrowserWindow, IpcMain, OpenDialogOptions } from 'electron';
 import type { AdminModuleApi, IpcRuntimeState } from '../../shared/types/runtime';
 import type { IpcChannelMap, IpcEventMap } from '../../shared/contracts/ipc';
 
+interface ReliableTransportApi {
+  track: (params: {
+    kind: 'chat-direct' | 'help-request';
+    peerId: string;
+    payload: Record<string, unknown>;
+    persist?: boolean;
+    maxAttempts?: number;
+    retryDelaysMs?: number[];
+  }) => boolean;
+}
+
 export interface RegisterDeps {
   ipcMain: IpcMain;
   BrowserWindow: typeof BrowserWindow;
@@ -26,6 +37,7 @@ export interface RegisterDeps {
   udp: { getSocket: () => unknown };
   helpSvc: {
     deliverHelpRequestToAdmin: (...args: unknown[]) => boolean;
+    enqueueOrDeliverHelpRequest: (...args: unknown[]) => { sent: number; queued: boolean };
   };
   bus: { emit: (event: string, payload?: unknown) => void };
   EVENTS: Record<string, string>;
@@ -41,6 +53,7 @@ export interface RegisterDeps {
   applyWindowMode: (modeName: string) => void;
   closeOverlayWindow: (force?: boolean) => void;
   broadcastToRenderer: (event: string, data: unknown) => void;
+  reliableTransport?: ReliableTransportApi;
 }
 
 export type HandleFn = <C extends keyof IpcChannelMap>(
@@ -58,7 +71,7 @@ export interface WindowRegistrarDeps extends Pick<RegisterDeps, 'state' | 'apply
   handle: HandleFn;
 }
 
-export interface ChatRegistrarDeps extends Pick<RegisterDeps, 'state' | 'uuidv4' | 'sendToPeer' | 'doSaveHistory' | 'dialog' | 'fs' | 'path' | 'broadcastToRenderer'> {
+export interface ChatRegistrarDeps extends Pick<RegisterDeps, 'state' | 'uuidv4' | 'sendToPeer' | 'doSaveHistory' | 'dialog' | 'fs' | 'path' | 'broadcastToRenderer' | 'reliableTransport'> {
   handle: HandleFn;
 }
 
@@ -71,7 +84,7 @@ export interface ForcedVideoRegistrarDeps extends Pick<RegisterDeps, 'adminModul
   handle: HandleFn;
 }
 
-export interface HelpRegistrarDeps extends Pick<RegisterDeps, 'os' | 'uuidv4' | 'captureScreenshot' | 'state' | 'hasAdminAccess' | 'helpSvc' | 'sendToPeer' | 'doSaveState' | 'adminModule'> {
+export interface HelpRegistrarDeps extends Pick<RegisterDeps, 'os' | 'uuidv4' | 'captureScreenshot' | 'state' | 'hasAdminAccess' | 'helpSvc' | 'sendToPeer' | 'doSaveState' | 'adminModule' | 'reliableTransport'> {
   handle: HandleFn;
 }
 

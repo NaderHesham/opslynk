@@ -51,12 +51,12 @@ function upsertHelpRequest(helpRequests, req, saveState) {
  * Delivers a single help request to one admin peer.
  * Returns true if the message was sent (or already delivered).
  */
-function deliverHelpRequestToAdmin(peer, req, sendToPeer, hasAdminAccess, saveState) {
+function deliverHelpRequestToAdmin(peer, req, sendToPeer, hasAdminAccess, saveState, reliableTransport = null) {
   if (!peer || !hasAdminAccess(peer.role))           return false;
   if (!Array.isArray(req.deliveredAdminIds)) req.deliveredAdminIds = [];
   if (req.deliveredAdminIds.includes(peer.id))       return false;
 
-  const sent = sendToPeer(peer.id, {
+  const payload = {
     type           : 'help-request',
     fromId         : req.fromId,
     username       : req.username,
@@ -64,11 +64,15 @@ function deliverHelpRequestToAdmin(peer, req, sendToPeer, hasAdminAccess, saveSt
     description    : req.description,
     priority       : req.priority,
     reqId          : req.reqId,
+    msgId          : req.msgId,
     timestamp      : req.timestamp,
     screenshotB64  : req.screenshotB64  || null,
     screenshotName : req.screenshotName || null,
     screenshotSize : req.screenshotSize || 0
-  });
+  };
+  const sent = reliableTransport
+    ? reliableTransport.track({ kind: 'help-request', peerId: peer.id, payload, persist: true })
+    : sendToPeer(peer.id, payload);
 
   if (sent) {
     req.deliveredAdminIds.push(peer.id);
@@ -76,6 +80,37 @@ function deliverHelpRequestToAdmin(peer, req, sendToPeer, hasAdminAccess, saveSt
     saveState();
   }
   return sent;
+}
+
+/**
+ * Attempts to deliver a help request to any known admin peers.
+ * Falls back to the legacy pending queue only when no admin peers are known yet.
+ */
+function enqueueOrDeliverHelpRequest(
+  peers,
+  pendingOutgoingHelpRequests,
+  req,
+  sendToPeer,
+  hasAdminAccess,
+  saveState,
+  reliableTransport = null
+) {
+  const admins = [...peers.values()].filter((peer) => hasAdminAccess(peer.role));
+
+  let sent = 0;
+  admins.forEach((peer) => {
+    if (deliverHelpRequestToAdmin(peer, req, sendToPeer, hasAdminAccess, saveState, reliableTransport)) sent += 1;
+  });
+
+  if (sent === 0 && admins.length === 0) {
+    pendingOutgoingHelpRequests.unshift(req);
+    saveState();
+  }
+
+  return {
+    sent,
+    queued: sent === 0 && admins.length === 0
+  };
 }
 
 /**
@@ -87,7 +122,8 @@ function flushPendingHelpRequests(
   sendToPeer,
   hasAdminAccess,
   saveState,
-  targetAdminId = null
+  targetAdminId = null,
+  reliableTransport = null
 ) {
   if (!pendingOutgoingHelpRequests.length) return;
 
@@ -100,7 +136,7 @@ function flushPendingHelpRequests(
   if (!admins.length) return;
 
   const remaining = pendingOutgoingHelpRequests.filter(req => {
-    admins.forEach(peer => deliverHelpRequestToAdmin(peer, req, sendToPeer, hasAdminAccess, saveState));
+    admins.forEach(peer => deliverHelpRequestToAdmin(peer, req, sendToPeer, hasAdminAccess, saveState, reliableTransport));
     return !(Array.isArray(req.deliveredAdminIds) && req.deliveredAdminIds.length > 0);
   });
 
@@ -167,6 +203,7 @@ module.exports = {
   getTargetPeers,
   upsertHelpRequest,
   deliverHelpRequestToAdmin,
+  enqueueOrDeliverHelpRequest,
   flushPendingHelpRequests,
   getPeerExportPayload,
   formatPeerSpecsText

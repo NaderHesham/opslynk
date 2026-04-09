@@ -1,3 +1,11 @@
+window.addEventListener('error', event => {
+      console.error('[OpsLynk][window-error]', event.message, event.filename, event.lineno, event.error);
+    });
+
+window.addEventListener('unhandledrejection', event => {
+      console.error('[OpsLynk][unhandled-rejection]', event.reason);
+    });
+
 IPC.setMainWindow();
 
 async function init() {
@@ -30,7 +38,8 @@ async function init() {
           id: p.id,
           role: existing.role || p.role,
           username: existing.username || p.username,
-          online: Boolean(existing.online || p.online)
+          online: Boolean(existing.online || p.online),
+          connectionState: existing.connectionState || p.connectionState || (p.online ? 'connected' : 'offline')
         };
       });
       ensureDashboardTabButton();

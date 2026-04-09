@@ -1,5 +1,5 @@
 import type { BroadcastPayload, ForcedVideoPayload, LockScreenPayload } from './admin';
-import type { FileTransferMetadata, HelpRequest, PeerIdentity } from '../types/runtime';
+import type { FileTransferMetadata, HelpRequest, PeerConnectionState, PeerIdentity } from '../types/runtime';
 
 export const IPC_CHANNELS = {
   app: {
@@ -78,6 +78,7 @@ export interface InitDataResponse {
     color?: string;
     title?: string;
     online: boolean;
+    connectionState: PeerConnectionState;
     identityVerified: boolean;
     identityRejected: boolean;
     avatar: string | null;

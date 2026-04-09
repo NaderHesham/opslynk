@@ -7,6 +7,7 @@ export function createAppState(chatPortBase: number): AppRuntimeState {
     chatHistory: {},
     helpRequests: [],
     pendingOutgoingHelpRequests: [],
+    pendingReliableMessages: [],
     userGroups: [],
     soundEnabled: true,
     networkOnline: false,

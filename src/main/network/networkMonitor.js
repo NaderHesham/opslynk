@@ -32,6 +32,7 @@ function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer, onNetwo
         for (const [id, peer] of state.peers) {
           if (!peer.online) continue;
           peer.online = false;
+          peer.connectionState = 'offline';
           peer.ws = null;
           bus.emit(EVENTS.DEVICE_LEFT, { id });
         }
@@ -50,6 +51,7 @@ function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer, onNetwo
         const lastBeat = peer.lastHeartbeat || 0;
         if (lastBeat > 0 && (now - lastBeat) > STALE_THRESHOLD) {
           peer.online = false;
+          peer.connectionState = 'degraded';
           if (peer.ws) { try { peer.ws.terminate?.() ?? peer.ws.close(); } catch {} }
           peer.ws = null;
           broadcastToRenderer?.('peer:offline', { peerId: id });

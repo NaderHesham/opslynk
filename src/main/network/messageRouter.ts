@@ -34,6 +34,7 @@ interface RouterDeps {
     reason: string;
     mode: 'trusted' | 'newly-trusted' | 'denied';
   };
+  reliableTransport?: { confirm: (msgId: string) => boolean };
   onTrustDecision?: (entry: Record<string, unknown>) => void;
   captureScreenshot?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }
@@ -62,6 +63,7 @@ export function createMessageRouter({
   verifySignedPeerIdentity,
   evaluateControlMessageTrust,
   rememberTrustedPeer,
+  reliableTransport,
   onTrustDecision,
   captureScreenshot
 }: RouterDeps): { handleP2PMessage: (ws: unknown, msg: Record<string, unknown>, remoteIp: string) => void } {
@@ -119,6 +121,7 @@ export function createMessageRouter({
           existingPeer.identityVerified = false;
           existingPeer.identityRejected = true;
           existingPeer.online = false;
+          existingPeer.connectionState = 'degraded';
         }
         if (typeof (ws as { close?: () => void } | undefined)?.close === 'function') {
           (ws as { close: () => void }).close();
@@ -141,6 +144,7 @@ export function createMessageRouter({
           existingPeer.identityVerified = false;
           existingPeer.identityRejected = true;
           existingPeer.online = false;
+          existingPeer.connectionState = 'degraded';
         }
         if (typeof (ws as { close?: () => void } | undefined)?.close === 'function') {
           (ws as { close: () => void }).close();
@@ -168,6 +172,7 @@ export function createMessageRouter({
           port: p.port || wsNet.CHAT_PORT_BASE,
           ws,
           online: true,
+          connectionState: 'connected',
           identityVerified: true,
           identityRejected: false,
           identityLastVerifiedAt: new Date().toISOString(),
@@ -183,6 +188,7 @@ export function createMessageRouter({
           ip: remoteIp,
           ws,
           online: true,
+          connectionState: 'connected',
           identityVerified: true,
           identityRejected: false,
           identityLastVerifiedAt: new Date().toISOString(),
@@ -303,8 +309,7 @@ export function createMessageRouter({
     if (type === 'ack') {
       // Confirm delivery tracking for chat ACKs
       if (msg.msgId) {
-        const { confirm } = require('../../../src/services/ackTracker') as { confirm: (id: string) => void };
-        confirm(String(msg.msgId));
+        reliableTransport?.confirm(String(msg.msgId));
       }
       // Broadcast ACK (has broadcastId) — emit to renderer for the ACK list UI
       if (msg.broadcastId) {
@@ -360,6 +365,7 @@ export function createMessageRouter({
       if (peer) {
         const wasOnline = !!peer.online;
         peer.online = true;
+        peer.connectionState = 'connected';
         peer.lastHeartbeat = Date.now();
         peer.systemInfo    = (msg.systemInfo as Record<string, unknown>) || peer.systemInfo;
         if (msg.liveMetrics) peer.liveMetrics = msg.liveMetrics as PeerSession['liveMetrics'];
@@ -424,7 +430,8 @@ export function createMessageRouter({
         deviceId: String(msg.deviceId || peer.deviceId || peer.id),
         publicKey: typeof msg.publicKey === 'string' && msg.publicKey ? msg.publicKey : peer.publicKey,
         identityFingerprint: typeof msg.identityFingerprint === 'string' && msg.identityFingerprint ? msg.identityFingerprint : peer.identityFingerprint,
-        systemInfo: msg.systemInfo || peer.systemInfo || null
+        systemInfo: msg.systemInfo || peer.systemInfo || null,
+        connectionState: peer.online ? 'connected' : peer.connectionState
       });
       if (hasAdminAccess(peer.role) && (peer.ws as { readyState?: number } | undefined)?.readyState === 1) {
         flushPendingHelpRequests(peer.id);

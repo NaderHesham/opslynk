@@ -1,13 +1,6 @@
 import { IPC_CHANNELS } from '../../shared/contracts/ipc';
 import type { ChatRegistrarDeps } from './types';
 
-const ackTracker = require('../../../src/services/ackTracker') as {
-  track: (msgId: string, peerId: string, payload: Record<string, unknown>, opts: {
-    onDelivered: (id: string) => void;
-    onFailed:    (id: string) => void;
-  }) => void;
-};
-
 export function registerChatHandlers({
   handle,
   state,
@@ -17,17 +10,19 @@ export function registerChatHandlers({
   broadcastToRenderer,
   dialog,
   fs,
-  path
+  path,
+  reliableTransport
 }: ChatRegistrarDeps): void {
   handle(IPC_CHANNELS.chat.SEND_CHAT, ({ peerId, text, emoji }) => {
     const msgId = uuidv4();
     const timestamp = new Date().toISOString();
     const payload: Record<string, unknown> = { type: 'chat', fromId: state.myProfile?.id, text, emoji, msgId, timestamp };
-    sendToPeer(peerId, payload);
-    ackTracker.track(msgId, peerId, payload, {
-      onDelivered: (id) => broadcastToRenderer('chat:delivered', { msgId: id, peerId }),
-      onFailed:    (id) => broadcastToRenderer('chat:failed',    { msgId: id, peerId })
-    });
+    if (reliableTransport) {
+      reliableTransport.track({ kind: 'chat-direct', peerId, payload, persist: true });
+    } else {
+      sendToPeer(peerId, payload);
+      broadcastToRenderer('chat:delivered', { msgId, peerId });
+    }
     const entry = { id: msgId, fromId: state.myProfile?.id, text, emoji, timestamp, mine: true };
     if (!state.chatHistory[peerId]) state.chatHistory[peerId] = [];
     state.chatHistory[peerId].push(entry);

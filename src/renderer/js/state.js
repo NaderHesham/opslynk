@@ -55,6 +55,15 @@ const getPeerTrustState = peer => {
   if (peer?.identityVerified) return { key: 'verified', label: 'Verified', shortLabel: 'VERIFIED' };
   return { key: 'pending', label: 'Verifying', shortLabel: 'VERIFY' };
 };
+const getPeerConnectionState = peer => peer?.connectionState || (peer?.online ? 'connected' : 'offline');
+const getPeerConnectionMeta = peer => {
+  const state = getPeerConnectionState(peer);
+  if (state === 'connected') return { key: 'online', label: 'Connected', shortLabel: 'LIVE', chatLabel: 'Online', reachable: true };
+  if (state === 'handshaking') return { key: 'handshaking', label: 'Handshaking', shortLabel: 'SYNC', chatLabel: 'Handshaking', reachable: false };
+  if (state === 'discovering') return { key: 'discovering', label: 'Discovering', shortLabel: 'SCAN', chatLabel: 'Discovering', reachable: false };
+  if (state === 'degraded') return { key: 'degraded', label: 'Degraded', shortLabel: 'DEGRADED', chatLabel: 'Degraded', reachable: false };
+  return { key: 'offline', label: 'Offline', shortLabel: 'OFF', chatLabel: 'Offline', reachable: false };
+};
 const getSortedPeers = () => Object.values(peers).sort(comparePeers);
 const getSidebarSearchValue = () => (document.getElementById('peerSearch')?.value || '').trim().toLowerCase();
 const matchesPeerSearch = (peer, search) => {

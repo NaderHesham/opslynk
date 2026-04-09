@@ -3,6 +3,7 @@ import type { AdminCommand } from '../contracts/admin';
 
 export type UserRole = 'user' | 'admin' | 'super_admin';
 export type PeerStatus = 'online' | 'offline';
+export type PeerConnectionState = 'discovering' | 'handshaking' | 'connected' | 'degraded' | 'offline';
 
 export interface PeerIdentity {
   id: string;
@@ -22,6 +23,7 @@ export interface PeerSession extends PeerIdentity {
   port?: number;
   ws?: unknown;
   online: boolean;
+  connectionState?: PeerConnectionState;
   identityVerified?: boolean;
   identityRejected?: boolean;
   identityLastVerifiedAt?: string;
@@ -53,12 +55,26 @@ export interface HelpRequest {
   createdAt?: string;
 }
 
+export interface PendingReliableMessage {
+  msgId: string;
+  kind: 'chat-direct' | 'help-request';
+  peerId: string;
+  payload: Record<string, unknown>;
+  attempts: number;
+  maxAttempts: number;
+  retryDelaysMs: number[];
+  persist: boolean;
+  createdAt: string;
+  lastAttemptAt: string;
+}
+
 export interface AppRuntimeState {
   myProfile: (PeerIdentity & { soundEnabled?: boolean }) | null;
   peers: Map<string, PeerSession>;
   chatHistory: Record<string, Array<Record<string, unknown>>>;
   helpRequests: HelpRequest[];
   pendingOutgoingHelpRequests: HelpRequest[];
+  pendingReliableMessages: PendingReliableMessage[];
   userGroups: Array<{ id: string; name: string; memberIds: string[] }>;
   soundEnabled: boolean;
   networkOnline: boolean;
@@ -103,6 +119,7 @@ export type RecordsRuntimeState = Pick<
   | 'chatHistory'
   | 'helpRequests'
   | 'pendingOutgoingHelpRequests'
+  | 'pendingReliableMessages'
   | 'userGroups'
 >;
 
@@ -131,6 +148,7 @@ export type IpcRuntimeState = Pick<
   | 'chatHistory'
   | 'helpRequests'
   | 'pendingOutgoingHelpRequests'
+  | 'pendingReliableMessages'
   | 'userGroups'
   | 'networkOnline'
   | 'myPortRef'

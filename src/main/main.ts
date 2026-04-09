@@ -13,6 +13,26 @@ const { getOrCreateDeviceIdentity, buildDefaultProfile } = require('../../src/se
   getOrCreateDeviceIdentity: (ip: string) => { deviceId: string };
   buildDefaultProfile: (record: { deviceId: string }) => Record<string, unknown>;
 };
+const { createReliableTransport } = require('../../src/services/reliableTransport') as {
+  createReliableTransport: (deps: {
+    state: AppRuntimeState;
+    sendToPeer: (peerId: string, payload: Record<string, unknown>) => unknown;
+    broadcastToRenderer: (event: string, data: unknown) => void;
+    doSaveState: () => void;
+  }) => {
+    track: (params: {
+      kind: 'chat-direct' | 'help-request';
+      peerId: string;
+      payload: Record<string, unknown>;
+      persist?: boolean;
+      maxAttempts?: number;
+      retryDelaysMs?: number[];
+    }) => boolean;
+    confirm: (msgId: string) => boolean;
+    notifyPeerAvailable: (peerId: string) => void;
+    hydrate: () => void;
+  };
+};
 const {
   ensureDeviceCredentials,
   attachIdentityToProfile,
@@ -114,9 +134,17 @@ function flushPendingHelpRequests(targetAdminId: string | null = null): void {
     sendToPeer,
     hasAdminAccess,
     doSaveState,
-    targetAdminId
+    targetAdminId,
+    reliableTransport
   );
 }
+
+const reliableTransport = createReliableTransport({
+  state,
+  sendToPeer,
+  broadcastToRenderer,
+  doSaveState
+});
 
 const windowManager = createWindowManager({
   state: owners.windowState,
@@ -169,6 +197,7 @@ const { handleP2PMessage } = createMessageRouter({
   verifySignedPeerIdentity,
   evaluateControlMessageTrust: deviceTrust.evaluateIncomingControl,
   rememberTrustedPeer: trustStore.rememberPeer,
+  reliableTransport,
   onTrustDecision: auditSink.onAuditEntry,
   captureScreenshot: () => captureScreenshot(state.mainWindow)
 });
@@ -186,7 +215,8 @@ const peerSession = createPeerSession({
   broadcastToRenderer,
   handleP2PMessage,
   flushPendingHelpRequests,
-  buildSignedPeerIdentity: createSignedPeerIdentity
+  buildSignedPeerIdentity: createSignedPeerIdentity,
+  reliableTransport
 });
 
 const { startNetworkMonitor } = createNetworkMonitor({
@@ -255,7 +285,8 @@ const _ipcDeps = {
   updateTrayMenu: trayManager.updateTrayMenu,
   applyWindowMode: windowManager.applyWindowMode,
   closeOverlayWindow: windowManager.closeOverlayWindow,
-  broadcastToRenderer
+  broadcastToRenderer,
+  reliableTransport
 };
 
 if (APP_MODE === 'admin') {
@@ -291,5 +322,6 @@ registerLifecycle({
   setRendererBridge: (bridge: (event: string, data: unknown) => void) => bus.setRendererBridge(bridge),
   broadcastToRenderer,
   doSaveHistory,
-  doSaveState
+  doSaveState,
+  hydrateReliableTransport: reliableTransport.hydrate
 });

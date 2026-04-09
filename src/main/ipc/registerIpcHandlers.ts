@@ -48,7 +48,8 @@ export function registerIpcHandlers(deps: RegisterDeps): void {
     broadcastToRenderer: deps.broadcastToRenderer,
     dialog: deps.dialog,
     fs: deps.fs,
-    path: deps.path
+    path: deps.path,
+    reliableTransport: deps.reliableTransport
   });
 
   registerBroadcastHandlers({
@@ -80,7 +81,8 @@ export function registerIpcHandlers(deps: RegisterDeps): void {
     helpSvc: deps.helpSvc,
     sendToPeer: deps.sendToPeer,
     doSaveState: deps.doSaveState,
-    adminModule: deps.adminModule
+    adminModule: deps.adminModule,
+    reliableTransport: deps.reliableTransport
   });
 
   registerAdminHandlers({

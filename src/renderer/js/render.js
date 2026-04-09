@@ -100,12 +100,13 @@ function renderDashboardDeviceGrid(items) {
         const initial = esc(label[0]?.toUpperCase() || '?');
         const hostname = peer.systemInfo?.hostname || getPeerDisplayTitle(peer);
         const ip = peer.systemInfo?.ip || 'IP unavailable';
-        const availabilityClass = peer.online ? 'online' : 'offline';
-        const availabilityLabel = peer.online ? 'Online' : 'Offline';
+        const connection = getPeerConnectionMeta(peer);
+        const availabilityClass = peer.online ? 'online' : connection.key;
+        const availabilityLabel = connection.label;
         const roleClass = hasAdminAccess(peer.role) ? 'admin' : 'user';
         const roleLabel = hasAdminAccess(peer.role) ? 'Admin' : 'User';
-        const deliveryClass = peer.online ? 'online' : 'pending';
-        const deliveryLabel = peer.online ? 'Reachable' : 'Pending';
+        const deliveryClass = peer.online ? 'online' : (connection.key === 'degraded' ? 'pending' : connection.key);
+        const deliveryLabel = peer.online ? 'Reachable' : (connection.key === 'discovering' ? 'Pending' : connection.label);
         const trust = getPeerTrustState(peer);
         const fillColor = peer.online ? 'var(--green)' : 'var(--amber)';
         const fillWidth = peer.online ? 100 : 34;
@@ -339,15 +340,16 @@ function renderPeerList() {
         const roleBadge = roleBadgeHTML(p.role);
         const subtitle = esc(getPeerDisplayTitle(p));
         const trust = getPeerTrustState(p);
+        const connection = getPeerConnectionMeta(p);
         const el = document.createElement('div');
         el.className = 'pi' + (p.role === 'super_admin' ? ' super-card' : '') + (p.id === activePeerId ? ' active' : '');
         el.dataset.pid = p.id; el.onclick = () => openChat(p.id);
         const u = unread[p.id] || 0;
         const sideTag = p.identityRejected
           ? `<span class="peer-state-tag changed">${trust.shortLabel}</span>`
-          : p.online
+          : connection.reachable
           ? (u ? `<div class="ubadge">${u}</div>` : '<span class="peer-state-tag ack">LIVE</span>')
-          : `<span class="peer-state-tag ${!p.identityVerified ? 'verify' : hasAdminAccess(p.role) ? 'pending' : 'off'}">${!p.identityVerified ? trust.shortLabel : hasAdminAccess(p.role) ? 'PEND' : 'OFF'}</span>`;
+          : `<span class="peer-state-tag ${!p.identityVerified ? 'verify' : connection.key}">${!p.identityVerified ? trust.shortLabel : connection.shortLabel}</span>`;
         el.innerHTML = `
       ${avatarHTML(p, 's32')}
       <div class="pmeta">
@@ -358,7 +360,7 @@ function renderPeerList() {
         </div>
       </div>
       <div class="ptrail">
-        <span class="pstatus-dot ${p.online ? '' : 'off'}" aria-label="${p.online ? 'Online' : 'Offline'}"><span class="mini-state"></span></span>
+        <span class="pstatus-dot ${connection.reachable ? '' : connection.key === 'offline' ? 'off' : connection.key}" aria-label="${esc(connection.label)}"><span class="mini-state"></span></span>
         ${sideTag}
       </div>
     `;
@@ -408,6 +410,7 @@ function renderUsersTab() {
         const ram = esc(p.systemInfo?.ramGb ? `${p.systemInfo.ramGb} GB` : '-');
         const diskFree = esc(p.systemInfo?.disk?.freeGb ? `${p.systemInfo.disk.freeGb} GB` : '-');
         const roleLabel = hasAdminAccess(p.role) ? 'Admin' : 'User';
+        const connection = getPeerConnectionMeta(p);
         const trust = getPeerTrustState(p);
         const metricsHTML = lm ? `
       <div class="directory-metrics">
@@ -435,7 +438,7 @@ function renderUsersTab() {
         <div class="directory-dot${p.online ? '' : ' off'}"></div>
       </div>
       <div class="directory-tags">
-        <span class="directory-tag ${p.online ? 'online' : 'offline'}">${p.online ? 'Online' : 'Offline'}</span>
+        <span class="directory-tag ${p.online ? 'online' : connection.key}">${connection.label}</span>
         <span class="directory-tag role">${roleLabel}</span>
         <span class="directory-tag trust ${trust.key}">${trust.label}</span>
         <span class="directory-tag">${hostname}</span>
@@ -498,8 +501,9 @@ function updateActivePeerStatus() {
       const peer = peers[activePeerId];
       const status = document.getElementById('cpstatus');
       if (!peer || !status) return;
-      status.textContent = peer.online ? '● Online' : '○ Offline';
-      status.style.color = peer.online ? 'var(--green)' : 'var(--txt3)';
+      const connection = getPeerConnectionMeta(peer);
+      status.textContent = `${connection.reachable ? '●' : '○'} ${connection.chatLabel}`;
+      status.style.color = connection.key === 'online' ? 'var(--green)' : connection.key === 'degraded' ? 'var(--amber)' : 'var(--txt3)';
     }
 
 function ensureChatLayout() {

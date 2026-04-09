@@ -5,8 +5,9 @@ function openChat(peerId) {
       const cpav = document.getElementById('cpav'); applyAvatar(cpav, peer);
       document.getElementById('cpname').innerHTML = `${esc(peer.username)} ${roleBadgeHTML(peer.role)}`;
       const cs = document.getElementById('cpstatus');
-      cs.textContent = peer.online ? '● Online' : '○ Offline';
-      cs.style.color = peer.online ? 'var(--green)' : 'var(--txt3)';
+      const conn = getPeerConnectionMeta(peer);
+      cs.textContent = `${conn.reachable ? '●' : '○'} ${conn.chatLabel}`;
+      cs.style.color = conn.key === 'online' ? 'var(--green)' : conn.key === 'degraded' ? 'var(--amber)' : 'var(--txt3)';
       const msgs = document.getElementById('msgs'); msgs.innerHTML = '';
       (history[peerId] || []).forEach(m => appendBubble(m, null, false));
       renderPeerList(); switchTab('chat'); ensureChatLayout();
@@ -118,7 +119,7 @@ function openSpecsModal(peerId) {
       selectedSpecPeerId = peerId;
       applyAvatar(document.getElementById('specavatar'), peer);
       document.getElementById('specname').innerHTML = `${esc(peer.username)} ${roleBadgeHTML(peer.role)}`;
-      document.getElementById('specsubtitle').textContent = `${peer.online ? 'Online' : 'Offline'} • ${getPeerDisplayTitle(peer)}`;
+      document.getElementById('specsubtitle').textContent = `${getPeerConnectionMeta(peer).label} • ${getPeerDisplayTitle(peer)}`;
       document.getElementById('specgrid').innerHTML = buildSpecFields(peer).map(([label, value]) => `
     <div class="spec-card">
       <strong>${esc(label)}</strong>

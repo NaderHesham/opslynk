@@ -232,3 +232,111 @@ test('invalid origin metadata rejects sensitive control message', () => {
   assert.equal(calls.urgentOverlay, 0);
   assert.equal(calls.normalPopup, 0);
 });
+
+test('verified hello marks peer as connected and emits safe connection state', () => {
+  const state = {
+    myProfile: { id: 'self-1', role: 'user' },
+    myPortRef: { value: 5000 },
+    peers: new Map(),
+    chatHistory: {},
+    soundEnabled: true,
+    helpRequests: []
+  };
+  const emitted = [];
+  const ws = { readyState: 1 };
+  const router = createMessageRouter({
+    state,
+    wsNet: { CHAT_PORT_BASE: 3000, safeSend: () => {} },
+    helpSvc: { upsertHelpRequest: () => {} },
+    bus: { emit: (event, payload) => emitted.push({ event, payload }) },
+    EVENTS: { DEVICE_JOINED: 'DEVICE_JOINED', DEVICE_UPDATED: 'DEVICE_UPDATED' },
+    hasAdminAccess: (role) => role === 'admin' || role === 'super_admin',
+    peerToSafe: (peer) => ({ id: peer.id, connectionState: peer.connectionState, online: peer.online }),
+    updateTrayMenu: () => {},
+    doSaveState: () => {},
+    doSaveHistory: () => {},
+    flushPendingHelpRequests: () => {},
+    showNotification: () => {},
+    showUrgentOverlay: () => {},
+    showNormalBroadcastPopup: () => {},
+    showHelpRequestPopup: () => {},
+    showForcedVideoWindow: () => {},
+    closeForcedVideoWindow: () => {},
+    showLockScreen: () => {},
+    unlockScreen: () => {},
+    buildSignedPeerIdentity: () => ({ id: 'self-1', role: 'user' }),
+    verifySignedPeerIdentity: () => ({ valid: true, fingerprint: 'fp-peer-1' }),
+    evaluateControlMessageTrust: () => ({ trusted: false, reason: 'n/a', mode: 'denied' }),
+    rememberTrustedPeer: () => ({ trusted: true, reason: 'fingerprint-match', mode: 'trusted' })
+  });
+
+  router.handleP2PMessage(ws, {
+    type: 'hello',
+    from: { id: 'peer-1', username: 'Peer', role: 'user', port: 45679 }
+  }, '10.0.0.5');
+
+  const peer = state.peers.get('peer-1');
+  assert.ok(peer);
+  assert.equal(peer.online, true);
+  assert.equal(peer.connectionState, 'connected');
+  assert.equal(emitted[0].event, 'DEVICE_JOINED');
+  assert.deepEqual(emitted[0].payload, { id: 'peer-1', connectionState: 'connected', online: true });
+});
+
+test('invalid peer identity degrades existing peer state', () => {
+  const ws = { readyState: 1, close: () => {} };
+  const state = {
+    myProfile: { id: 'self-1', role: 'user' },
+    myPortRef: { value: 5000 },
+    peers: new Map([
+      ['peer-1', {
+        id: 'peer-1',
+        role: 'user',
+        username: 'Peer',
+        ws,
+        online: true,
+        connectionState: 'connected',
+        identityVerified: true
+      }]
+    ]),
+    chatHistory: {},
+    soundEnabled: true,
+    helpRequests: []
+  };
+  const router = createMessageRouter({
+    state,
+    wsNet: { CHAT_PORT_BASE: 3000, safeSend: () => {} },
+    helpSvc: { upsertHelpRequest: () => {} },
+    bus: { emit: () => {} },
+    EVENTS: {},
+    hasAdminAccess: (role) => role === 'admin' || role === 'super_admin',
+    peerToSafe: (peer) => peer,
+    updateTrayMenu: () => {},
+    doSaveState: () => {},
+    doSaveHistory: () => {},
+    flushPendingHelpRequests: () => {},
+    showNotification: () => {},
+    showUrgentOverlay: () => {},
+    showNormalBroadcastPopup: () => {},
+    showHelpRequestPopup: () => {},
+    showForcedVideoWindow: () => {},
+    closeForcedVideoWindow: () => {},
+    showLockScreen: () => {},
+    unlockScreen: () => {},
+    buildSignedPeerIdentity: () => ({ id: 'self-1', role: 'user' }),
+    verifySignedPeerIdentity: () => ({ valid: false, reason: 'bad-signature' }),
+    evaluateControlMessageTrust: () => ({ trusted: false, reason: 'n/a', mode: 'denied' }),
+    rememberTrustedPeer: () => ({ trusted: true, reason: 'fingerprint-match', mode: 'trusted' })
+  });
+
+  router.handleP2PMessage(ws, {
+    type: 'hello',
+    from: { id: 'peer-1', username: 'Peer', role: 'user', port: 45679 }
+  }, '10.0.0.5');
+
+  const peer = state.peers.get('peer-1');
+  assert.ok(peer);
+  assert.equal(peer.online, false);
+  assert.equal(peer.connectionState, 'degraded');
+  assert.equal(peer.identityRejected, true);
+});

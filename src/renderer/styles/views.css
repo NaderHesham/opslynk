@@ -332,6 +332,19 @@
       border-color: var(--red-b)
     }
 
+.dash-device-tag.discovering,
+.dash-device-tag.handshaking {
+      background: rgba(88, 166, 255, .12);
+      color: var(--accent);
+      border-color: rgba(88, 166, 255, .24)
+    }
+
+.dash-device-tag.degraded {
+      background: var(--amber-s);
+      color: var(--amber);
+      border-color: var(--amber-b)
+    }
+
 .dash-device-tag.user {
       background: var(--cyan-s);
       color: var(--cyan);
@@ -2059,6 +2072,19 @@
       background: var(--red-s);
       color: var(--red);
       border-color: var(--red-b)
+    }
+
+.directory-tag.discovering,
+.directory-tag.handshaking {
+      background: rgba(88, 166, 255, .12);
+      color: var(--accent);
+      border-color: rgba(88, 166, 255, .24)
+    }
+
+.directory-tag.degraded {
+      background: var(--amber-s);
+      color: var(--amber);
+      border-color: var(--amber-b)
     }
 
 .directory-tag.role {

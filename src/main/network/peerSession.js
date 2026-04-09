@@ -16,7 +16,8 @@ function createPeerSession({
   broadcastToRenderer,
   handleP2PMessage,
   flushPendingHelpRequests,
-  buildSignedPeerIdentity
+  buildSignedPeerIdentity,
+  reliableTransport
 }) {
   const heartbeatTimers = new Map();
   const reconnectTimers = new Map();
@@ -79,7 +80,9 @@ function createPeerSession({
   function emitPeerJoined(peer) {
     peer.online = true;
     peer.lastHeartbeat = Date.now();
+    peer.connectionState = 'connected';
     stopReconnect(peer.id);
+    reliableTransport?.notifyPeerAvailable(peer.id);
     bus.emit(EVENTS.DEVICE_JOINED, peerToSafe(peer));
     updateTrayMenu();
     startHeartbeat(peer.id);
@@ -93,7 +96,10 @@ function createPeerSession({
     scheduleReconnect(id);
     triggerDiscovery();
     if (wasAlreadyOffline && hadReconnectTimer) return;
-    if (peer) peer.online = false;
+    if (peer) {
+      peer.online = false;
+      peer.connectionState = state.networkOnline ? 'degraded' : 'offline';
+    }
     broadcastToRenderer('peer:offline', { peerId: id });
     bus.emit(EVENTS.DEVICE_LEFT, { id });
     updateTrayMenu();

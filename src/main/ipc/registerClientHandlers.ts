@@ -25,7 +25,8 @@ export function registerClientHandlers(deps: RegisterDeps): void {
     broadcastToRenderer: deps.broadcastToRenderer,
     dialog: deps.dialog,
     fs: deps.fs,
-    path: deps.path
+    path: deps.path,
+    reliableTransport: deps.reliableTransport
   });
   registerProfileHandlers({
     handle,
@@ -86,19 +87,20 @@ export function registerClientHandlers(deps: RegisterDeps): void {
       priority,
       reqId,
       timestamp,
-      screenshotB64,
-      screenshotName,
-      screenshotSize
+        screenshotB64,
+        screenshotName,
+        screenshotSize
     };
-    const queuedRequest = { ...msg, deliveredAdminIds: [], createdAt: timestamp };
-    let sent = 0;
-    for (const [, peer] of deps.state.peers) {
-      if (deps.hasAdminAccess(peer.role) && deps.helpSvc.deliverHelpRequestToAdmin(peer, queuedRequest, deps.sendToPeer, deps.hasAdminAccess, deps.doSaveState)) sent++;
-    }
-    if (sent === 0) {
-      deps.state.pendingOutgoingHelpRequests.unshift(queuedRequest);
-      deps.doSaveState();
-    }
-    return { reqId, sent, queued: sent === 0, hasScreenshot: !!screenshotB64 };
+    const queuedRequest = { ...msg, msgId: deps.uuidv4(), deliveredAdminIds: [], createdAt: timestamp };
+    const result = deps.helpSvc.enqueueOrDeliverHelpRequest(
+      deps.state.peers,
+      deps.state.pendingOutgoingHelpRequests,
+      queuedRequest,
+      deps.sendToPeer,
+      deps.hasAdminAccess,
+      deps.doSaveState,
+      deps.reliableTransport
+    );
+    return { reqId, sent: result.sent, queued: result.queued, hasScreenshot: !!screenshotB64 };
   });
 }
