@@ -81,6 +81,7 @@ function createPeerSession({
     peer.online = true;
     peer.lastHeartbeat = Date.now();
     peer.connectionState = 'connected';
+    peer.lastDisconnectedAt = null;
     stopReconnect(peer.id);
     reliableTransport?.notifyPeerAvailable(peer.id);
     bus.emit(EVENTS.DEVICE_JOINED, peerToSafe(peer));
@@ -99,6 +100,7 @@ function createPeerSession({
     if (peer) {
       peer.online = false;
       peer.connectionState = state.networkOnline ? 'degraded' : 'offline';
+      peer.lastDisconnectedAt = Date.now();
     }
     broadcastToRenderer(EVENTS.PEER_STALE, { peerId: id });
     bus.emit(EVENTS.DEVICE_LEFT, { id });

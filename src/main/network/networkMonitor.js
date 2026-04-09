@@ -18,6 +18,7 @@ function hasLiveNetwork() {
 }
 
 const STALE_THRESHOLD = 10_000;
+const OFFLINE_AFTER_DEGRADED_MS = 15_000;
 
 function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer, onNetworkRestored }) {
   function startNetworkMonitor() {
@@ -33,6 +34,7 @@ function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer, onNetwo
           if (!peer.online) continue;
           peer.online = false;
           peer.connectionState = 'offline';
+          peer.lastDisconnectedAt = Date.now();
           peer.ws = null;
           bus.emit(EVENTS.DEVICE_LEFT, { id });
         }
@@ -47,15 +49,26 @@ function createNetworkMonitor({ state, bus, EVENTS, broadcastToRenderer, onNetwo
     setInterval(() => {
       const now = Date.now();
       for (const [id, peer] of state.peers) {
-        if (!peer.online) continue;
+        if (!peer.online && peer.connectionState !== 'degraded') continue;
         const lastBeat = peer.lastHeartbeat || 0;
-        if (lastBeat > 0 && (now - lastBeat) > STALE_THRESHOLD) {
+        if (peer.online && lastBeat > 0 && (now - lastBeat) > STALE_THRESHOLD) {
           peer.online = false;
           peer.connectionState = 'degraded';
+          peer.lastDisconnectedAt = now;
           if (peer.ws) { try { peer.ws.terminate?.() ?? peer.ws.close(); } catch {} }
           peer.ws = null;
           broadcastToRenderer?.(EVENTS.PEER_STALE, { peerId: id });
           bus.emit(EVENTS.DEVICE_LEFT, { id });
+          continue;
+        }
+
+        if (
+          peer.connectionState === 'degraded' &&
+          peer.lastDisconnectedAt &&
+          (now - peer.lastDisconnectedAt) > OFFLINE_AFTER_DEGRADED_MS
+        ) {
+          peer.connectionState = 'offline';
+          bus.emit(EVENTS.DEVICE_UPDATED, { id, online: false, connectionState: 'offline' });
         }
       }
     }, 1_000);

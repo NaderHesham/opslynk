@@ -111,7 +111,7 @@ function renderDashboardDeviceGrid(items) {
         const fillColor = peer.online ? 'var(--green)' : 'var(--amber)';
         const fillWidth = peer.online ? 100 : 34;
         return `
-      <article class="dash-device-card ${availabilityClass}">
+      <article class="dash-device-card ${availabilityClass}" onclick="openChat('${peer.id}')">
         <div class="dash-device-top">
           <div class="dash-device-avatar" style="background:${COLORS[Math.abs(hc(label)) % COLORS.length]}">${initial}</div>
           <div>
@@ -142,7 +142,10 @@ function renderDashboardAlerts(helpCards, offlinePeers) {
           level: card.dataset.priority === 'urgent' ? 'danger' : 'warn',
           title: `Help request · ${card.dataset.username || 'User'}`,
           copy: card.dataset.description || 'A user is waiting for admin assistance.',
-          meta: card.dataset.machine || 'Awaiting action'
+          meta: card.dataset.machine || 'Awaiting action',
+          actionHtml: card.dataset.fromid && card.dataset.reqid
+            ? `<button class="ubtn" onclick="event.stopPropagation(); openHelpConversation('${card.dataset.fromid}','${card.dataset.reqid}')">Open Chat</button>`
+            : `<button class="ubtn" onclick="event.stopPropagation(); switchTab('help')">Open Queue</button>`
         });
       }
 
@@ -152,7 +155,8 @@ function renderDashboardAlerts(helpCards, offlinePeers) {
           level: 'danger',
           title: `Peer offline · ${peer.username || 'Unknown device'}`,
           copy: 'This device is currently unavailable for broadcasts, direct replies, and remote assistance.',
-          meta: peer.systemInfo?.hostname || peer.systemInfo?.ip || getPeerDisplayTitle(peer)
+          meta: peer.systemInfo?.hostname || peer.systemInfo?.ip || getPeerDisplayTitle(peer),
+          actionHtml: `<button class="ubtn" onclick="event.stopPropagation(); openChat('${peer.id}')">Open Chat</button>`
         });
       }
 
@@ -163,6 +167,7 @@ function renderDashboardAlerts(helpCards, offlinePeers) {
         <div class="dash-alert-title">${esc(item.title)}</div>
         <div class="dash-alert-copy">${esc(item.copy)}</div>
         <div class="dash-alert-meta">${esc(item.meta)}</div>
+        <div class="dash-alert-actions">${item.actionHtml || ''}</div>
       </article>`).join('');
     }
 
@@ -412,6 +417,12 @@ function renderUsersTab() {
         const roleLabel = hasAdminAccess(p.role) ? 'Admin' : 'User';
         const connection = getPeerConnectionMeta(p);
         const trust = getPeerTrustState(p);
+        const latestHelpCard = document.querySelector(`#helplist .hcard[data-fromid="${p.id}"]`);
+        const latestHelpReqId = latestHelpCard?.dataset.reqid || '';
+        const helpIsAcked = latestHelpCard?.style.opacity === '.7';
+        const helpBadge = latestHelpCard
+          ? `<span class="directory-tag ${helpIsAcked ? 'role' : 'trust degraded'}">${helpIsAcked ? 'Ticket acknowledged' : 'Open ticket'}</span>`
+          : '';
         const metricsHTML = lm ? `
       <div class="directory-metrics">
         <div class="directory-metric-row">
@@ -426,9 +437,15 @@ function renderUsersTab() {
         </div>
       </div>` : '';
         const captureBtn = (p.online && !hasAdminAccess(p.role) && _appMode === 'admin')
-          ? `<button class="ubtn" onclick="requestScreenshot('${p.id}')">Capture</button>` : '';
+          ? `<button class="ubtn" onclick="event.stopPropagation(); requestScreenshot('${p.id}')">Capture</button>` : '';
+        const ticketBtn = latestHelpReqId
+          ? `<button class="ubtn" onclick="openLatestHelpForPeer('${p.id}')">View Ticket</button>`
+          : '';
+        const ackBtn = latestHelpReqId && !helpIsAcked
+          ? `<button class="ubtn" onclick="ackHelp('${latestHelpReqId}','${p.id}', this)">Acknowledge</button>`
+          : '';
         return `
-    <article class="directory-card${p.online ? '' : ' offline'}">
+    <article class="directory-card${p.online ? '' : ' offline'}" onclick="openChat('${p.id}')">
       <div class="directory-top">
         <div class="directory-avatar">${initials}</div>
         <div class="directory-id">
@@ -442,6 +459,7 @@ function renderUsersTab() {
         <span class="directory-tag role">${roleLabel}</span>
         <span class="directory-tag trust ${trust.key}">${trust.label}</span>
         <span class="directory-tag">${hostname}</span>
+        ${helpBadge}
       </div>
       <div class="directory-stats">
         <div class="directory-stat"><strong>Host</strong><span>${hostname}</span></div>
@@ -457,12 +475,14 @@ function renderUsersTab() {
         <div class="directory-detail"><strong>Free Disk</strong><span>${diskFree}</span></div>
       </div>
       <div class="directory-actions">
-        <button class="ubtn" onclick="openSpecsModal('${p.id}')">View Specs</button>
-        <button class="ubtn" onclick="exportPeerSpecs('${p.id}','txt')">Export TXT</button>
-        <button class="ubtn" onclick="openChat('${p.id}')">Open Chat</button>
+        <button class="ubtn" onclick="event.stopPropagation(); openSpecsModal('${p.id}')">View Specs</button>
+        <button class="ubtn" onclick="event.stopPropagation(); exportPeerSpecs('${p.id}','txt')">Export TXT</button>
+        <button class="ubtn" onclick="event.stopPropagation(); openChat('${p.id}')">Open Chat</button>
+        ${ticketBtn ? ticketBtn.replace('onclick="', 'onclick="event.stopPropagation(); ') : ''}
+        ${ackBtn ? ackBtn.replace('onclick="', 'onclick="event.stopPropagation(); ') : ''}
         ${captureBtn}
       </div>
-    </div>`;
+    </article>`;
       }).join('')}</div>`
         : '<div class="empty-glass"><div class="ei">Users</div>No users match the current filters.</div>';
     }

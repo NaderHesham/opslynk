@@ -1,7 +1,7 @@
 function setupEvents() {
-      IPC.on('system:deviceUpdated', p => { const prev = peers[p.id]; peers[p.id] = { ...prev, ...p }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); updateConnPill(); const nameChanged = prev && prev.username !== p.username; const wentOnline = prev && !prev.online && p.online; if (nameChanged || wentOnline) addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile details changed.', p.online ? 'Online now' : (getPeerConnectionMeta(p).label || 'Status refreshed')); });
-      IPC.on('system:deviceJoined', p => { peers[p.id] = { ...peers[p.id], ...p, online: true, connectionState: p.connectionState || 'connected' }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); updateConnPill(); addDashboardActivity('system', `${p.username || 'Peer'} came online`, 'A reachable endpoint joined the LAN session.', p.title || 'Ready'); });
-      IPC.on('system:deviceLeft', ({ id }) => { if (peers[id]) { peers[id].online = false; peers[id].connectionState = peers[id].connectionState === 'offline' ? 'offline' : 'degraded'; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); addDashboardActivity('system', `${peers[id].username || 'Peer'} went offline`, 'This endpoint is temporarily unavailable for admin actions.', getPeerConnectionMeta(peers[id]).label); } updateConnPill(); });
+      IPC.on('system:deviceUpdated', p => { const prev = peers[p.id]; peers[p.id] = { ...prev, ...p }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); if (p.id === activePeerId) renderActiveChatContext(); updateConnPill(); const nameChanged = prev && prev.username !== p.username; const wentOnline = prev && !prev.online && p.online; if (nameChanged || wentOnline) addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile details changed.', p.online ? 'Online now' : (getPeerConnectionMeta(p).label || 'Status refreshed')); });
+      IPC.on('system:deviceJoined', p => { peers[p.id] = { ...peers[p.id], ...p, online: true, connectionState: p.connectionState || 'connected' }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); if (p.id === activePeerId) renderActiveChatContext(); updateConnPill(); addDashboardActivity('system', `${p.username || 'Peer'} came online`, 'A reachable endpoint joined the LAN session.', p.title || 'Ready'); });
+      IPC.on('system:deviceLeft', ({ id }) => { if (peers[id]) { peers[id].online = false; peers[id].connectionState = peers[id].connectionState === 'offline' ? 'offline' : 'degraded'; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); if (id === activePeerId) renderActiveChatContext(); addDashboardActivity('system', `${peers[id].username || 'Peer'} went offline`, 'This endpoint is temporarily unavailable for admin actions.', getPeerConnectionMeta(peers[id]).label); } updateConnPill(); });
 
       IPC.on('network:message', ({ peerId, message }) => {
         if (!history[peerId]) history[peerId] = [];
@@ -19,6 +19,7 @@ function setupEvents() {
           peers[peerId].online = true;
           if (systemInfo)   peers[peerId].systemInfo   = systemInfo;
           if (liveMetrics)  peers[peerId].liveMetrics  = liveMetrics;
+          if (peerId === activePeerId) renderActiveChatContext();
           const active = document.querySelector('.panel.active');
           if (active?.id === 'tab-users' || active?.id === 'tab-dashboard') { renderPeerList(); renderUsersTab(); }
         }
@@ -35,6 +36,7 @@ function setupEvents() {
           peers[peerId].connectionState = 'degraded';
           renderPeerList();
           updateActivePeerStatus();
+          if (peerId === activePeerId) renderActiveChatContext();
         }
         updateConnPill();
       });
@@ -71,7 +73,7 @@ function setupEvents() {
       IPC.on('network:broadcastReply', ({ fromId, text, broadcastId, username }) => {
         const rl = document.getElementById('replieslist'); const re = rl.querySelector('.empty'); if (re) re.remove();
         const c = document.createElement('div'); c.className = 'rcard';
-        c.innerHTML = `<div class="reply-card-head"><div><div class="rfrom">${esc(username || '?')}</div><div class="reply-card-sub">Broadcast response</div></div><div class="rts">${new Date().toLocaleTimeString()}</div></div><div class="rtxt">${esc(text)}</div><div class="reply-card-actions"><button class="ubtn" onclick="openChat('${fromId}')">Open Chat</button></div>`;
+        c.innerHTML = `<div class="reply-card-head"><div><div class="rfrom">${esc(username || '?')}</div><div class="reply-card-sub">Broadcast response</div></div><div class="rts">${new Date().toLocaleTimeString()}</div></div><div class="rtxt">${esc(text)}</div><div class="reply-card-actions"><button class="ubtn" onclick="openChat('${fromId}')">Open Chat</button><button class="ubtn" onclick="openLatestHelpForPeer('${fromId}')">View Ticket</button><button class="ubtn" onclick="openSpecsModal('${fromId}')">View Specs</button></div>`;
         rl.prepend(c);
         const rb = document.querySelector('[data-tab="replies"]'); if (rb && !rb.querySelector('.tbadge')) rb.insertAdjacentHTML('beforeend', '<span class="tbadge">!</span>');
         beep(440, 0.12);

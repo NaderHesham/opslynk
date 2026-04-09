@@ -1,6 +1,58 @@
+function renderActiveChatContext() {
+      const panel = document.getElementById('chat-context');
+      if (!panel) return;
+      if (!_appMode || _appMode === 'client' || !activePeerId) {
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        return;
+      }
+      const peer = peers[activePeerId];
+      const helpCard = getActiveHelpCardForPeer(activePeerId);
+      if (!peer || !helpCard) {
+        panel.style.display = 'none';
+        panel.innerHTML = '';
+        return;
+      }
+
+      const reqId = helpCard.dataset.reqid || '';
+      const status = helpCard.dataset.status === 'acked' ? 'Acknowledged' : 'Open';
+      const priority = (helpCard.dataset.priority || 'medium').toUpperCase();
+      const description = helpCard.dataset.description || 'No details provided.';
+      const machine = helpCard.dataset.machine || peer.systemInfo?.hostname || 'LAN peer';
+      const hasScreenshot = helpCard.dataset.hasScreenshot === 'true';
+      const captureAction = (peer.online && !hasAdminAccess(peer.role) && _appMode === 'admin')
+        ? `<button class="ubtn" onclick="requestScreenshot('${peer.id}')">Capture</button>`
+        : '';
+
+      panel.innerHTML = `
+    <div class="chat-context-shell ${helpCard.dataset.status === 'acked' ? 'acked' : 'open'}">
+      <div class="chat-context-copy">
+        <div class="chat-context-top">
+          <span class="chat-context-kicker">Active Ticket</span>
+          <span class="chat-context-pill ${String(helpCard.dataset.priority || 'medium')}">${priority}</span>
+          <span class="chat-context-state">${status}</span>
+        </div>
+        <div class="chat-context-desc">${esc(description)}</div>
+        <div class="chat-context-meta">${esc(machine)}${hasScreenshot ? ' · Screenshot attached' : ''}</div>
+      </div>
+      <div class="chat-context-actions">
+        ${helpCard.dataset.status === 'acked' ? '<span class="chat-context-done">Acknowledged</span>' : `<button class="ubtn" onclick="ackHelp('${reqId}','${peer.id}')">Acknowledge</button>`}
+        <button class="ubtn" onclick="activeHelpRequestId='${reqId}'; switchTab('help'); setTimeout(() => focusHelpRequest('${reqId}'), 60);">View Ticket</button>
+        <button class="ubtn" onclick="openSpecsModal('${peer.id}')">View Specs</button>
+        ${captureAction}
+      </div>
+    </div>`;
+      panel.style.display = 'block';
+    }
+
 function openChat(peerId) {
       activePeerId = peerId; unread[peerId] = 0;
       const peer = peers[peerId]; if (!peer) return;
+      const explicitHelp = getHelpCardByReqId(activeHelpRequestId);
+      if (!explicitHelp || explicitHelp.dataset.fromid !== peerId) {
+        const helpCard = getLatestHelpCardForPeer(peerId);
+        activeHelpRequestId = helpCard?.dataset.reqid || null;
+      }
       ensureChatLayout();
       const cpav = document.getElementById('cpav'); applyAvatar(cpav, peer);
       document.getElementById('cpname').innerHTML = `${esc(peer.username)} ${roleBadgeHTML(peer.role)}`;
@@ -8,6 +60,7 @@ function openChat(peerId) {
       const conn = getPeerConnectionMeta(peer);
       cs.textContent = `${conn.reachable ? '●' : '○'} ${conn.chatLabel}`;
       cs.style.color = conn.key === 'online' ? 'var(--green)' : conn.key === 'degraded' ? 'var(--amber)' : 'var(--txt3)';
+      renderActiveChatContext();
       const msgs = document.getElementById('msgs'); msgs.innerHTML = '';
       (history[peerId] || []).forEach(m => appendBubble(m, null, false));
       renderPeerList(); switchTab('chat'); ensureChatLayout();
@@ -137,9 +190,8 @@ function closeSpecsModal() {
 async function requestScreenshot(peerId) {
       const peer = peers[peerId];
       if (!peer) return;
-      // Show modal in loading state
-      document.getElementById('ssTitle').textContent = `Capturing — ${esc(peer.username)}`;
-      document.getElementById('ssMeta').textContent  = 'Waiting for response from client…';
+      document.getElementById('ssTitle').textContent = `Capturing - ${esc(peer.username)}`;
+      document.getElementById('ssMeta').textContent  = 'Waiting for response from client...';
       document.getElementById('ssLoading').style.display  = 'block';
       document.getElementById('screenshotImg').style.display = 'none';
       document.getElementById('screenshotModal').classList.add('show');
@@ -152,20 +204,19 @@ async function requestScreenshot(peerId) {
 
 function showScreenshotResult(peerId, base64, name, timestamp) {
       const peer = peers[peerId];
-      document.getElementById('ssTitle').textContent = `Screenshot — ${esc(peer?.username || peerId)}`;
+      document.getElementById('ssTitle').textContent = `Screenshot - ${esc(peer?.username || peerId)}`;
       document.getElementById('ssMeta').textContent  = new Date(timestamp || Date.now()).toLocaleString();
       document.getElementById('ssLoading').style.display     = 'none';
       const img = document.getElementById('screenshotImg');
       img.src = `data:image/png;base64,${base64}`;
       img.style.display = 'block';
-      // Open modal if not already open (screenshot could arrive while closed)
       document.getElementById('screenshotModal').classList.add('show');
     }
 
 function closeScreenshotModal() {
       document.getElementById('screenshotModal').classList.remove('show');
       document.getElementById('screenshotImg').src = '';
-      document.getElementById('ssLoading').textContent = 'Requesting screenshot…';
+      document.getElementById('ssLoading').textContent = 'Requesting screenshot...';
       document.getElementById('ssLoading').style.display  = 'block';
     }
 

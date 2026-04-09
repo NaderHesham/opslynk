@@ -12,6 +12,7 @@ let networkOnline = false;
 let currentHostname = '';
 let modalAvatar = null;
 let selectedSpecPeerId = null;
+let activeHelpRequestId = null;
 let userGroups = [];
 let dashboardActivity = [];
 let dashboardSeries = { presence: [], pressure: [] };

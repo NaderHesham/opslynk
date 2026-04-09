@@ -72,6 +72,38 @@ function setPrio(p) {
       ['low', 'medium', 'urgent'].forEach(x => { const b = document.getElementById('prio-' + x); b.className = 'prbtn' + (x === p ? ` s${x[0]}` : ''); });
     }
 
+function getHelpCardByReqId(reqId) {
+      return reqId ? document.getElementById('hc-' + reqId) : null;
+    }
+
+function getLatestHelpCardForPeer(peerId) {
+      return [...document.querySelectorAll('#helplist .hcard')]
+        .find(card => card.dataset.fromid === peerId && card.dataset.status !== 'acked') || null;
+    }
+
+function openLatestHelpForPeer(peerId) {
+      const helpCard = getLatestHelpCardForPeer(peerId);
+      if (!helpCard) {
+        openChat(peerId);
+        showToast('No active ticket', 'This peer has no open help request right now.');
+        return;
+      }
+      activeHelpRequestId = helpCard.dataset.reqid || null;
+      switchTab('help');
+      setTimeout(() => focusHelpRequest(helpCard.dataset.reqid), 60);
+    }
+
+function getActiveHelpCardForPeer(peerId) {
+      const explicit = getHelpCardByReqId(activeHelpRequestId);
+      if (explicit && explicit.dataset.fromid === peerId) return explicit;
+      return getLatestHelpCardForPeer(peerId);
+    }
+
+function openHelpConversation(peerId, reqId) {
+      activeHelpRequestId = reqId || null;
+      openChat(peerId);
+    }
+
 function appendHelpCard(req) {
       const list = document.getElementById('helplist');
       if (!list) return;
@@ -82,11 +114,15 @@ function appendHelpCard(req) {
       const card = document.createElement('article');
       card.className = `hcard ${req.priority || 'medium'}`;
       card.id = 'hc-' + req.reqId;
+      card.dataset.reqid = req.reqId;
+      card.dataset.fromid = req.fromId || '';
       card.dataset.priority = req.priority || 'medium';
       card.dataset.status = req.status === 'acked' ? 'acked' : 'open';
       card.dataset.username = req.username || '';
       card.dataset.machine = req.machine || '';
       card.dataset.description = req.description || '';
+      card.dataset.timestamp = req.timestamp || '';
+      card.dataset.hasScreenshot = req.screenshotB64 ? 'true' : 'false';
       const hasScreenshot = !!req.screenshotB64;
       const ssHtml = hasScreenshot ? `
     <div class="help-shot">
@@ -117,7 +153,7 @@ function appendHelpCard(req) {
     </div>
     <div class="help-card-actions">
       ${acked ? '<span class="bsm done">Acknowledged</span>' : `<button class="bsm pr" onclick="ackHelp('${req.reqId}','${req.fromId}',this)">Acknowledge</button>`}
-      <button class="bsm gh" onclick="openChat('${req.fromId}')">Open Chat</button>
+      <button class="bsm gh" onclick="openHelpConversation('${req.fromId}','${req.reqId}')">Open Chat</button>
     </div>`;
       if (acked) card.style.opacity = '.4';
       list.prepend(card);
@@ -126,6 +162,7 @@ function appendHelpCard(req) {
       addDashboardActivity('help', `Help request from ${req.username || 'user'}`, req.description || 'No details provided.', req.machine || 'LAN peer');
       renderHelpRequests();
       renderDashboard();
+      if (activePeerId === req.fromId) renderActiveChatContext();
     }
 
 async function ackHelp(reqId, fromId, btn) {
@@ -138,6 +175,7 @@ async function ackHelp(reqId, fromId, btn) {
         if (actions) actions.innerHTML = '<span class="bsm done">Acknowledged</span>';
         card.classList.remove('focus');
       }
+      if (activeHelpRequestId === reqId) renderActiveChatContext();
       helpBadge = document.querySelectorAll('#helplist .hcard:not([style*="opacity"])').length;
       setHelpBadgeCount();
       addDashboardActivity('system', 'Ticket acknowledged', 'A help request has been marked as acknowledged.', reqId);
@@ -148,6 +186,7 @@ async function ackHelp(reqId, fromId, btn) {
 function focusHelpRequest(reqId) {
       const card = document.getElementById('hc-' + reqId);
       if (!card) return;
+      activeHelpRequestId = reqId;
       document.querySelectorAll('#helplist .hcard.focus').forEach(el => el.classList.remove('focus'));
       card.classList.add('focus');
       card.scrollIntoView({ behavior: 'smooth', block: 'center' });

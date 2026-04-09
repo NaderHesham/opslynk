@@ -24,6 +24,7 @@ export interface PeerSession extends PeerIdentity {
   ws?: unknown;
   online: boolean;
   connectionState?: PeerConnectionState;
+  lastDisconnectedAt?: number;
   identityVerified?: boolean;
   identityRejected?: boolean;
   identityLastVerifiedAt?: string;
