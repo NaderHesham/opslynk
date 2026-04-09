@@ -154,6 +154,18 @@
   color: var(--txt3)
 }
 
+.pi .psubtitle.trust-line.verified {
+  color: var(--green)
+}
+
+.pi .psubtitle.trust-line.pending {
+  color: var(--accent)
+}
+
+.pi .psubtitle.trust-line.changed {
+  color: var(--red)
+}
+
 .pi .ptrail {
   display: flex;
   flex-direction: column;
@@ -236,6 +248,18 @@
   background: var(--amber-s);
   color: var(--amber);
   border-color: var(--amber-b)
+}
+
+.peer-state-tag.verify {
+  background: rgba(88, 166, 255, .12);
+  color: var(--accent);
+  border-color: rgba(88, 166, 255, .24)
+}
+
+.peer-state-tag.changed {
+  background: var(--red-s);
+  color: var(--red);
+  border-color: var(--red-b)
 }
 
 .ubadge {

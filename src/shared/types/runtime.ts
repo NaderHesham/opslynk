@@ -8,6 +8,9 @@ export interface PeerIdentity {
   id: string;
   username: string;
   role: UserRole | string;
+  deviceId?: string;
+  publicKey?: string;
+  identityFingerprint?: string;
   color?: string;
   title?: string;
   avatar?: string | null;
@@ -19,6 +22,9 @@ export interface PeerSession extends PeerIdentity {
   port?: number;
   ws?: unknown;
   online: boolean;
+  identityVerified?: boolean;
+  identityRejected?: boolean;
+  identityLastVerifiedAt?: string;
   lastSeen?: number;
   lastHeartbeat?: number;
   liveMetrics?: { cpuPct: number; ramUsedPct: number; ramFreeGb: string } | null;

@@ -50,6 +50,11 @@ const roleBadgeHTML = role => role === 'super_admin'
   : role === 'admin'
     ? '<span class="rbadge admin">Admin</span>'
     : '';
+const getPeerTrustState = peer => {
+  if (peer?.identityRejected) return { key: 'changed', label: 'Identity Changed', shortLabel: 'CHANGED' };
+  if (peer?.identityVerified) return { key: 'verified', label: 'Verified', shortLabel: 'VERIFIED' };
+  return { key: 'pending', label: 'Verifying', shortLabel: 'VERIFY' };
+};
 const getSortedPeers = () => Object.values(peers).sort(comparePeers);
 const getSidebarSearchValue = () => (document.getElementById('peerSearch')?.value || '').trim().toLowerCase();
 const matchesPeerSearch = (peer, search) => {

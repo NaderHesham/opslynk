@@ -73,9 +73,13 @@ export interface InitDataResponse {
     id: string;
     username: string;
     role: string;
+    deviceId?: string;
+    identityFingerprint?: string;
     color?: string;
     title?: string;
     online: boolean;
+    identityVerified: boolean;
+    identityRejected: boolean;
     avatar: string | null;
     systemInfo: Record<string, unknown> | null;
   }>;

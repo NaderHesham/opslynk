@@ -11,20 +11,27 @@ interface TrustStoreDeps {
   hasAdminAccess: (role: string | undefined) => boolean;
 }
 
+interface TrustedPeerRecord {
+  fingerprint: string;
+  role?: string;
+  firstSeenAt: string;
+  lastSeenAt: string;
+}
+
 interface TrustStoreSnapshot {
-  trustedPeerIds: string[];
+  trustedPeers: Record<string, TrustedPeerRecord>;
   blockedPeerIds: string[];
 }
 
-export function createTrustStore({ app, fs, path, hasAdminAccess }: TrustStoreDeps): {
-  isTrustedPeer: (peerId: string, role?: string) => boolean;
+export function createTrustStore({ app, fs, path }: TrustStoreDeps): {
+  isTrustedPeer: (peerId: string, role?: string, fingerprint?: string) => boolean;
   isBlockedPeer: (peerId: string) => boolean;
-  rememberPeer: (peerId: string, role?: string) => void;
+  rememberPeer: (peerId: string, role?: string, fingerprint?: string) => { trusted: boolean; reason: string; mode: 'trusted' | 'newly-trusted' | 'denied' };
   blockPeer: (peerId: string) => void;
   unblockPeer: (peerId: string) => void;
   getSnapshot: () => TrustStoreSnapshot;
 } {
-  const trustedPeerIds = new Set<string>();
+  const trustedPeers = new Map<string, TrustedPeerRecord>();
   const blockedPeerIds = new Set<string>();
 
   const trustDir = path.join(app.getPath('userData'), 'security');
@@ -37,7 +44,7 @@ export function createTrustStore({ app, fs, path, hasAdminAccess }: TrustStoreDe
     queueMicrotask(() => {
       persistScheduled = false;
       const snapshot: TrustStoreSnapshot = {
-        trustedPeerIds: [...trustedPeerIds],
+        trustedPeers: Object.fromEntries(trustedPeers.entries()),
         blockedPeerIds: [...blockedPeerIds]
       };
       void fs.promises
@@ -54,8 +61,14 @@ export function createTrustStore({ app, fs, path, hasAdminAccess }: TrustStoreDe
       .readFile(trustFile, 'utf8')
       .then((raw) => {
         const data = JSON.parse(raw) as Partial<TrustStoreSnapshot>;
-        for (const id of data.trustedPeerIds || []) {
-          if (typeof id === 'string' && id.trim()) trustedPeerIds.add(id);
+        for (const [peerId, record] of Object.entries(data.trustedPeers || {})) {
+          if (!peerId || typeof record?.fingerprint !== 'string' || !record.fingerprint.trim()) continue;
+          trustedPeers.set(peerId, {
+            fingerprint: record.fingerprint,
+            role: record.role,
+            firstSeenAt: record.firstSeenAt || new Date().toISOString(),
+            lastSeenAt: record.lastSeenAt || new Date().toISOString()
+          });
         }
         for (const id of data.blockedPeerIds || []) {
           if (typeof id === 'string' && id.trim()) blockedPeerIds.add(id);
@@ -64,30 +77,41 @@ export function createTrustStore({ app, fs, path, hasAdminAccess }: TrustStoreDe
       .catch(() => {});
   };
 
-  const rememberPeer = (peerId: string, role?: string): void => {
-    if (!peerId || blockedPeerIds.has(peerId)) return;
-    if (hasAdminAccess(role)) {
-      trustedPeerIds.add(peerId);
-      persist();
+  const rememberPeer = (peerId: string, role?: string, fingerprint?: string): { trusted: boolean; reason: string; mode: 'trusted' | 'newly-trusted' | 'denied' } => {
+    if (!peerId) return { trusted: false, reason: 'missing-peer-id', mode: 'denied' };
+    if (!fingerprint) return { trusted: false, reason: 'missing-fingerprint', mode: 'denied' };
+    if (blockedPeerIds.has(peerId)) return { trusted: false, reason: 'peer-blocked', mode: 'denied' };
+
+    const now = new Date().toISOString();
+    const current = trustedPeers.get(peerId);
+    if (current && current.fingerprint !== fingerprint) {
+      return { trusted: false, reason: 'fingerprint-mismatch', mode: 'denied' };
     }
+
+    trustedPeers.set(peerId, {
+      fingerprint,
+      role: role || current?.role,
+      firstSeenAt: current?.firstSeenAt || now,
+      lastSeenAt: now
+    });
+    persist();
+    return { trusted: true, reason: current ? 'fingerprint-match' : 'pinned-first-seen', mode: current ? 'trusted' : 'newly-trusted' };
   };
 
   const isBlockedPeer = (peerId: string): boolean => blockedPeerIds.has(peerId);
 
-  const isTrustedPeer = (peerId: string, role?: string): boolean => {
+  const isTrustedPeer = (peerId: string, _role?: string, fingerprint?: string): boolean => {
     if (!peerId || blockedPeerIds.has(peerId)) return false;
-    if (hasAdminAccess(role)) {
-      trustedPeerIds.add(peerId);
-      persist();
-      return true;
-    }
-    return trustedPeerIds.has(peerId);
+    const current = trustedPeers.get(peerId);
+    if (!current) return false;
+    if (fingerprint && current.fingerprint !== fingerprint) return false;
+    return true;
   };
 
   const blockPeer = (peerId: string): void => {
     if (!peerId) return;
     blockedPeerIds.add(peerId);
-    trustedPeerIds.delete(peerId);
+    trustedPeers.delete(peerId);
     persist();
   };
 
@@ -105,6 +129,6 @@ export function createTrustStore({ app, fs, path, hasAdminAccess }: TrustStoreDe
     rememberPeer,
     blockPeer,
     unblockPeer,
-    getSnapshot: () => ({ trustedPeerIds: [...trustedPeerIds], blockedPeerIds: [...blockedPeerIds] })
+    getSnapshot: () => ({ trustedPeers: Object.fromEntries(trustedPeers.entries()), blockedPeerIds: [...blockedPeerIds] })
   };
 }

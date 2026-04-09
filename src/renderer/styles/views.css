@@ -350,6 +350,24 @@
       border-color: var(--amber-b)
     }
 
+.dash-device-tag.trust.verified {
+      background: var(--green-s);
+      color: var(--green);
+      border-color: var(--green-b)
+    }
+
+.dash-device-tag.trust.pending {
+      background: rgba(88, 166, 255, .12);
+      color: var(--accent);
+      border-color: rgba(88, 166, 255, .24)
+    }
+
+.dash-device-tag.trust.changed {
+      background: var(--red-s);
+      color: var(--red);
+      border-color: var(--red-b)
+    }
+
 .dash-device-bar {
       margin-top: 9px;
       height: 3px;
@@ -2047,6 +2065,24 @@
       background: var(--gold-s);
       color: var(--ring-txt);
       border-color: var(--gold-b)
+    }
+
+.directory-tag.trust.verified {
+      background: var(--green-s);
+      color: var(--green);
+      border-color: var(--green-b)
+    }
+
+.directory-tag.trust.pending {
+      background: rgba(88, 166, 255, .12);
+      color: var(--accent);
+      border-color: rgba(88, 166, 255, .24)
+    }
+
+.directory-tag.trust.changed {
+      background: var(--red-s);
+      color: var(--red);
+      border-color: var(--red-b)
     }
 
 .directory-stats {

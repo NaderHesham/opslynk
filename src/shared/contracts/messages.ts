@@ -6,7 +6,12 @@ export interface HelloPayload {
     id: string;
     username: string;
     role: string;
+    deviceId?: string;
     port?: number;
+    publicKey?: string;
+    identityFingerprint?: string;
+    signedAt?: string;
+    signature?: string;
     color?: string;
     title?: string;
     avatar?: string | null;

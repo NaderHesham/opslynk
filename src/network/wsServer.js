@@ -12,6 +12,7 @@ const { generateKeyPair, deriveSharedKey, encrypt, decrypt } = require('../servi
 let _peers            = null;
 let _myProfile        = null;
 let _myPortRef        = null;
+let _buildSignedPeerIdentity = null;
 let _onMessage        = null;
 let _onPeerOnline     = null;
 let _onPeerOffline    = null;
@@ -33,6 +34,7 @@ function init(deps) {
   _peers             = deps.peers;
   _myProfile         = deps.myProfile;
   _myPortRef         = deps.myPortRef;
+  _buildSignedPeerIdentity = deps.buildSignedPeerIdentity;
   _onMessage         = deps.onMessage;
   _onPeerOnline      = deps.onPeerOnline;
   _onPeerOffline     = deps.onPeerOffline;
@@ -74,6 +76,12 @@ function startWsServer(port) {
 function cleanupSocket(ws) {
   sessionKeys.delete(ws);
   pendingECDH.delete(ws);
+}
+
+function buildHelloIdentity() {
+  const profile = _myProfile();
+  if (_buildSignedPeerIdentity) return _buildSignedPeerIdentity(profile, _myPortRef.value);
+  return { ...profile, port: _myPortRef.value };
 }
 
 function handleIncomingWS(ws, req) {
@@ -160,7 +168,7 @@ function connectToPeer(peer) {
 
         // Now encryption is ready — send hello + queued messages
         peer.online = true;
-        encryptSend(ws, { type: 'hello', from: { ..._myProfile(), port: _myPortRef.value } });
+        encryptSend(ws, { type: 'hello', from: buildHelloIdentity() });
         const queued = _getPendingMsgs(peer.id);
         queued.forEach(m => encryptSend(ws, m));
         _clearPendingMsgs(peer.id);

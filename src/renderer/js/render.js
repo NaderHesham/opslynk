@@ -106,6 +106,7 @@ function renderDashboardDeviceGrid(items) {
         const roleLabel = hasAdminAccess(peer.role) ? 'Admin' : 'User';
         const deliveryClass = peer.online ? 'online' : 'pending';
         const deliveryLabel = peer.online ? 'Reachable' : 'Pending';
+        const trust = getPeerTrustState(peer);
         const fillColor = peer.online ? 'var(--green)' : 'var(--amber)';
         const fillWidth = peer.online ? 100 : 34;
         return `
@@ -121,6 +122,7 @@ function renderDashboardDeviceGrid(items) {
           <span class="dash-device-tag ${availabilityClass}">${availabilityLabel}</span>
           <span class="dash-device-tag ${roleClass}">${roleLabel}</span>
           <span class="dash-device-tag ${deliveryClass}">${deliveryLabel}</span>
+          <span class="dash-device-tag trust ${trust.key}">${trust.label}</span>
         </div>
         <div class="dash-device-bar">
           <div class="dash-device-bar-fill" style="width:${fillWidth}%;background:${fillColor};"></div>
@@ -336,19 +338,23 @@ function renderPeerList() {
       const renderPeerCard = p => {
         const roleBadge = roleBadgeHTML(p.role);
         const subtitle = esc(getPeerDisplayTitle(p));
+        const trust = getPeerTrustState(p);
         const el = document.createElement('div');
         el.className = 'pi' + (p.role === 'super_admin' ? ' super-card' : '') + (p.id === activePeerId ? ' active' : '');
         el.dataset.pid = p.id; el.onclick = () => openChat(p.id);
         const u = unread[p.id] || 0;
-        const sideTag = p.online
+        const sideTag = p.identityRejected
+          ? `<span class="peer-state-tag changed">${trust.shortLabel}</span>`
+          : p.online
           ? (u ? `<div class="ubadge">${u}</div>` : '<span class="peer-state-tag ack">LIVE</span>')
-          : `<span class="peer-state-tag ${hasAdminAccess(p.role) ? 'pending' : 'off'}">${hasAdminAccess(p.role) ? 'PEND' : 'OFF'}</span>`;
+          : `<span class="peer-state-tag ${!p.identityVerified ? 'verify' : hasAdminAccess(p.role) ? 'pending' : 'off'}">${!p.identityVerified ? trust.shortLabel : hasAdminAccess(p.role) ? 'PEND' : 'OFF'}</span>`;
         el.innerHTML = `
       ${avatarHTML(p, 's32')}
       <div class="pmeta">
         <div class="pname"><span class="pname-text">${esc(p.username)}</span>${roleBadge}</div>
         <div class="psub">
           <span class="psubtitle">${subtitle}</span>
+          <span class="psubtitle trust-line ${trust.key}">${trust.label}</span>
         </div>
       </div>
       <div class="ptrail">
@@ -402,6 +408,7 @@ function renderUsersTab() {
         const ram = esc(p.systemInfo?.ramGb ? `${p.systemInfo.ramGb} GB` : '-');
         const diskFree = esc(p.systemInfo?.disk?.freeGb ? `${p.systemInfo.disk.freeGb} GB` : '-');
         const roleLabel = hasAdminAccess(p.role) ? 'Admin' : 'User';
+        const trust = getPeerTrustState(p);
         const metricsHTML = lm ? `
       <div class="directory-metrics">
         <div class="directory-metric-row">
@@ -430,6 +437,7 @@ function renderUsersTab() {
       <div class="directory-tags">
         <span class="directory-tag ${p.online ? 'online' : 'offline'}">${p.online ? 'Online' : 'Offline'}</span>
         <span class="directory-tag role">${roleLabel}</span>
+        <span class="directory-tag trust ${trust.key}">${trust.label}</span>
         <span class="directory-tag">${hostname}</span>
       </div>
       <div class="directory-stats">

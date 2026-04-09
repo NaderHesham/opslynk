@@ -11,8 +11,8 @@ export interface CommandOrigin {
 interface DeviceTrustDeps {
   hasAdminAccess: (role: string | undefined) => boolean;
   trustStore: {
-    isTrustedPeer: (peerId: string, role?: string) => boolean;
-    rememberPeer: (peerId: string, role?: string) => void;
+    isTrustedPeer: (peerId: string, role?: string, fingerprint?: string) => boolean;
+    rememberPeer: (peerId: string, role?: string, fingerprint?: string) => { trusted: boolean; reason: string; mode: 'trusted' | 'newly-trusted' | 'denied' };
     isBlockedPeer: (peerId: string) => boolean;
   };
   maxClockSkewMs?: number;
@@ -53,8 +53,9 @@ export function createDeviceTrust({
     if (!sender) return { trusted: false, reason: 'unknown-sender', mode: 'denied' };
     if (!hasAdminAccess(sender.role)) return { trusted: false, reason: 'sender-not-admin', mode: 'denied' };
     if (trustStore.isBlockedPeer(sender.id)) return { trusted: false, reason: 'sender-blocked', mode: 'denied' };
-    if (!trustStore.isTrustedPeer(sender.id, sender.role)) return { trusted: false, reason: 'sender-not-trusted', mode: 'denied' };
-    trustStore.rememberPeer(sender.id, sender.role);
+    if (!sender.identityVerified || !sender.identityFingerprint) return { trusted: false, reason: 'sender-identity-unverified', mode: 'denied' };
+    if (!trustStore.isTrustedPeer(sender.id, sender.role, sender.identityFingerprint)) return { trusted: false, reason: 'sender-not-trusted', mode: 'denied' };
+    trustStore.rememberPeer(sender.id, sender.role, sender.identityFingerprint);
 
     if (!origin) return { trusted: false, reason: 'origin-missing', mode: 'denied' };
     if (origin.commandType !== commandType) return { trusted: false, reason: 'origin-command-mismatch', mode: 'denied' };

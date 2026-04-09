@@ -13,6 +13,17 @@ const { getOrCreateDeviceIdentity, buildDefaultProfile } = require('../../src/se
   getOrCreateDeviceIdentity: (ip: string) => { deviceId: string };
   buildDefaultProfile: (record: { deviceId: string }) => Record<string, unknown>;
 };
+const {
+  ensureDeviceCredentials,
+  attachIdentityToProfile,
+  createSignedPeerIdentity,
+  verifySignedPeerIdentity
+} = require('../../src/services/deviceAuth') as {
+  ensureDeviceCredentials: (record: { deviceId: string }) => { deviceId: string; auth?: Record<string, string> };
+  attachIdentityToProfile: (profile: Record<string, unknown>, record: { deviceId: string; auth?: Record<string, string> }) => Record<string, unknown>;
+  createSignedPeerIdentity: (profile: Record<string, unknown>, port: number) => Record<string, unknown>;
+  verifySignedPeerIdentity: (identity: Record<string, unknown>) => { valid: boolean; fingerprint?: string; reason?: string };
+};
 const { getSystemInfo, getPrimaryNetworkInfo } = require('../../src/system/systemInfo') as {
   getSystemInfo: () => Record<string, unknown>;
   getPrimaryNetworkInfo: () => { ip: string };
@@ -154,6 +165,8 @@ const { handleP2PMessage } = createMessageRouter({
   closeForcedVideoWindow: windowManager.closeForcedVideoWindow,
   showLockScreen: windowManager.showLockScreen,
   unlockScreen: windowManager.unlockScreen,
+  buildSignedPeerIdentity: createSignedPeerIdentity,
+  verifySignedPeerIdentity,
   evaluateControlMessageTrust: deviceTrust.evaluateIncomingControl,
   rememberTrustedPeer: trustStore.rememberPeer,
   onTrustDecision: auditSink.onAuditEntry,
@@ -172,7 +185,8 @@ const peerSession = createPeerSession({
   helpSvc,
   broadcastToRenderer,
   handleP2PMessage,
-  flushPendingHelpRequests
+  flushPendingHelpRequests,
+  buildSignedPeerIdentity: createSignedPeerIdentity
 });
 
 const { startNetworkMonitor } = createNetworkMonitor({
@@ -263,6 +277,8 @@ registerLifecycle({
   state: owners.lifecycleState,
   getPrimaryNetworkInfo,
   getOrCreateDeviceIdentity,
+  ensureDeviceCredentials,
+  attachIdentityToProfile,
   buildDefaultProfile,
   getSystemInfo,
   ensureControlProfile,

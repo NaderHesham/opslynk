@@ -21,13 +21,19 @@ interface RouterDeps {
   closeForcedVideoWindow: (force?: boolean) => void;
   showLockScreen: (message: string) => void;
   unlockScreen: () => void;
+  buildSignedPeerIdentity: (profile: Record<string, unknown>, port: number) => Record<string, unknown>;
+  verifySignedPeerIdentity: (identity: Record<string, unknown>) => { valid: boolean; fingerprint?: string; reason?: string };
   evaluateControlMessageTrust: (params: {
     commandType: string;
     fromId: string;
     sender?: PeerSession;
     origin?: Partial<CommandOrigin>;
   }) => { trusted: boolean; reason: string; mode: 'trusted' | 'denied' };
-  rememberTrustedPeer: (peerId: string, role?: string) => void;
+  rememberTrustedPeer: (peerId: string, role?: string, fingerprint?: string) => {
+    trusted: boolean;
+    reason: string;
+    mode: 'trusted' | 'newly-trusted' | 'denied';
+  };
   onTrustDecision?: (entry: Record<string, unknown>) => void;
   captureScreenshot?: () => Promise<{ base64: string; name: string; size: number } | null>;
 }
@@ -52,6 +58,8 @@ export function createMessageRouter({
   closeForcedVideoWindow,
   showLockScreen,
   unlockScreen,
+  buildSignedPeerIdentity,
+  verifySignedPeerIdentity,
   evaluateControlMessageTrust,
   rememberTrustedPeer,
   onTrustDecision,
@@ -104,15 +112,65 @@ export function createMessageRouter({
     if (type === 'hello' || type === 'hello-ack') {
       const p = msg.from as PeerSession | undefined;
       if (!p || typeof p.id !== 'string' || !p.id || p.id === state.myProfile?.id) return;
-      let peer = state.peers.get(p.id);
+      const existingPeer = state.peers.get(p.id);
+      const identityCheck = verifySignedPeerIdentity(p as unknown as Record<string, unknown>);
+      if (!identityCheck.valid || !identityCheck.fingerprint) {
+        if (existingPeer) {
+          existingPeer.identityVerified = false;
+          existingPeer.identityRejected = true;
+          existingPeer.online = false;
+        }
+        if (typeof (ws as { close?: () => void } | undefined)?.close === 'function') {
+          (ws as { close: () => void }).close();
+        }
+        if (onTrustDecision) {
+          onTrustDecision({
+            timestamp: new Date().toISOString(),
+            type: 'incoming-peer-identity',
+            fromId: p.id,
+            trusted: false,
+            mode: 'denied',
+            reason: identityCheck.reason || 'identity-invalid'
+          });
+        }
+        return;
+      }
+      const trustDecision = rememberTrustedPeer(p.id, p.role, identityCheck.fingerprint);
+      if (!trustDecision.trusted) {
+        if (existingPeer) {
+          existingPeer.identityVerified = false;
+          existingPeer.identityRejected = true;
+          existingPeer.online = false;
+        }
+        if (typeof (ws as { close?: () => void } | undefined)?.close === 'function') {
+          (ws as { close: () => void }).close();
+        }
+        if (onTrustDecision) {
+          onTrustDecision({
+            timestamp: new Date().toISOString(),
+            type: 'incoming-peer-identity',
+            fromId: p.id,
+            trusted: false,
+            mode: trustDecision.mode,
+            reason: trustDecision.reason
+          });
+        }
+        return;
+      }
+      let peer = existingPeer;
       const wasOnline = !!peer?.online;
       if (!peer) {
         peer = {
           ...p,
+          deviceId: p.deviceId || p.id,
+          identityFingerprint: identityCheck.fingerprint,
           ip: remoteIp,
           port: p.port || wsNet.CHAT_PORT_BASE,
           ws,
           online: true,
+          identityVerified: true,
+          identityRejected: false,
+          identityLastVerifiedAt: new Date().toISOString(),
           lastSeen: Date.now(),
           lastHeartbeat: Date.now()
         };
@@ -120,9 +178,14 @@ export function createMessageRouter({
       } else {
         Object.assign(peer, {
           ...p,
+          deviceId: p.deviceId || p.id,
+          identityFingerprint: identityCheck.fingerprint,
           ip: remoteIp,
           ws,
           online: true,
+          identityVerified: true,
+          identityRejected: false,
+          identityLastVerifiedAt: new Date().toISOString(),
           lastSeen: Date.now(),
           lastHeartbeat: Date.now()
         });
@@ -131,9 +194,28 @@ export function createMessageRouter({
       bus.emit(wasOnline ? EVENTS.DEVICE_UPDATED : EVENTS.DEVICE_JOINED, peerToSafe(peer));
       updateTrayMenu();
       if (type === 'hello') {
-        wsNet.safeSend(ws, { type: 'hello-ack', from: { ...state.myProfile, port: state.myPortRef.value } });
+        wsNet.safeSend(ws, { type: 'hello-ack', from: buildSignedPeerIdentity(state.myProfile as unknown as Record<string, unknown>, state.myPortRef.value) });
       }
-      rememberTrustedPeer(p.id, p.role);
+      if (onTrustDecision) {
+        onTrustDecision({
+          timestamp: new Date().toISOString(),
+          type: 'incoming-peer-identity',
+          fromId: p.id,
+          trusted: true,
+          mode: trustDecision.mode,
+          reason: trustDecision.reason,
+          fingerprint: identityCheck.fingerprint
+        });
+      }
+      return;
+    }
+
+    const fromId = String(msg.fromId || '');
+    const verifiedSender = fromId ? state.peers.get(fromId) : undefined;
+    if (
+      fromId &&
+      (!verifiedSender || verifiedSender.ws !== ws || !verifiedSender.identityVerified)
+    ) {
       return;
     }
 
@@ -300,7 +382,7 @@ export function createMessageRouter({
       if (hasAdminAccess(state.myProfile?.role)) return;
       // Require sender to be a known admin
       const requester = state.peers.get(String(msg.fromId || ''));
-      if (!requester || !hasAdminAccess(requester.role)) return;
+      if (!requester || !hasAdminAccess(requester.role) || !requester.identityVerified) return;
       const reqId = String(msg.reqId || '');
       void (async () => {
         const ss = captureScreenshot ? await captureScreenshot() : null;
@@ -332,13 +414,16 @@ export function createMessageRouter({
 
     if (type === 'profile-update') {
       const peer = state.peers.get(String(msg.id || ''));
-      if (!peer) return;
+      if (!peer || peer.ws !== ws || !peer.identityVerified) return;
       Object.assign(peer, {
         color: msg.color,
         title: msg.title,
         username: msg.username,
         avatar: msg.avatar,
         role: msg.role || peer.role,
+        deviceId: String(msg.deviceId || peer.deviceId || peer.id),
+        publicKey: typeof msg.publicKey === 'string' && msg.publicKey ? msg.publicKey : peer.publicKey,
+        identityFingerprint: typeof msg.identityFingerprint === 'string' && msg.identityFingerprint ? msg.identityFingerprint : peer.identityFingerprint,
         systemInfo: msg.systemInfo || peer.systemInfo || null
       });
       if (hasAdminAccess(peer.role) && (peer.ws as { readyState?: number } | undefined)?.readyState === 1) {

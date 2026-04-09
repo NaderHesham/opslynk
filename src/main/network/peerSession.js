@@ -15,7 +15,8 @@ function createPeerSession({
   helpSvc,
   broadcastToRenderer,
   handleP2PMessage,
-  flushPendingHelpRequests
+  flushPendingHelpRequests,
+  buildSignedPeerIdentity
 }) {
   const heartbeatTimers = new Map();
   const reconnectTimers = new Map();
@@ -112,6 +113,7 @@ function createPeerSession({
       peers: state.peers,
       myProfile: () => state.myProfile,
       myPortRef: state.myPortRef,
+      buildSignedPeerIdentity,
       onMessage: handleP2PMessage,
       onPeerOnline: emitPeerJoined,
       onPeerOffline: emitPeerLeft,

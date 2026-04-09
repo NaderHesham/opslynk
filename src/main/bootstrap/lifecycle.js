@@ -7,6 +7,8 @@ function registerLifecycle({
   state,
   getPrimaryNetworkInfo,
   getOrCreateDeviceIdentity,
+  ensureDeviceCredentials = (record) => record,
+  attachIdentityToProfile = (profile) => profile,
   buildDefaultProfile,
   getSystemInfo,
   ensureControlProfile,
@@ -25,7 +27,7 @@ function registerLifecycle({
     storage.ensureDirs();
 
     const netInfo = getPrimaryNetworkInfo();
-    const deviceRecord = getOrCreateDeviceIdentity(netInfo.ip);
+    const deviceRecord = ensureDeviceCredentials(getOrCreateDeviceIdentity(netInfo.ip));
 
     const raw = storage.loadProfile();
     if (raw) {
@@ -36,6 +38,7 @@ function registerLifecycle({
     }
 
     const preservedUsername = raw?.username;
+    state.myProfile = attachIdentityToProfile(state.myProfile, deviceRecord);
     state.myProfile.systemInfo = getSystemInfo();
     ensureControlProfile();
     if (preservedUsername) state.myProfile.username = preservedUsername;

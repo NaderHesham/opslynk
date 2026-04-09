@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const { createMessageRouter } = require('../../src/main/network/messageRouter');
 
 function createHarness() {
+  const adminWs = { readyState: 1 };
   const calls = {
     urgentOverlay: 0,
     normalPopup: 0,
@@ -21,8 +22,8 @@ function createHarness() {
     myProfile: { id: 'self-1', role: 'user' },
     myPortRef: { value: 5000 },
     peers: new Map([
-      ['admin-1', { id: 'admin-1', role: 'super_admin', username: 'Admin', ws: { readyState: 1 } }],
-      ['user-1', { id: 'user-1', role: 'user', username: 'User' }]
+      ['admin-1', { id: 'admin-1', role: 'super_admin', username: 'Admin', ws: adminWs, identityVerified: true, identityFingerprint: 'fp-admin' }],
+      ['user-1', { id: 'user-1', role: 'user', username: 'User', ws: { readyState: 1 }, identityVerified: true, identityFingerprint: 'fp-user' }]
     ]),
     chatHistory: {},
     soundEnabled: true,
@@ -60,6 +61,8 @@ function createHarness() {
     closeForcedVideoWindow: (force) => { if (force) calls.forcedVideoStop += 1; },
     showLockScreen: () => { calls.lockScreen += 1; },
     unlockScreen: () => { calls.unlockScreen += 1; },
+    buildSignedPeerIdentity: () => ({ id: 'self-1', role: 'user' }),
+    verifySignedPeerIdentity: () => ({ valid: true, fingerprint: 'fp-admin' }),
     evaluateControlMessageTrust: ({ fromId, sender, origin, commandType }) => {
       if (!sender) return { trusted: false, reason: 'unknown-sender', mode: 'denied' };
       if (origin && origin.issuerId === fromId && origin.commandType === commandType) {
@@ -68,16 +71,16 @@ function createHarness() {
       if (!origin) return { trusted: false, reason: 'origin-missing', mode: 'denied' };
       return { trusted: false, reason: 'origin-invalid', mode: 'denied' };
     },
-    rememberTrustedPeer: () => {},
+    rememberTrustedPeer: () => ({ trusted: true, reason: 'fingerprint-match', mode: 'trusted' }),
     onTrustDecision: (entry) => trustEvents.push(entry)
   });
 
-  return { router, calls, emitted, trustEvents };
+  return { router, calls, emitted, trustEvents, adminWs };
 }
 
 test('urgent broadcast uses urgent overlay path', () => {
-  const { router, calls } = createHarness();
-  router.handleP2PMessage(null, {
+  const { router, calls, adminWs } = createHarness();
+  router.handleP2PMessage(adminWs, {
     type: 'broadcast',
     fromId: 'admin-1',
     text: 'urgent message',
@@ -96,9 +99,9 @@ test('urgent broadcast uses urgent overlay path', () => {
 });
 
 test('forced video start/stop routes remain intact', () => {
-  const { router, calls } = createHarness();
+  const { router, calls, adminWs } = createHarness();
 
-  router.handleP2PMessage(null, {
+  router.handleP2PMessage(adminWs, {
     type: 'forced-video-broadcast',
     fromId: 'admin-1',
     videoB64: 'abc',
@@ -110,7 +113,7 @@ test('forced video start/stop routes remain intact', () => {
       commandType: 'forced-video-broadcast'
     }
   });
-  router.handleP2PMessage(null, {
+  router.handleP2PMessage(adminWs, {
     type: 'forced-video-broadcast-stop',
     fromId: 'admin-1',
     origin: {
@@ -127,12 +130,12 @@ test('forced video start/stop routes remain intact', () => {
 });
 
 test('screen lock/unlock only accept admin sender role', () => {
-  const { router, calls, emitted } = createHarness();
+  const { router, calls, emitted, adminWs } = createHarness();
 
-  router.handleP2PMessage(null, { type: 'screen-lock', fromId: 'user-1', message: 'x' });
+  router.handleP2PMessage(adminWs, { type: 'screen-lock', fromId: 'user-1', message: 'x' });
   assert.equal(calls.lockScreen, 0);
 
-  router.handleP2PMessage(null, {
+  router.handleP2PMessage(adminWs, {
     type: 'screen-lock',
     fromId: 'admin-1',
     message: 'locked',
@@ -147,7 +150,7 @@ test('screen lock/unlock only accept admin sender role', () => {
   assert.equal(calls.lockScreen, 1);
   assert.equal(emitted.find((x) => x.event === 'SCREEN_LOCKED').payload.message, 'locked');
 
-  router.handleP2PMessage(null, {
+  router.handleP2PMessage(adminWs, {
     type: 'screen-unlock',
     fromId: 'admin-1',
     origin: {
@@ -163,8 +166,8 @@ test('screen lock/unlock only accept admin sender role', () => {
 });
 
 test('untrusted sensitive command is denied before control action', () => {
-  const { router, calls } = createHarness();
-  router.handleP2PMessage(null, {
+  const { router, calls, adminWs } = createHarness();
+  router.handleP2PMessage(adminWs, {
     type: 'screen-lock',
     fromId: 'unknown-admin',
     message: 'locked',
@@ -180,8 +183,8 @@ test('untrusted sensitive command is denied before control action', () => {
 });
 
 test('trusted command origin is audited in trust decision stream', () => {
-  const { router, trustEvents } = createHarness();
-  router.handleP2PMessage(null, {
+  const { router, trustEvents, adminWs } = createHarness();
+  router.handleP2PMessage(adminWs, {
     type: 'broadcast',
     fromId: 'admin-1',
     text: 'urgent message',
@@ -201,8 +204,8 @@ test('trusted command origin is audited in trust decision stream', () => {
 });
 
 test('missing origin metadata rejects sensitive control message', () => {
-  const { router, calls } = createHarness();
-  router.handleP2PMessage(null, {
+  const { router, calls, adminWs } = createHarness();
+  router.handleP2PMessage(adminWs, {
     type: 'forced-video-broadcast',
     fromId: 'admin-1',
     videoB64: 'abc'
@@ -211,8 +214,8 @@ test('missing origin metadata rejects sensitive control message', () => {
 });
 
 test('invalid origin metadata rejects sensitive control message', () => {
-  const { router, calls } = createHarness();
-  router.handleP2PMessage(null, {
+  const { router, calls, adminWs } = createHarness();
+  router.handleP2PMessage(adminWs, {
     type: 'broadcast',
     fromId: 'admin-1',
     text: 'urgent message',
