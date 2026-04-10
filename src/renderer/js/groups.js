@@ -10,6 +10,7 @@ async function saveGroup() {
       document.getElementById('groupname').value = '';
       document.querySelectorAll('#groupmembers input:checked').forEach(el => { el.checked = false; });
       renderGroupUI();
+      renderMonitorTab();
       addDashboardActivity('system', 'Group saved', `Audience "${name}" is ready for targeted broadcasts.`, `${memberIds.length} member(s)`);
       showToast('Group saved', 'Broadcast group saved successfully.');
     }
@@ -19,6 +20,7 @@ async function deleteGroup(id) {
       if (!result?.success) return;
       userGroups = result.groups || [];
       renderGroupUI();
+      renderMonitorTab();
       addDashboardActivity('system', 'Group removed', 'Saved audience deleted from the admin console.', id);
     }
 

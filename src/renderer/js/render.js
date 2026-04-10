@@ -63,13 +63,23 @@ function pushDashboardSeries(key, value) {
 function addDashboardActivity(kind, title, detail, meta = '') {
       if (!document.getElementById('dashTimeline')) return; // client mode — no dashboard
       const stamp = new Date();
+      const at = stamp.getTime();
+      const head = dashboardActivity[0];
+      if (head && head.kind === kind && head.title === title && head.detail === detail && (at - Number(head.at || 0)) < 20000) {
+        if (meta && meta !== head.meta) head.meta = meta;
+        head.time = stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        head.at = at;
+        renderDashboard();
+        return;
+      }
       dashboardActivity.unshift({
-        id: `${stamp.getTime()}-${Math.random().toString(16).slice(2, 8)}`,
+        id: `${at}-${Math.random().toString(16).slice(2, 8)}`,
         kind,
         title,
         detail,
         meta,
-        time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        time: stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        at
       });
       dashboardActivity = dashboardActivity.slice(0, 18);
       renderDashboard();
@@ -83,9 +93,98 @@ function clearDashboardActivity() {
 function setDashboardDeviceFilter(filter) {
       dashboardDeviceFilter = filter;
       document.querySelectorAll('.dash-filter-pill').forEach(btn => {
+        if (!btn.id.startsWith('dashFilter-')) return;
         btn.classList.toggle('active', btn.id === `dashFilter-${filter}`);
       });
       renderDashboard();
+}
+
+function setDashboardScreenshotFilter(filter) {
+      dashboardScreenshotFilter = filter;
+      document.querySelectorAll('.dash-filter-pill').forEach(btn => {
+        if (!btn.id.startsWith('dashScreenshotFilter-')) return;
+        btn.classList.toggle('active', btn.id === `dashScreenshotFilter-${filter}`);
+      });
+      renderDashboard();
+}
+
+async function setScreenshotPollingMode(mode) {
+      if (mode !== 'normal' && mode !== 'fast' && mode !== 'live') return;
+      try {
+        const snapshot = await IPC.setScreenshotPolling?.({ mode });
+        if (snapshot && typeof snapshot === 'object') {
+          screenshotPolling = { ...screenshotPolling, ...snapshot };
+        } else {
+          screenshotPolling = { ...screenshotPolling, mode };
+        }
+        renderDashboard();
+        renderMonitorTab();
+      } catch (error) {
+        console.error('[OpsLynk] set screenshot polling mode failed', error);
+        showToast('Polling update failed', 'Could not update screenshot polling mode right now.', 'warn');
+      }
+}
+
+async function toggleScreenshotPolling() {
+      const nextEnabled = !Boolean(screenshotPolling?.enabled);
+      try {
+        const snapshot = await IPC.setScreenshotPolling?.({ enabled: nextEnabled });
+        if (snapshot && typeof snapshot === 'object') {
+          screenshotPolling = { ...screenshotPolling, ...snapshot };
+        } else {
+          screenshotPolling = { ...screenshotPolling, enabled: nextEnabled };
+        }
+        renderDashboard();
+        renderMonitorTab();
+      } catch (error) {
+        console.error('[OpsLynk] toggle screenshot polling failed', error);
+        showToast('Polling update failed', 'Could not toggle screenshot wall polling right now.', 'warn');
+      }
+}
+
+function syncScreenshotPollingControls() {
+      const normalBtn = document.getElementById('dashScreenshotMode-normal');
+      const fastBtn = document.getElementById('dashScreenshotMode-fast');
+      const liveBtn = document.getElementById('dashScreenshotMode-live');
+      const toggleBtn = document.getElementById('dashScreenshotToggle');
+      const monitorNormalBtn = document.getElementById('monitorMode-normal');
+      const monitorFastBtn = document.getElementById('monitorMode-fast');
+      const monitorLiveBtn = document.getElementById('monitorMode-live');
+      const monitorToggleBtn = document.getElementById('monitorMode-toggle');
+      const liveWallSub = document.getElementById('dashLiveWallSub');
+      const monitorLiveWallSub = document.getElementById('monitorLiveWallSub');
+      if (normalBtn) normalBtn.classList.toggle('active', screenshotPolling.mode === 'normal');
+      if (fastBtn) fastBtn.classList.toggle('active', screenshotPolling.mode === 'fast');
+      if (liveBtn) liveBtn.classList.toggle('active', screenshotPolling.mode === 'live');
+      if (monitorNormalBtn) monitorNormalBtn.classList.toggle('active', screenshotPolling.mode === 'normal');
+      if (monitorFastBtn) monitorFastBtn.classList.toggle('active', screenshotPolling.mode === 'fast');
+      if (monitorLiveBtn) monitorLiveBtn.classList.toggle('active', screenshotPolling.mode === 'live');
+      if (toggleBtn) {
+        const enabled = Boolean(screenshotPolling.enabled);
+        toggleBtn.textContent = enabled ? 'Pause' : 'Resume';
+        toggleBtn.classList.toggle('paused', !enabled);
+      }
+      if (monitorToggleBtn) {
+        const enabled = Boolean(screenshotPolling.enabled);
+        monitorToggleBtn.textContent = enabled ? 'Pause' : 'Resume';
+        monitorToggleBtn.classList.toggle('active', !enabled);
+      }
+      if (liveWallSub) {
+        const enabled = Boolean(screenshotPolling.enabled);
+        const refreshSec = Math.max(1, Math.round(Number(screenshotPolling.previewRefreshMs || 0) / 1000));
+        const modeLabel = screenshotPolling.mode === 'fast' ? 'Fast' : (screenshotPolling.mode === 'live' ? 'Live' : 'Normal');
+        liveWallSub.textContent = enabled
+          ? `Live wall mode: ${modeLabel} (${refreshSec}s target refresh)`
+          : 'Live wall mode: Paused';
+      }
+      if (monitorLiveWallSub) {
+        const enabled = Boolean(screenshotPolling.enabled);
+        const refreshSec = Math.max(1, Math.round(Number(screenshotPolling.previewRefreshMs || 0) / 1000));
+        const modeLabel = screenshotPolling.mode === 'fast' ? 'Fast' : (screenshotPolling.mode === 'live' ? 'Live' : 'Normal');
+        monitorLiveWallSub.textContent = enabled
+          ? `Live wall mode: ${modeLabel} (${refreshSec}s target refresh)`
+          : 'Live wall mode: Paused';
+      }
 }
 
 function renderDashboardDeviceGrid(items) {
@@ -101,6 +200,8 @@ function renderDashboardDeviceGrid(items) {
         const hostname = peer.systemInfo?.hostname || getPeerDisplayTitle(peer);
         const ip = peer.systemInfo?.ip || 'IP unavailable';
         const connection = getPeerConnectionMeta(peer);
+        const freshness = getPeerFreshnessMeta(peer);
+        const activity = getPeerActivityMeta(peer);
         const availabilityClass = peer.online ? 'online' : connection.key;
         const availabilityLabel = connection.label;
         const roleClass = hasAdminAccess(peer.role) ? 'admin' : 'user';
@@ -121,6 +222,8 @@ function renderDashboardDeviceGrid(items) {
         </div>
         <div class="dash-device-tags">
           <span class="dash-device-tag ${availabilityClass}">${availabilityLabel}</span>
+          <span class="dash-device-tag ${freshness.key}">${freshness.label}</span>
+          <span class="dash-device-tag ${activity.key}">${activity.label}</span>
           <span class="dash-device-tag ${roleClass}">${roleLabel}</span>
           <span class="dash-device-tag ${deliveryClass}">${deliveryLabel}</span>
           <span class="dash-device-tag trust ${trust.key}">${trust.label}</span>
@@ -130,6 +233,262 @@ function renderDashboardDeviceGrid(items) {
         </div>
       </article>`;
       }).join('');
+    }
+
+function renderDashboardScreenshotWall(items) {
+      const clients = items.filter(peer => !hasAdminAccess(peer.role));
+      const targets = clients.length
+        ? clients
+        : items.filter(peer => peer.id !== me?.id);
+      if (!targets.length) return '<div class="empty"><div class="ei">Preview</div>No devices available for live wall</div>';
+      const filtered = targets.slice(0, 8);
+      return filtered.map(peer => {
+        const screenshot = getPeerScreenshotMeta(peer);
+        const previewStyle = peer.latestScreenshotPreview
+          ? ` style="background-image:url('${peer.latestScreenshotPreview.replace(/'/g, '%27')}')"`
+          : '';
+        const offlineOverlay = !peer.online ? '<div class="dash-shot-offline-mask"><span>OFFLINE</span></div>' : '';
+        const connectionBadge = !peer.online
+          ? '<span class="dash-shot-conn offline"><span class="dot"></span>OFF</span>'
+          : '';
+        const canCapture = !hasAdminAccess(peer.role);
+        const actionLabel = !peer.online
+          ? 'Offline'
+          : peer.latestScreenshotPreview
+          ? 'Open'
+          : (canCapture ? (peer.screenshotRequestPending ? 'Polling' : 'Request') : 'N/A');
+        const actionHandler = peer.latestScreenshotPreview
+          ? `openDashboardScreenshot('${peer.id}')`
+          : (canCapture ? `requestScreenshot('${peer.id}')` : '');
+        return `
+      <article class="dash-shot-card ${screenshot.key}${!peer.online ? ' offline' : ''}" ${actionHandler ? `onclick="${actionHandler}"` : ''}>
+        <div class="dash-shot-frame${!peer.online ? ' offline' : ''}"${previewStyle}>
+          ${offlineOverlay}
+          ${peer.latestScreenshotPreview ? '' : `<div class="dash-shot-empty">Waiting first frame</div>`}
+        </div>
+        <div class="dash-shot-meta">
+          <div>
+            <div class="dash-shot-name">${esc(peer.username || 'Unknown')}</div>
+            <div class="dash-shot-sub">${esc(peer.systemInfo?.hostname || getPeerDisplayTitle(peer))}</div>
+            ${connectionBadge}
+          </div>
+          <span class="dash-shot-action">${esc(actionLabel)}</span>
+        </div>
+        <div class="dash-shot-footer">
+          <span>${esc(screenshot.capturedAt ? fmtClock(screenshot.capturedAt) : 'Waiting')}</span>
+        </div>
+      </article>`;
+      }).join('');
+    }
+
+function setMonitorGroupFilter(groupId) {
+      monitorGroupFilter = groupId || 'all';
+      renderMonitorTab();
+}
+
+function setMonitorActionMode(mode) {
+      monitorActionMode = mode === 'remote' ? 'remote' : 'preview';
+      syncMonitorActionControls();
+      renderMonitorTab();
+}
+
+function syncMonitorActionControls() {
+      const previewBtn = document.getElementById('monitorAction-preview');
+      const remoteBtn = document.getElementById('monitorAction-remote');
+      const actionSub = document.getElementById('monitorActionSub');
+      if (previewBtn) previewBtn.classList.toggle('active', monitorActionMode === 'preview');
+      if (remoteBtn) remoteBtn.classList.toggle('active', monitorActionMode === 'remote');
+      if (actionSub) {
+        actionSub.textContent = monitorActionMode === 'remote'
+          ? 'Clicking a device opens remote-session handoff (Sprint 5 hook).'
+          : 'Clicking a device opens its latest preview.';
+      }
+}
+
+function openMonitorTarget(peerId) {
+      const peer = peers[peerId];
+      if (!peer) return;
+      if (monitorActionMode === 'remote') {
+        openMonitorRemoteModal(peerId);
+        return;
+      }
+      if (peer.latestScreenshotPreview) {
+        openDashboardScreenshot(peerId);
+        return;
+      }
+      if (!hasAdminAccess(peer.role)) requestScreenshot(peerId);
+}
+
+function clearMonitorRemoteTimer() {
+      if (monitorRemoteStatusTimer) {
+        clearTimeout(monitorRemoteStatusTimer);
+        monitorRemoteStatusTimer = null;
+      }
+}
+
+function renderMonitorRemoteModal() {
+      const peer = peers[monitorRemoteSession.peerId];
+      const title = document.getElementById('monitorRemoteTitle');
+      const sub = document.getElementById('monitorRemoteSub');
+      const badge = document.getElementById('monitorRemoteBadge');
+      const target = document.getElementById('monitorRemoteTarget');
+      const machine = document.getElementById('monitorRemoteMachine');
+      const connection = document.getElementById('monitorRemoteConnection');
+      const requestedAt = document.getElementById('monitorRemoteRequestedAt');
+      const hint = document.getElementById('monitorRemoteHint');
+      const requestBtn = document.getElementById('monitorRemoteRequestBtn');
+      if (!title || !sub || !badge || !target || !machine || !connection || !requestedAt || !hint || !requestBtn) return;
+      const status = monitorRemoteSession.status || 'idle';
+      const statusLabels = {
+        idle: 'Idle',
+        connecting: 'Connecting',
+        ready: 'Connected (Placeholder)',
+        unavailable: 'Unavailable'
+      };
+      title.textContent = peer ? `Remote Session · ${peer.username || 'Unknown'}` : 'Remote Session';
+      sub.textContent = peer
+        ? `${peer.systemInfo?.hostname || getPeerDisplayTitle(peer)} · ${peer.online ? 'Connected' : 'Offline'}`
+        : 'Target not found';
+      badge.textContent = statusLabels[status] || 'Idle';
+      target.textContent = peer?.username || '-';
+      machine.textContent = peer ? (peer.systemInfo?.hostname || getPeerDisplayTitle(peer)) : '-';
+      connection.textContent = peer ? (peer.online ? 'Connected' : 'Offline') : '-';
+      requestedAt.textContent = monitorRemoteSession.requestedAt ? fmtClock(monitorRemoteSession.requestedAt) : '-';
+      if (status === 'ready') {
+        hint.textContent = 'Forced remote handoff is ready. Sprint 5 will mount the real remote desktop stream here.';
+      } else if (status === 'connecting') {
+        hint.textContent = 'Starting forced remote session...';
+      } else if (status === 'unavailable') {
+        hint.textContent = 'Target is offline now. Bring the device online, then connect again.';
+      } else {
+        hint.textContent = 'This is a Sprint 5 placeholder. Live forced remote desktop stream will mount in this panel.';
+      }
+      requestBtn.disabled = !peer || !peer.online || status === 'connecting';
+      requestBtn.textContent = status === 'ready' ? 'Reconnect Now' : 'Connect Now';
+}
+
+function openMonitorRemoteModal(peerId) {
+      const modal = document.getElementById('monitorRemoteModal');
+      if (!modal) return;
+      const peer = peers[peerId];
+      clearMonitorRemoteTimer();
+      monitorRemoteSession = {
+        peerId,
+        status: peer?.online ? 'connecting' : 'unavailable',
+        requestedAt: Date.now()
+      };
+      renderMonitorRemoteModal();
+      modal.classList.add('show');
+      if (!peer?.online) return;
+      monitorRemoteStatusTimer = setTimeout(() => {
+        if (monitorRemoteSession.peerId !== peerId) return;
+        monitorRemoteSession.status = peers[peerId]?.online ? 'ready' : 'unavailable';
+        renderMonitorRemoteModal();
+      }, 500);
+}
+
+function requestMonitorRemoteSession() {
+      const peerId = monitorRemoteSession.peerId;
+      if (!peerId) return;
+      const peer = peers[peerId];
+      clearMonitorRemoteTimer();
+      if (!peer?.online) {
+        monitorRemoteSession.status = 'unavailable';
+        renderMonitorRemoteModal();
+        showToast('Remote unavailable', 'Target is offline right now.', 'warn');
+        return;
+      }
+      monitorRemoteSession.status = 'connecting';
+      monitorRemoteSession.requestedAt = Date.now();
+      renderMonitorRemoteModal();
+      monitorRemoteStatusTimer = setTimeout(() => {
+        if (monitorRemoteSession.peerId !== peerId) return;
+        monitorRemoteSession.status = peers[peerId]?.online ? 'ready' : 'unavailable';
+        renderMonitorRemoteModal();
+      }, 800);
+}
+
+function closeMonitorRemoteModal() {
+      document.getElementById('monitorRemoteModal')?.classList.remove('show');
+      clearMonitorRemoteTimer();
+}
+
+function renderMonitorTab() {
+      const grid = document.getElementById('monitorLiveGrid');
+      const groupSelect = document.getElementById('monitorGroupFilter');
+      if (!grid || !groupSelect) return;
+
+      const options = [`<option value="all">All Devices</option>`]
+        .concat((userGroups || []).map(group => `<option value="${esc(group.id)}">${esc(group.name)}</option>`));
+      groupSelect.innerHTML = options.join('');
+      groupSelect.value = monitorGroupFilter || 'all';
+
+      const group = (userGroups || []).find(g => g.id === monitorGroupFilter);
+      const members = new Set(Array.isArray(group?.memberIds) ? group.memberIds : []);
+      const allTargets = getSortedPeers().filter(p => !hasAdminAccess(p.role));
+      const targets = monitorGroupFilter === 'all'
+        ? allTargets
+        : allTargets.filter(p => members.has(p.id));
+
+      if (!targets.length) {
+        grid.innerHTML = '<div class="empty"><div class="ei">Preview</div>No devices in this scope</div>';
+        syncMonitorActionControls();
+        syncScreenshotPollingControls();
+        return;
+      }
+
+      grid.innerHTML = targets.slice(0, 60).map(peer => {
+        const screenshot = getPeerScreenshotMeta(peer);
+        const previewStyle = peer.latestScreenshotPreview
+          ? ` style="background-image:url('${peer.latestScreenshotPreview.replace(/'/g, '%27')}')"`
+          : '';
+        const offlineOverlay = !peer.online ? '<div class="dash-shot-offline-mask"><span>OFFLINE</span></div>' : '';
+        const connectionBadge = !peer.online
+          ? '<span class="dash-shot-conn offline"><span class="dot"></span>OFF</span>'
+          : '';
+        const actionLabel = !peer.online
+          ? 'Offline'
+          : monitorActionMode === 'remote'
+          ? 'Remote'
+          : (peer.latestScreenshotPreview ? 'Open' : (peer.screenshotRequestPending ? 'Polling' : 'Request'));
+        return `
+      <article class="dash-shot-card ${screenshot.key}${!peer.online ? ' offline' : ''}" onclick="openMonitorTarget('${peer.id}')">
+        <div class="dash-shot-frame${!peer.online ? ' offline' : ''}"${previewStyle}>
+          ${offlineOverlay}
+          ${peer.latestScreenshotPreview ? '' : `<div class="dash-shot-empty">Waiting first frame</div>`}
+        </div>
+        <div class="dash-shot-meta">
+          <div>
+            <div class="dash-shot-name">${esc(peer.username || 'Unknown')}</div>
+            <div class="dash-shot-sub">${esc(peer.systemInfo?.hostname || getPeerDisplayTitle(peer))}</div>
+            ${connectionBadge}
+          </div>
+          <span class="dash-shot-action">${esc(actionLabel)}</span>
+        </div>
+        <div class="dash-shot-footer">
+          <span>${esc(screenshot.capturedAt ? fmtClock(screenshot.capturedAt) : 'Waiting')}</span>
+        </div>
+      </article>`;
+      }).join('');
+      syncMonitorActionControls();
+      syncScreenshotPollingControls();
+}
+
+function openDashboardScreenshot(peerId) {
+      const peer = peers[peerId];
+      if (!peer?.latestScreenshotPreview) {
+        requestScreenshot(peerId);
+        return;
+      }
+      document.getElementById('ssTitle').textContent = `Screenshot - ${esc(peer.username || peerId)}`;
+      document.getElementById('ssMeta').textContent = peer.latestScreenshot?.capturedAt
+        ? new Date(peer.latestScreenshot.capturedAt).toLocaleString()
+        : 'Latest preview';
+      document.getElementById('ssLoading').style.display = 'none';
+      const img = document.getElementById('screenshotImg');
+      img.src = peer.latestScreenshotPreview;
+      img.style.display = 'block';
+      document.getElementById('screenshotModal').classList.add('show');
     }
 
 function renderDashboardAlerts(helpCards, offlinePeers) {
@@ -243,6 +602,8 @@ function renderDashboard() {
       setHtml('presenceSpark', renderMiniChart(dashboardSeries.presence, 'green'));
       setHtml('pressureSpark', renderMiniChart(dashboardSeries.pressure, ''));
       setHtml('dashDeviceGrid', renderDashboardDeviceGrid(sortedPeers));
+      setHtml('dashScreenshotGrid', renderDashboardScreenshotWall(sortedPeers));
+      syncScreenshotPollingControls();
       setHtml('dashAlertList', renderDashboardAlerts(openHelpCards, offlinePeers));
 
       const miniList = document.getElementById('dashMiniList');
@@ -381,6 +742,175 @@ function renderPeerList() {
       }
     }
 
+function buildUserDetailedSegments(peer) {
+      const events = normalizeActivityEvents(peer);
+      const segments = [];
+      let cursorState = 'offline';
+      let cursorAt = null;
+      const pushSegment = (from, to, state) => {
+        const start = Number(from || 0);
+        const end = Number(to || 0);
+        if (!start || !end || end <= start) return;
+        // Ignore micro-segments so timeline stays readable and meaningful.
+        if ((end - start) < 1000) return;
+        segments.push({ from: start, to: end, state });
+      };
+      for (const event of events) {
+        if (event.type === 'online') {
+          if (cursorAt && event.at > cursorAt) pushSegment(cursorAt, event.at, cursorState);
+          cursorState = 'active';
+          cursorAt = event.at;
+          continue;
+        }
+        if (event.type === 'active' || event.type === 'idle' || event.type === 'offline') {
+          if (cursorAt && event.at > cursorAt) pushSegment(cursorAt, event.at, cursorState);
+          cursorState = event.type;
+          cursorAt = event.at;
+        }
+      }
+      if (cursorAt && Date.now() > cursorAt) pushSegment(cursorAt, Date.now(), cursorState);
+      if (!segments.length) return segments;
+      // Heartbeat/session markers can split one logical state interval into many short
+      // adjacent pieces; merge contiguous intervals with the same state for clean timelines.
+      const merged = [segments[0]];
+      for (let i = 1; i < segments.length; i++) {
+        const prev = merged[merged.length - 1];
+        const current = segments[i];
+        if (prev.state === current.state && current.from <= (prev.to + 1000)) {
+          prev.to = Math.max(prev.to, current.to);
+          continue;
+        }
+        merged.push(current);
+      }
+      return merged;
+}
+
+function formatTimelineClock(ts) {
+      const value = Number(ts || 0);
+      if (!value) return '-';
+      return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function formatDurationPrecise(ms) {
+      const safe = Math.max(0, Number(ms || 0));
+      const totalSeconds = Math.floor(safe / 1000);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
+      if (minutes > 0) return `${minutes}m ${seconds}s`;
+      return `${seconds}s`;
+}
+
+function renderUserTimelineRows() {
+      const body = document.getElementById('userTimelineTableBody');
+      const label = document.getElementById('userTimelineFilterLabel');
+      if (!body) return;
+      const filtered = userTimelineSegments
+        .filter(seg => userTimelineFilter === 'all' ? true : seg.state === userTimelineFilter)
+        .slice(-200)
+        .reverse();
+      if (label) label.textContent = userTimelineFilter === 'all' ? 'All states' : `${userTimelineFilter} only`;
+      if (!filtered.length) {
+        body.innerHTML = '<tr><td colspan="4" class="activity-line-empty">No intervals in this filter.</td></tr>';
+        return;
+      }
+      body.innerHTML = filtered.map(seg => `
+      <tr>
+        <td>${esc(formatTimelineClock(seg.from))}</td>
+        <td>${esc(formatTimelineClock(seg.to))}</td>
+        <td>${esc(formatDurationPrecise(Math.max(0, Number(seg.to) - Number(seg.from))))}</td>
+        <td><span class="directory-tag ${seg.state === 'active' ? 'online' : seg.state === 'idle' ? 'degraded' : 'offline'}">${esc(seg.state.toUpperCase())}</span></td>
+      </tr>`).join('');
+}
+
+function setUserTimelineFilter(filter) {
+      userTimelineFilter = (filter === 'active' || filter === 'idle' || filter === 'offline') ? filter : 'all';
+      document.getElementById('timelineFilter-all')?.classList.toggle('active', userTimelineFilter === 'all');
+      document.getElementById('timelineFilter-active')?.classList.toggle('active', userTimelineFilter === 'active');
+      document.getElementById('timelineFilter-idle')?.classList.toggle('active', userTimelineFilter === 'idle');
+      document.getElementById('timelineFilter-offline')?.classList.toggle('active', userTimelineFilter === 'offline');
+      renderUserTimelineRows();
+}
+
+function openUserTimelineModal(peerId) {
+      const peer = peers[peerId];
+      const modal = document.getElementById('userTimelineModal');
+      if (!peer || !modal) return;
+      userTimelinePeerId = peerId;
+      userTimelineSegments = buildUserDetailedSegments(peer);
+      document.getElementById('userTimelineTitle').textContent = `${peer.username || 'User'} - Detailed Timeline`;
+      document.getElementById('userTimelineSub').textContent = `${peer.systemInfo?.hostname || getPeerDisplayTitle(peer)} · ${peer.online ? 'Connected' : 'Offline'}`;
+      setUserTimelineFilter('all');
+      modal.classList.add('show');
+}
+
+function closeUserTimelineModal() {
+      document.getElementById('userTimelineModal')?.classList.remove('show');
+      userTimelinePeerId = null;
+}
+
+function openUserStatsModal(peerId) {
+      const peer = peers[peerId];
+      const modal = document.getElementById('userStatsModal');
+      const body = document.getElementById('userStatsBody');
+      if (!peer || !modal || !body) return;
+      const summary = getPeerActivitySummary(peer);
+      const timeline = getPeerActivityTimelineItems(peer, 8);
+      const detailedSegments = buildUserDetailedSegments(peer);
+      const formatTs = ts => Number(ts || 0) ? new Date(Number(ts)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
+      const offlinePeriods = detailedSegments.filter(seg => seg.state === 'offline').length;
+      const staleMs = summary.lastSeenAt ? Math.max(0, Date.now() - Number(summary.lastSeenAt)) : null;
+      const dataFreshness = staleMs == null ? 'No recent heartbeat' : `${fmtDuration(staleMs)} ago`;
+      const currentStateLabel = peer.online ? (peer.activityState === 'idle' ? 'Idle' : 'Active') : 'Offline';
+      const sessionEndLabel = peer.online ? 'Ongoing' : (summary.lastSeenAt ? formatTs(summary.lastSeenAt) : '-');
+      body.innerHTML = `
+    <div class="activity-timeline-card compact">
+      <div class="activity-timeline-head"><strong>System Presence</strong><span>${esc(dataFreshness)}</span></div>
+      <div class="activity-summary-grid compact">
+        <div class="activity-summary-card"><strong>First Seen</strong><span>${esc(summary.firstSeenAt ? formatTs(summary.firstSeenAt) : '-')}</span></div>
+        <div class="activity-summary-card"><strong>Last Seen</strong><span>${esc(summary.lastSeenAt ? formatTs(summary.lastSeenAt) : '-')}</span></div>
+        <div class="activity-summary-card"><strong>Current State</strong><span>${esc(currentStateLabel)}</span></div>
+        <div class="activity-summary-card"><strong>State Duration</strong><span>${esc(summary.currentStateDuration != null ? fmtDuration(summary.currentStateDuration) : '-')}</span></div>
+      </div>
+    </div>
+
+    <div class="activity-timeline-card compact">
+      <div class="activity-timeline-head"><strong>Today Summary</strong><span>${esc(`${summary.sessionsToday} session(s)`)}</span></div>
+      <div class="activity-summary-grid compact">
+        <div class="activity-summary-card"><strong>Total Active</strong><span>${esc(fmtDuration(summary.activeMs))}</span></div>
+        <div class="activity-summary-card"><strong>Total Idle</strong><span>${esc(fmtDuration(summary.idleMs))}</span></div>
+        <div class="activity-summary-card"><strong>Offline Periods</strong><span>${esc(String(offlinePeriods))}</span></div>
+        <div class="activity-summary-card"><strong>Last Active Input</strong><span>${esc(summary.lastActiveAt ? formatTs(summary.lastActiveAt) : '-')}</span></div>
+      </div>
+    </div>
+
+    <div class="activity-timeline-card compact">
+      <div class="activity-timeline-head"><strong>Current / Last Session</strong><span>${esc(peer.online ? 'Live session' : 'Closed session')}</span></div>
+      <div class="activity-summary-grid compact">
+        <div class="activity-summary-card"><strong>Session Start</strong><span>${esc(summary.sessionStartAt ? formatTs(summary.sessionStartAt) : '-')}</span></div>
+        <div class="activity-summary-card"><strong>Session End</strong><span>${esc(sessionEndLabel)}</span></div>
+        <div class="activity-summary-card"><strong>Last Transition</strong><span>${esc(timeline[0] ? `${timeline[0].label} @ ${formatTs(timeline[0].at)}` : '-')}</span></div>
+        <div class="activity-summary-card"><strong>Connectivity</strong><span>${esc(peer.online ? 'Connected' : 'Offline')}</span></div>
+      </div>
+    </div>
+
+    <div class="activity-summary-grid compact">
+      <div class="activity-summary-card" style="grid-column:1 / -1;">
+        <strong>Detailed Timeline</strong>
+        <button class="ubtn ghost" style="margin-top:6px;" onclick="openUserTimelineModal('${peer.id}')">Open Timeline</button>
+      </div>
+    </div>
+    `;
+      document.getElementById('userStatsTitle').textContent = `${peer.username || 'User'} - Activity Stats`;
+      document.getElementById('userStatsSub').textContent = `${peer.systemInfo?.hostname || getPeerDisplayTitle(peer)} · ${peer.online ? 'Connected' : 'Offline'}`;
+      modal.classList.add('show');
+}
+
+function closeUserStatsModal() {
+      document.getElementById('userStatsModal')?.classList.remove('show');
+}
+
 function renderUsersTab() {
       const list = document.getElementById('userslist');
       if (!list) return;
@@ -390,6 +920,7 @@ function renderUsersTab() {
       document.getElementById('userFilterOnline')?.classList.toggle('active', userFilter === 'online');
       document.getElementById('userFilterOffline')?.classList.toggle('active', userFilter === 'offline');
       document.getElementById('userFilterAdmins')?.classList.toggle('active', userFilter === 'admins');
+
       let filtered = getSortedPeers().filter(p => {
         if (userFilter === 'online' && !p.online) return false;
         if (userFilter === 'offline' && p.online) return false;
@@ -397,90 +928,47 @@ function renderUsersTab() {
         if (!search) return true;
         return matchesPeerSearch(p, search);
       });
+
       filtered.sort((a, b) => {
         if (sort === 'name') return String(a.username || '').localeCompare(String(b.username || ''));
         if (sort === 'role') return roleRank(b.role) - roleRank(a.role) || Number(b.online) - Number(a.online) || String(a.username || '').localeCompare(String(b.username || ''));
         return comparePeers(a, b);
       });
-      list.innerHTML = filtered.length ? `<div class="directory-grid">${filtered.map(p => {
-        const lm = p.liveMetrics;
-        const cpuPct = lm?.cpuPct ?? null;
-        const ramPct = lm?.ramUsedPct ?? null;
+
+      list.innerHTML = filtered.length ? `<div class="directory-grid compact">${filtered.map(p => {
         const initials = esc(String(p.username || '?').slice(0, 2).toUpperCase());
+        const connection = getPeerConnectionMeta(p);
+        const activitySummary = getPeerActivitySummary(p);
         const hostname = esc(p.systemInfo?.hostname || '-');
         const ip = esc(p.systemInfo?.ip || '-');
-        const os = esc(p.systemInfo?.version || p.systemInfo?.os || '-');
-        const device = esc(p.systemInfo?.modelName || p.systemInfo?.manufacturer || '-');
-        const cpuModel = esc(p.systemInfo?.cpuModel || '-');
-        const ram = esc(p.systemInfo?.ramGb ? `${p.systemInfo.ramGb} GB` : '-');
-        const diskFree = esc(p.systemInfo?.disk?.freeGb ? `${p.systemInfo.disk.freeGb} GB` : '-');
-        const roleLabel = hasAdminAccess(p.role) ? 'Admin' : 'User';
-        const connection = getPeerConnectionMeta(p);
-        const trust = getPeerTrustState(p);
-        const latestHelpCard = document.querySelector(`#helplist .hcard[data-fromid="${p.id}"]`);
-        const latestHelpReqId = latestHelpCard?.dataset.reqid || '';
-        const helpIsAcked = latestHelpCard?.style.opacity === '.7';
-        const helpBadge = latestHelpCard
-          ? `<span class="directory-tag ${helpIsAcked ? 'role' : 'trust degraded'}">${helpIsAcked ? 'Ticket acknowledged' : 'Open ticket'}</span>`
-          : '';
-        const metricsHTML = lm ? `
-      <div class="directory-metrics">
-        <div class="directory-metric-row">
-          <span class="directory-metric-label">CPU</span>
-          <div class="directory-metric-bar"><div class="directory-metric-fill cpu${cpuPct > 80 ? ' hot' : ''}" style="width:${cpuPct}%"></div></div>
-          <span class="directory-metric-val">${cpuPct}%</span>
-        </div>
-        <div class="directory-metric-row">
-          <span class="directory-metric-label">RAM</span>
-          <div class="directory-metric-bar"><div class="directory-metric-fill ram${ramPct > 85 ? ' hot' : ''}" style="width:${ramPct}%"></div></div>
-          <span class="directory-metric-val">${ramPct}%</span>
-        </div>
-      </div>` : '';
-        const captureBtn = (p.online && !hasAdminAccess(p.role) && _appMode === 'admin')
-          ? `<button class="ubtn" onclick="event.stopPropagation(); requestScreenshot('${p.id}')">Capture</button>` : '';
-        const ticketBtn = latestHelpReqId
-          ? `<button class="ubtn" onclick="openLatestHelpForPeer('${p.id}')">View Ticket</button>`
-          : '';
-        const ackBtn = latestHelpReqId && !helpIsAcked
-          ? `<button class="ubtn" onclick="ackHelp('${latestHelpReqId}','${p.id}', this)">Acknowledge</button>`
-          : '';
+        const roleLabel = esc(getRoleLabel(p.role));
+
         return `
-    <article class="directory-card${p.online ? '' : ' offline'}" onclick="openChat('${p.id}')">
-      <div class="directory-top">
+    <article class="directory-card compact${p.online ? '' : ' offline'}">
+      <div class="directory-top compact">
         <div class="directory-avatar">${initials}</div>
         <div class="directory-id">
-          <div class="directory-name">${esc(p.username)} ${roleBadgeHTML(p.role)}</div>
-          <div class="directory-sub">${esc(getPeerDisplayTitle(p))}</div>
+          <div class="directory-name">${esc(p.username || 'Unknown')}</div>
+          <div class="directory-sub">${esc(getPeerDisplayTitle(p))} · ${hostname}</div>
         </div>
         <div class="directory-dot${p.online ? '' : ' off'}"></div>
       </div>
-      <div class="directory-tags">
-        <span class="directory-tag ${p.online ? 'online' : connection.key}">${connection.label}</span>
+
+      <div class="directory-tags compact">
         <span class="directory-tag role">${roleLabel}</span>
-        <span class="directory-tag trust ${trust.key}">${trust.label}</span>
-        <span class="directory-tag">${hostname}</span>
-        ${helpBadge}
+        <span class="directory-tag ${p.online ? 'online' : connection.key}">${p.online ? 'Connected' : 'Offline'}</span>
       </div>
-      <div class="directory-stats">
-        <div class="directory-stat"><strong>Host</strong><span>${hostname}</span></div>
-        <div class="directory-stat"><strong>IP</strong><span>${ip}</span></div>
-        <div><strong>CPU / RAM</strong><br>${esc(p.systemInfo?.cpuModel || '-')} • ${esc(p.systemInfo?.ramGb ? `${p.systemInfo.ramGb} GB` : '-')}</div>
-        <div class="directory-stat"><strong>Device</strong><span>${device}</span></div>
+
+      <div class="directory-quick-meta">
+        <span>IP: ${ip}</span>
       </div>
-      ${metricsHTML}
-      <div class="directory-details">
-        <div class="directory-detail"><strong>OS</strong><span>${os}</span></div>
-        <div class="directory-detail"><strong>CPU</strong><span>${cpuModel}</span></div>
-        <div class="directory-detail"><strong>RAM</strong><span>${ram}</span></div>
-        <div class="directory-detail"><strong>Free Disk</strong><span>${diskFree}</span></div>
-      </div>
-      <div class="directory-actions">
-        <button class="ubtn" onclick="event.stopPropagation(); openSpecsModal('${p.id}')">View Specs</button>
-        <button class="ubtn" onclick="event.stopPropagation(); exportPeerSpecs('${p.id}','txt')">Export TXT</button>
+
+      <div class="directory-actions compact">
         <button class="ubtn" onclick="event.stopPropagation(); openChat('${p.id}')">Open Chat</button>
-        ${ticketBtn ? ticketBtn.replace('onclick="', 'onclick="event.stopPropagation(); ') : ''}
-        ${ackBtn ? ackBtn.replace('onclick="', 'onclick="event.stopPropagation(); ') : ''}
-        ${captureBtn}
+        <div class="spec-action-stack">
+          <button class="ubtn" onclick="event.stopPropagation(); openSpecsModal('${p.id}')">View Specs</button>
+        </div>
+        <button class="ubtn" onclick="event.stopPropagation(); openUserStatsModal('${p.id}')">View Stats</button>
       </div>
     </article>`;
       }).join('')}</div>`
@@ -546,6 +1034,7 @@ function sanitizeVisibleText() {
           broadcast: 'Broadcast',
           replies: 'Replies',
           users: 'Users',
+          monitor: 'Monitor',
           groups: 'Groups',
           help: 'Help Requests',
           ask: 'Ask For Help'

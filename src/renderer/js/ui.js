@@ -18,6 +18,7 @@ function switchTab(t) {
       if (workspaceTab) setUsersWorkspaceTab(workspaceTab);
       if (targetTab === 'chat') ensureChatLayout();
       if (targetTab === 'dashboard') renderDashboard();
+      if (targetTab === 'monitor') renderMonitorTab();
       if (targetTab === 'users' && (workspaceTab === 'accounts' || t === 'accounts')) loadAccounts();
     }
 
@@ -79,6 +80,25 @@ function closeSettings() {
 
 function settingsOverlayClick(e) {
         if (e.target === document.getElementById('settings-overlay')) closeSettings();
+      }
+
+async function logoutCurrentSession() {
+        const confirmed = window.confirm('Log out now?');
+        if (!confirmed) return;
+        try {
+          const result = await window.OpsLynk.auth.logout();
+          if (!result?.success) {
+            showToast('Logout failed', result?.error || 'Could not log out right now.', 'warn');
+            return;
+          }
+          try {
+            localStorage.removeItem('opslynk.auth.rememberMe');
+            localStorage.removeItem('opslynk.auth.lastUsername');
+          } catch {}
+          closeSettings();
+        } catch {
+          showToast('Logout failed', 'Unexpected error while logging out.', 'warn');
+        }
       }
 
 try {

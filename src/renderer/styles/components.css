@@ -135,7 +135,7 @@
 
 .pi .pname-text {
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis
@@ -4233,6 +4233,30 @@ textarea.binput:focus {
   letter-spacing: .08em;
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.sett-danger-btn {
+  width: 100%;
+  min-height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--red-b);
+  background: var(--red-s);
+  color: #ffdbe1;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease, border-color .12s ease;
+}
+
+.sett-danger-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  border-color: color-mix(in srgb, var(--red-b) 70%, #fff)
+}
+
+.sett-danger-btn:active {
+  transform: translateY(0);
 }
 
 .theme-grid {

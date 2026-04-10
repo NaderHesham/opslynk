@@ -14,7 +14,7 @@ interface AuthService {
 interface AuthDeps {
   ipcMain:        IpcMain;
   authService:    AuthService;
-  onLoginSuccess: (user: unknown) => void;
+  onLoginSuccess: (user: unknown, options?: { rememberMe?: boolean }) => void;
 }
 
 export function registerAuthHandlers({ ipcMain, authService, onLoginSuccess }: AuthDeps): void {
@@ -22,13 +22,13 @@ export function registerAuthHandlers({ ipcMain, authService, onLoginSuccess }: A
 
   ipcMain.handle('auth:setup', async (_e, { username, password }: { username: string; password: string }) => {
     const result = await authService.createSuperAdmin(username, password);
-    if (result.success) onLoginSuccess(result.user);
+    if (result.success) onLoginSuccess(result.user, { rememberMe: false });
     return result;
   });
 
-  ipcMain.handle('auth:login', async (_e, { username, password }: { username: string; password: string }) => {
+  ipcMain.handle('auth:login', async (_e, { username, password, rememberMe }: { username: string; password: string; rememberMe?: boolean }) => {
     const result = await authService.login(username, password);
-    if (result.success) onLoginSuccess(result.user);
+    if (result.success) onLoginSuccess(result.user, { rememberMe: !!rememberMe });
     return result;
   });
 

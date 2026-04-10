@@ -1,6 +1,6 @@
 :root {
       --rail-w: 54px;
-      --sidebar-w: 226px;
+      --sidebar-w: 256px;
       --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
     }
 
@@ -471,12 +471,13 @@ body::after {
 
 #sidebar-toggle {
       position: absolute;
-      top: 10px;
-      left: calc(var(--rail-w) + var(--sidebar-w) - 12px);
+      top: calc(50% + 22px);
+      transform: translateY(-50%);
+      left: calc(var(--rail-w) + var(--sidebar-w) - 6px);
       z-index: 3;
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
+      width: 12px;
+      height: 92px;
+      border-radius: 999px;
       border: 1px solid var(--b);
       background: var(--glass2);
       color: var(--txt3);
@@ -486,7 +487,7 @@ body::after {
       cursor: pointer;
       backdrop-filter: var(--frost);
       -webkit-backdrop-filter: var(--frost);
-      transition: left .28s ease, background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease
+      transition: left .28s ease, background .18s ease, border-color .18s ease, color .18s ease, box-shadow .18s ease
     }
 
 #sidebar-toggle:hover {
@@ -497,7 +498,7 @@ body::after {
 
 #sidebar-toggle::after {
       content: '◂';
-      font-size: 11px;
+      font-size: 10px;
       line-height: 1
     }
 
@@ -506,7 +507,7 @@ body::after {
     }
 
 body:not(.sidebar-collapsed) #sidebar-toggle {
-      left: calc(var(--rail-w) + var(--sidebar-w) - 12px)
+      left: calc(var(--rail-w) + var(--sidebar-w) - 6px)
     }
 
 body.sidebar-collapsed #sidebar {
@@ -517,7 +518,7 @@ body.sidebar-collapsed #sidebar {
     }
 
 body.sidebar-collapsed #sidebar-toggle {
-      left: calc(var(--rail-w) + 6px)
+      left: calc(var(--rail-w) + 2px)
     }
 
 #view-host {

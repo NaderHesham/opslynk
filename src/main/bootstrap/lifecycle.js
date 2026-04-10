@@ -1,5 +1,18 @@
 'use strict';
 
+const ACTIVITY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_ACTIVITY_EVENTS_PER_PEER = 200;
+
+function pruneActivityEvents(events, now = Date.now()) {
+  if (!Array.isArray(events) || !events.length) return [];
+  const cutoff = now - ACTIVITY_RETENTION_MS;
+  return events
+    .map(event => ({ type: event?.type, at: Number(event?.at || 0) }))
+    .filter(event => event.at > 0 && event.at >= cutoff && ['online', 'offline', 'active', 'idle'].includes(event.type))
+    .sort((a, b) => a.at - b.at)
+    .slice(-MAX_ACTIVITY_EVENTS_PER_PEER);
+}
+
 function registerLifecycle({
   app,
   process,
@@ -24,6 +37,50 @@ function registerLifecycle({
   doSaveState,
   hydrateReliableTransport = () => {}
 }) {
+  function appendRestoreOfflineEvent(raw, now) {
+    const events = pruneActivityEvents(raw.activityEvents, now);
+    const last = events[events.length - 1];
+    if (raw.currentSessionStartedAt && (!last || last.type !== 'offline')) {
+      events.push({ type: 'offline', at: now });
+    }
+    return pruneActivityEvents(events, now);
+  }
+
+  function restoreSavedPeers(state, savedPeers) {
+    if (!Array.isArray(savedPeers)) return;
+    const restoredAt = Date.now();
+    for (const raw of savedPeers) {
+      if (!raw || typeof raw.id !== 'string' || !raw.id) continue;
+      state.peers.set(raw.id, {
+        id: raw.id,
+        username: raw.username || 'Unknown peer',
+        role: raw.role || 'user',
+        deviceId: raw.deviceId || raw.id,
+        identityFingerprint: raw.identityFingerprint,
+        color: raw.color,
+        title: raw.title,
+        avatar: raw.avatar || null,
+        systemInfo: raw.systemInfo || null,
+        online: false,
+        connectionState: 'offline',
+        restoredFromState: true,
+        identityVerified: !!raw.identityVerified,
+        identityRejected: !!raw.identityRejected,
+        lastDisconnectedAt: Number(raw.lastDisconnectedAt || 0) || restoredAt,
+        lastSeen: Number(raw.lastSeen || 0) || null,
+        lastHeartbeat: Number(raw.lastHeartbeat || 0) || null,
+        liveMetrics: raw.liveMetrics || null,
+        activityState: raw.activityState || 'offline',
+        lastInputAt: Number(raw.lastInputAt || 0) || null,
+        lastStateChangeAt: Number(raw.lastStateChangeAt || 0) || restoredAt,
+        currentSessionStartedAt: null,
+        idleThresholdMs: Number(raw.idleThresholdMs || 0) || 300000,
+        activityEvents: appendRestoreOfflineEvent(raw, restoredAt),
+        latestScreenshot: raw.latestScreenshot || null
+      });
+    }
+  }
+
   app.whenReady().then(async () => {
     storage.ensureDirs();
 
@@ -50,6 +107,7 @@ function registerLifecycle({
     state.pendingOutgoingHelpRequests = saved.pendingOutgoingHelpRequests;
     state.pendingReliableMessages = saved.pendingReliableMessages || [];
     state.userGroups = saved.userGroups;
+    restoreSavedPeers(state, saved.savedPeers);
     state.soundEnabled = typeof state.myProfile.soundEnabled === 'boolean' ? state.myProfile.soundEnabled : true;
 
     state.chatHistory = storage.loadHistory();

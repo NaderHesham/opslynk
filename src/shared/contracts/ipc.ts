@@ -1,11 +1,14 @@
 import type { BroadcastPayload, ForcedVideoPayload, LockScreenPayload } from './admin';
-import type { FileTransferMetadata, HelpRequest, PeerConnectionState, PeerIdentity } from '../types/runtime';
+import type { ActivityEvent, ActivitySnapshot, FileTransferMetadata, HelpRequest, PeerConnectionState, PeerIdentity } from '../types/runtime';
 
 export const IPC_CHANNELS = {
   app: {
     GET_INIT_DATA: 'get-init-data',
     GET_DEVICE_ID: 'get-device-id',
-    SET_SOUND: 'set-sound'
+    SET_SOUND: 'set-sound',
+    REPORT_ACTIVITY: 'report-activity',
+    GET_SCREENSHOT_POLLING: 'get-screenshot-polling',
+    SET_SCREENSHOT_POLLING: 'set-screenshot-polling'
   },
   window: {
     MINIMIZE: 'window-minimize',
@@ -69,21 +72,31 @@ export type ApiResult<T = Record<string, unknown>> = ApiSuccess<T> | ApiError;
 
 export interface InitDataResponse {
   profile: (PeerIdentity & { soundEnabled?: boolean }) | null;
-  peers: Array<{
-    id: string;
-    username: string;
-    role: string;
+    peers: Array<{
+      id: string;
+      username: string;
+      role: string;
     deviceId?: string;
     identityFingerprint?: string;
     color?: string;
     title?: string;
     online: boolean;
     connectionState: PeerConnectionState;
+    restoredFromState: boolean;
     identityVerified: boolean;
-    identityRejected: boolean;
-    avatar: string | null;
-    systemInfo: Record<string, unknown> | null;
-  }>;
+      identityRejected: boolean;
+      avatar: string | null;
+      systemInfo: Record<string, unknown> | null;
+      activityState: 'active' | 'idle' | 'offline';
+      lastInputAt: number | null;
+      lastStateChangeAt: number | null;
+      currentSessionStartedAt: number | null;
+      idleThresholdMs: number | null;
+      activityEvents: ActivityEvent[];
+      latestScreenshot: { capturedAt: number; name?: string | null; size?: number | null; mime?: string | null } | null;
+      latestScreenshotRequestedAt: number | null;
+      screenshotRequestPending: boolean;
+    }>;
   history: Record<string, Array<Record<string, unknown>>>;
   helpRequests: HelpRequest[];
   userGroups: Array<{ id: string; name: string; memberIds: string[] }>;
@@ -145,6 +158,22 @@ export interface HelpRequestPayload {
   includeScreenshot: boolean;
 }
 
+export interface ScreenshotPollingResponse {
+  enabled: boolean;
+  mode: 'normal' | 'fast' | 'live';
+  pollIntervalMs: number;
+  requestCooldownMs: number;
+  previewRefreshMs: number;
+}
+
+export interface ReportActivityRequest {
+  activity: ActivitySnapshot;
+  transition?: {
+    type: 'active' | 'idle';
+    at: number;
+  };
+}
+
 export interface HelpRequestResponse {
   reqId: string;
   sent: number;
@@ -180,6 +209,12 @@ export interface IpcEventMap {
 
 export interface IpcChannelMap {
   [IPC_CHANNELS.app.GET_INIT_DATA]: { request: void; response: InitDataResponse };
+  [IPC_CHANNELS.app.REPORT_ACTIVITY]: { request: ReportActivityRequest; response: { success: boolean } };
+  [IPC_CHANNELS.app.GET_SCREENSHOT_POLLING]: { request: void; response: ScreenshotPollingResponse };
+  [IPC_CHANNELS.app.SET_SCREENSHOT_POLLING]: {
+    request: { enabled?: boolean; mode?: 'normal' | 'fast' | 'live' };
+    response: ScreenshotPollingResponse;
+  };
   [IPC_CHANNELS.chat.SEND_CHAT]: { request: SendChatRequest; response: SendChatResponse };
   [IPC_CHANNELS.chat.SEND_FILE_OFFER]: { request: SendFileOfferRequest; response: SendFileOfferResponse };
   [IPC_CHANNELS.broadcast.SEND_BROADCAST]: { request: BroadcastPayload; response: unknown };

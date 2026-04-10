@@ -26,10 +26,11 @@ export function registerFullHandlers(deps: RegisterDeps): void {
   registerAuthHandlers({
     ipcMain: deps.ipcMain,
     authService,
-    onLoginSuccess: (user: unknown) => {
+    onLoginSuccess: (user: unknown, options?: { rememberMe?: boolean }) => {
       const u = user as { id?: string; username?: string; role?: string } | null;
       if (u && deps.state.myProfile) {
         (deps.state.myProfile as unknown as { authUserId?: string }).authUserId = u.id;
+        (deps.state.myProfile as unknown as { rememberMe?: boolean }).rememberMe = !!options?.rememberMe;
         if (u.role)     deps.state.myProfile.role     = u.role as import('../../shared/types/runtime').UserRole;
         if (u.username) deps.state.myProfile.username = u.username;
         deps.storage.saveProfile(deps.state.myProfile);
@@ -60,10 +61,39 @@ export function registerFullHandlers(deps: RegisterDeps): void {
   handle(IPC_CHANNELS.admin.REQUEST_SCREENSHOT, ({ peerId }) => {
     const peer = deps.state.peers.get(peerId);
     if (!peer || !peer.online) return { success: false, error: 'Peer not found or offline.' };
+    peer.screenshotRequestPending = true;
+    peer.latestScreenshotRequestedAt = Date.now();
+    (peer as unknown as { latestScreenshotRequestReason?: string }).latestScreenshotRequestReason = 'manual-request';
+    deps.broadcastToRenderer('system:deviceUpdated', {
+      id: peer.id,
+      username: peer.username,
+      role: peer.role,
+      deviceId: peer.deviceId,
+      identityFingerprint: peer.identityFingerprint,
+      color: peer.color,
+      title: peer.title,
+      online: peer.online,
+      connectionState: peer.connectionState || 'connected',
+      restoredFromState: !!peer.restoredFromState,
+      identityVerified: !!peer.identityVerified,
+      identityRejected: !!peer.identityRejected,
+      avatar: peer.avatar || null,
+      systemInfo: peer.systemInfo || null,
+      activityState: peer.activityState || (peer.online ? 'active' : 'offline'),
+      lastInputAt: peer.lastInputAt || null,
+      lastStateChangeAt: peer.lastStateChangeAt || null,
+      currentSessionStartedAt: peer.currentSessionStartedAt || null,
+      idleThresholdMs: peer.idleThresholdMs || null,
+      activityEvents: Array.isArray(peer.activityEvents) ? peer.activityEvents.slice(-24) : [],
+      latestScreenshot: peer.latestScreenshot || null,
+      latestScreenshotRequestedAt: peer.latestScreenshotRequestedAt || null,
+      screenshotRequestPending: !!peer.screenshotRequestPending
+    });
     deps.sendToPeer(peerId, {
       type:   'screenshot-request',
       fromId: deps.state.myProfile?.id,
-      reqId:  deps.uuidv4()
+      reqId:  deps.uuidv4(),
+      reason: 'manual-request'
     });
     return { success: true, queued: false };
   });

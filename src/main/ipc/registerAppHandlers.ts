@@ -6,7 +6,9 @@ export function registerAppHandlers({
   handle,
   os,
   udp,
-  state
+  state,
+  hasAdminAccess,
+  sendToPeer
 }: AppRegistrarDeps): void {
   handle(IPC_CHANNELS.app.GET_INIT_DATA, () => ({
     profile: state.myProfile,
@@ -20,10 +22,20 @@ export function registerAppHandlers({
       title: p.title,
       online: p.online,
       connectionState: getPeerConnectionState(p),
+      restoredFromState: !!p.restoredFromState,
       identityVerified: !!p.identityVerified,
       identityRejected: !!p.identityRejected,
       avatar: p.avatar || null,
-      systemInfo: p.systemInfo || null
+      systemInfo: p.systemInfo || null,
+      activityState: p.activityState || (p.online ? 'active' : 'offline'),
+      lastInputAt: p.lastInputAt || null,
+      lastStateChangeAt: p.lastStateChangeAt || null,
+      currentSessionStartedAt: p.currentSessionStartedAt || null,
+      idleThresholdMs: p.idleThresholdMs || null,
+      activityEvents: Array.isArray(p.activityEvents) ? p.activityEvents.slice(-24) : [],
+      latestScreenshot: p.latestScreenshot || null,
+      latestScreenshotRequestedAt: p.latestScreenshotRequestedAt || null,
+      screenshotRequestPending: !!p.screenshotRequestPending
     })),
     history: state.chatHistory,
     helpRequests: state.helpRequests,
@@ -33,4 +45,38 @@ export function registerAppHandlers({
     networkOnline: state.networkOnline
   }));
 
+  handle(IPC_CHANNELS.app.REPORT_ACTIVITY, ({ activity, transition }) => {
+    if (!state.localActivity) {
+      state.localActivity = {
+        state: 'active',
+        lastInputAt: Date.now(),
+        lastStateChangeAt: Date.now(),
+        idleThresholdMs: 300000
+      };
+    }
+
+    state.localActivity = {
+      state: activity?.state === 'idle' ? 'idle' : 'active',
+      lastInputAt: Number(activity?.lastInputAt || state.localActivity.lastInputAt || Date.now()),
+      lastStateChangeAt: Number(activity?.lastStateChangeAt || state.localActivity.lastStateChangeAt || Date.now()),
+      idleThresholdMs: Number(activity?.idleThresholdMs || state.localActivity.idleThresholdMs || 300000)
+    };
+
+    if (transition?.type) {
+      for (const peer of state.peers.values()) {
+        if (!peer.online || !hasAdminAccess(peer.role)) continue;
+        sendToPeer(peer.id, {
+          type: 'activity-transition',
+          fromId: state.myProfile?.id,
+          transition: {
+            type: transition.type,
+            at: Number(transition.at || Date.now())
+          },
+          activity: state.localActivity
+        });
+      }
+    }
+
+    return { success: true };
+  });
 }

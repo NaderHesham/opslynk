@@ -340,3 +340,138 @@ test('invalid peer identity degrades existing peer state', () => {
   assert.equal(peer.connectionState, 'degraded');
   assert.equal(peer.identityRejected, true);
 });
+
+test('out-of-order activity transition is ignored when older than current state', () => {
+  const ws = { readyState: 1 };
+  const state = {
+    myProfile: { id: 'self-1', role: 'admin' },
+    myPortRef: { value: 5000 },
+    peers: new Map([
+      ['peer-1', {
+        id: 'peer-1',
+        role: 'user',
+        username: 'Peer',
+        ws,
+        online: true,
+        connectionState: 'connected',
+        identityVerified: true,
+        activityState: 'idle',
+        lastStateChangeAt: 2000,
+        lastInputAt: 1500,
+        activityEvents: [{ type: 'idle', at: 2000 }]
+      }]
+    ]),
+    chatHistory: {},
+    soundEnabled: true,
+    helpRequests: []
+  };
+  const router = createMessageRouter({
+    state,
+    wsNet: { CHAT_PORT_BASE: 3000, safeSend: () => {} },
+    helpSvc: { upsertHelpRequest: () => {} },
+    bus: { emit: () => {} },
+    EVENTS: { DEVICE_UPDATED: 'DEVICE_UPDATED' },
+    hasAdminAccess: (role) => role === 'admin' || role === 'super_admin',
+    peerToSafe: (peer) => peer,
+    updateTrayMenu: () => {},
+    doSaveState: () => {},
+    doSaveHistory: () => {},
+    flushPendingHelpRequests: () => {},
+    showNotification: () => {},
+    showUrgentOverlay: () => {},
+    showNormalBroadcastPopup: () => {},
+    showHelpRequestPopup: () => {},
+    showForcedVideoWindow: () => {},
+    closeForcedVideoWindow: () => {},
+    showLockScreen: () => {},
+    unlockScreen: () => {},
+    buildSignedPeerIdentity: () => ({ id: 'self-1', role: 'admin' }),
+    verifySignedPeerIdentity: () => ({ valid: true, fingerprint: 'fp-peer-1' }),
+    evaluateControlMessageTrust: () => ({ trusted: false, reason: 'n/a', mode: 'denied' }),
+    rememberTrustedPeer: () => ({ trusted: true, reason: 'fingerprint-match', mode: 'trusted' })
+  });
+
+  router.handleP2PMessage(ws, {
+    type: 'activity-transition',
+    fromId: 'peer-1',
+    transition: { type: 'active', at: 1500 },
+    activity: {
+      state: 'active',
+      lastInputAt: 1500,
+      lastStateChangeAt: 1500,
+      idleThresholdMs: 300000
+    }
+  }, '10.0.0.5');
+
+  const peer = state.peers.get('peer-1');
+  assert.equal(peer.activityState, 'idle');
+  assert.equal(peer.lastStateChangeAt, 2000);
+});
+
+test('out-of-order heartbeat snapshot is ignored when older than known activity state', () => {
+  const ws = { readyState: 1 };
+  const state = {
+    myProfile: { id: 'self-1', role: 'admin' },
+    myPortRef: { value: 5000 },
+    peers: new Map([
+      ['peer-1', {
+        id: 'peer-1',
+        role: 'user',
+        username: 'Peer',
+        ws,
+        online: true,
+        connectionState: 'connected',
+        identityVerified: true,
+        activityState: 'idle',
+        lastStateChangeAt: 3000,
+        lastInputAt: 2500,
+        activityEvents: [{ type: 'idle', at: 3000 }]
+      }]
+    ]),
+    chatHistory: {},
+    soundEnabled: true,
+    helpRequests: []
+  };
+  const router = createMessageRouter({
+    state,
+    wsNet: { CHAT_PORT_BASE: 3000, safeSend: () => {} },
+    helpSvc: { upsertHelpRequest: () => {} },
+    bus: { emit: () => {} },
+    EVENTS: { DEVICE_UPDATED: 'DEVICE_UPDATED', PEER_HEARTBEAT: 'PEER_HEARTBEAT' },
+    hasAdminAccess: (role) => role === 'admin' || role === 'super_admin',
+    peerToSafe: (peer) => peer,
+    updateTrayMenu: () => {},
+    doSaveState: () => {},
+    doSaveHistory: () => {},
+    flushPendingHelpRequests: () => {},
+    showNotification: () => {},
+    showUrgentOverlay: () => {},
+    showNormalBroadcastPopup: () => {},
+    showHelpRequestPopup: () => {},
+    showForcedVideoWindow: () => {},
+    closeForcedVideoWindow: () => {},
+    showLockScreen: () => {},
+    unlockScreen: () => {},
+    buildSignedPeerIdentity: () => ({ id: 'self-1', role: 'admin' }),
+    verifySignedPeerIdentity: () => ({ valid: true, fingerprint: 'fp-peer-1' }),
+    evaluateControlMessageTrust: () => ({ trusted: false, reason: 'n/a', mode: 'denied' }),
+    rememberTrustedPeer: () => ({ trusted: true, reason: 'fingerprint-match', mode: 'trusted' })
+  });
+
+  router.handleP2PMessage(ws, {
+    type: 'heartbeat',
+    fromId: 'peer-1',
+    timestamp: 2500,
+    activity: {
+      state: 'active',
+      lastInputAt: 2400,
+      lastStateChangeAt: 2500,
+      idleThresholdMs: 300000
+    }
+  }, '10.0.0.5');
+
+  const peer = state.peers.get('peer-1');
+  assert.equal(peer.activityState, 'idle');
+  assert.equal(peer.lastStateChangeAt, 3000);
+  assert.equal(peer.lastInputAt, 2500);
+});

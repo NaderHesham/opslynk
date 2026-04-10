@@ -31,6 +31,14 @@ function showProfileAccountMsg(msg, type) {
       el.style.display = 'block';
     }
 
+function showSelfPasswordMsg(msg, type) {
+      const el = document.getElementById('selfPwMsg');
+      if (!el) return;
+      el.textContent = msg;
+      el.className = `acct-self-msg ${type}`;
+      el.style.display = 'block';
+}
+
 async function saveProfile() {
       const username = (document.getElementById('modname').value || '').trim();
       const title = document.getElementById('modtitle').value.trim();
@@ -50,43 +58,65 @@ async function saveProfile() {
     }
 
 async function changeMyPasswordFromProfile() {
+      openSelfPasswordModal();
+    }
+
+function openSelfPasswordModal() {
       if (_appMode === 'client' || me?.role !== 'super_admin' || !_acctCurrentUserId) {
-        showProfileAccountMsg('Only Super Admin can update this password.', 'err');
+        showToast('Not allowed', 'Only Super Admin can update this password.', 'warn');
         return;
       }
+      ['selfPwCurrent', 'selfPwNext', 'selfPwConfirm'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) input.value = '';
+      });
+      const msg = document.getElementById('selfPwMsg');
+      if (msg) {
+        msg.textContent = '';
+        msg.className = 'acct-self-msg';
+        msg.style.display = 'none';
+      }
+      document.getElementById('selfPwModal')?.classList.add('show');
+}
 
-      const currentPassword = String(document.getElementById('profCurrentPw')?.value || '');
-      const newPassword = String(document.getElementById('profNewPw')?.value || '');
-      const confirmPassword = String(document.getElementById('profConfirmPw')?.value || '');
+function closeSelfPasswordModal() {
+      document.getElementById('selfPwModal')?.classList.remove('show');
+}
+
+async function submitSelfPasswordChange() {
+      if (_appMode === 'client' || me?.role !== 'super_admin' || !_acctCurrentUserId) {
+        showSelfPasswordMsg('Only Super Admin can update this password.', 'err');
+        return;
+      }
+      const currentPassword = String(document.getElementById('selfPwCurrent')?.value || '');
+      const newPassword = String(document.getElementById('selfPwNext')?.value || '');
+      const confirmPassword = String(document.getElementById('selfPwConfirm')?.value || '');
 
       if (!currentPassword) {
-        showProfileAccountMsg('Current password is required.', 'err');
+        showSelfPasswordMsg('Current password is required.', 'err');
         return;
       }
       if (!newPassword || newPassword.length < 6) {
-        showProfileAccountMsg('New password must be at least 6 characters.', 'err');
+        showSelfPasswordMsg('New password must be at least 6 characters.', 'err');
         return;
       }
       if (newPassword !== confirmPassword) {
-        showProfileAccountMsg('New password confirmation does not match.', 'err');
+        showSelfPasswordMsg('New password confirmation does not match.', 'err');
         return;
       }
 
       try {
         const result = await IPC.auth.changePassword({ userId: _acctCurrentUserId, currentPassword, newPassword });
         if (!result?.success) {
-          showProfileAccountMsg(result?.error || 'Failed to update password.', 'err');
+          showSelfPasswordMsg(result?.error || 'Failed to update password.', 'err');
           return;
         }
-
-        document.getElementById('profCurrentPw').value = '';
-        document.getElementById('profNewPw').value = '';
-        document.getElementById('profConfirmPw').value = '';
-        showProfileAccountMsg('Password updated successfully.', 'ok');
+        showSelfPasswordMsg('Password updated successfully.', 'ok');
+        setTimeout(() => closeSelfPasswordModal(), 500);
       } catch {
-        showProfileAccountMsg('An unexpected error occurred.', 'err');
+        showSelfPasswordMsg('An unexpected error occurred.', 'err');
       }
-    }
+}
 
 async function pickAvatar() {
       const result = await IPC.selectAvatar();

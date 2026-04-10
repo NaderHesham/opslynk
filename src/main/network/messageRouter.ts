@@ -1,5 +1,24 @@
-import type { HelpRequest, NetworkRuntimeState, PeerSession } from '../../shared/types/runtime';
+import type { ActivityEvent, ActivitySnapshot, HelpRequest, NetworkRuntimeState, PeerActivityEventType, PeerActivityState, PeerSession } from '../../shared/types/runtime';
 import type { CommandOrigin } from '../security/deviceTrust';
+
+const ACTIVITY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_ACTIVITY_EVENTS_PER_PEER = 200;
+
+function pruneActivityEvents(
+  events: Array<{ type: string; at: number }> | undefined,
+  now = Date.now()
+): Array<{ type: 'online' | 'offline' | 'active' | 'idle'; at: number }> {
+  if (!Array.isArray(events) || !events.length) return [];
+  const cutoff = now - ACTIVITY_RETENTION_MS;
+  return events
+    .map((event) => ({ type: event?.type, at: Number(event?.at || 0) }))
+    .filter((event): event is { type: 'online' | 'offline' | 'active' | 'idle'; at: number } =>
+      event.at > 0 &&
+      event.at >= cutoff &&
+      ['online', 'offline', 'active', 'idle'].includes(event.type))
+    .sort((a, b) => a.at - b.at)
+    .slice(-MAX_ACTIVITY_EVENTS_PER_PEER);
+}
 
 interface RouterDeps {
   state: NetworkRuntimeState;
@@ -36,7 +55,7 @@ interface RouterDeps {
   };
   reliableTransport?: { confirm: (msgId: string) => boolean };
   onTrustDecision?: (entry: Record<string, unknown>) => void;
-  captureScreenshot?: () => Promise<{ base64: string; name: string; size: number } | null>;
+  captureScreenshot?: (options?: { hideWindow?: boolean }) => Promise<{ base64: string; name: string; size: number } | null>;
 }
 
 export function createMessageRouter({
@@ -68,6 +87,108 @@ export function createMessageRouter({
   captureScreenshot
 }: RouterDeps): { handleP2PMessage: (ws: unknown, msg: Record<string, unknown>, remoteIp: string) => void } {
   const debugLog = (..._args: unknown[]): void => {};
+
+  const emitPeerActivity = (peer: PeerSession, transitionType: PeerActivityEventType, at: number, source: string): void => {
+    bus.emit(EVENTS.PEER_ACTIVITY, {
+      peerId: peer.id,
+      state: peer.activityState || (peer.online ? 'active' : 'offline'),
+      at,
+      source,
+      transition: { type: transitionType, at },
+      lastInputAt: peer.lastInputAt || null,
+      lastStateChangeAt: peer.lastStateChangeAt || null,
+      currentSessionStartedAt: peer.currentSessionStartedAt || null,
+      activityEvents: Array.isArray(peer.activityEvents) ? peer.activityEvents.slice(-24) : []
+    });
+  };
+
+  const ensureActivityShape = (peer: PeerSession): void => {
+    if (!Array.isArray(peer.activityEvents)) peer.activityEvents = [];
+    if (!peer.activityState) peer.activityState = peer.online ? 'active' : 'offline';
+    if (!Number.isFinite(peer.lastStateChangeAt)) peer.lastStateChangeAt = Date.now();
+    if (!Number.isFinite(peer.lastInputAt) && peer.activityState !== 'offline') peer.lastInputAt = peer.lastStateChangeAt;
+    if (!Number.isFinite(peer.idleThresholdMs)) peer.idleThresholdMs = 300000;
+    if (peer.online && !Number.isFinite(peer.currentSessionStartedAt || undefined)) peer.currentSessionStartedAt = peer.lastSeen || Date.now();
+  };
+
+  const isOutOfOrderStateChange = (peer: PeerSession, at: number): boolean => {
+    const safeAt = Number(at || 0);
+    const knownAt = Number(peer.lastStateChangeAt || 0);
+    return safeAt > 0 && knownAt > 0 && safeAt < knownAt;
+  };
+
+  const shouldAcceptSnapshot = (peer: PeerSession, snapshot: ActivitySnapshot): boolean => {
+    const snapshotAt = Number(snapshot.lastStateChangeAt || 0);
+    const knownAt = Number(peer.lastStateChangeAt || 0);
+    if (snapshotAt && knownAt && snapshotAt < knownAt) return false;
+    const snapshotInputAt = Number(snapshot.lastInputAt || 0);
+    const knownInputAt = Number(peer.lastInputAt || 0);
+    if (snapshotInputAt && knownInputAt && snapshotInputAt < knownInputAt && snapshotAt <= knownAt) return false;
+    return true;
+  };
+
+  const appendActivityEvent = (peer: PeerSession, type: PeerActivityEventType, at: number): void => {
+    ensureActivityShape(peer);
+    const safeAt = Number(at || Date.now());
+    const last = peer.activityEvents?.[peer.activityEvents.length - 1];
+    if (last && last.type === type && Math.abs(last.at - safeAt) < 1000) return;
+    peer.activityEvents!.push({ type, at: safeAt } as ActivityEvent);
+    peer.activityEvents = pruneActivityEvents(peer.activityEvents!, safeAt) as ActivityEvent[];
+  };
+
+  const updateActivityState = (peer: PeerSession, nextState: PeerActivityState, at: number, source: string): void => {
+    ensureActivityShape(peer);
+    const safeAt = Number(at || Date.now());
+    if (isOutOfOrderStateChange(peer, safeAt)) return;
+    if (peer.activityState === nextState) {
+      peer.lastStateChangeAt = Math.max(Number(peer.lastStateChangeAt || 0), safeAt);
+      if (nextState === 'active') peer.lastInputAt = Math.max(Number(peer.lastInputAt || 0), safeAt);
+      return;
+    }
+    peer.activityState = nextState;
+    peer.lastStateChangeAt = safeAt;
+    if (nextState === 'active') peer.lastInputAt = Math.max(Number(peer.lastInputAt || 0), safeAt);
+    appendActivityEvent(peer, nextState, safeAt);
+    emitPeerActivity(peer, nextState, safeAt, source);
+  };
+
+  const normalizeActivity = (raw: unknown, fallbackAt: number): ActivitySnapshot | null => {
+    const data = raw as Partial<ActivitySnapshot> | null | undefined;
+    if (!data || (data.state !== 'active' && data.state !== 'idle')) return null;
+    return {
+      state: data.state,
+      lastInputAt: Number(data.lastInputAt || fallbackAt),
+      lastStateChangeAt: Number(data.lastStateChangeAt || fallbackAt),
+      idleThresholdMs: Number(data.idleThresholdMs || 300000)
+    };
+  };
+
+  const applyActivitySnapshot = (peer: PeerSession, raw: unknown, fallbackAt: number, source: string): void => {
+    const snapshot = normalizeActivity(raw, fallbackAt);
+    if (!snapshot) return;
+    ensureActivityShape(peer);
+    if (!shouldAcceptSnapshot(peer, snapshot)) return;
+    peer.idleThresholdMs = snapshot.idleThresholdMs;
+    peer.lastInputAt = Math.max(Number(peer.lastInputAt || 0), Number(snapshot.lastInputAt || 0)) || snapshot.lastInputAt;
+    peer.lastStateChangeAt = Math.max(Number(peer.lastStateChangeAt || 0), Number(snapshot.lastStateChangeAt || 0)) || snapshot.lastStateChangeAt;
+    if (peer.online && !peer.currentSessionStartedAt) peer.currentSessionStartedAt = fallbackAt;
+    updateActivityState(peer, snapshot.state, snapshot.lastStateChangeAt || fallbackAt, source);
+  };
+
+  const markPeerOnline = (peer: PeerSession, at: number, source: string): void => {
+    ensureActivityShape(peer);
+    if (!peer.currentSessionStartedAt) peer.currentSessionStartedAt = at;
+    const last = peer.activityEvents?.[peer.activityEvents.length - 1];
+    if (!last || last.type !== 'online') {
+      appendActivityEvent(peer, 'online', at);
+    }
+  };
+
+  const markPeerOffline = (peer: PeerSession, at: number, source: string): void => {
+    ensureActivityShape(peer);
+    updateActivityState(peer, 'offline', at, source);
+    peer.currentSessionStartedAt = null;
+  };
 
   const checkSensitiveTrust = (msg: Record<string, unknown>, commandType: string): boolean => {
     const fromId = String(msg.fromId || '');
@@ -173,11 +294,14 @@ export function createMessageRouter({
           ws,
           online: true,
           connectionState: 'connected',
+          restoredFromState: false,
           identityVerified: true,
           identityRejected: false,
           identityLastVerifiedAt: new Date().toISOString(),
           lastSeen: Date.now(),
-          lastHeartbeat: Date.now()
+          lastHeartbeat: Date.now(),
+          activityState: 'active',
+          activityEvents: []
         };
         state.peers.set(p.id, peer);
       } else {
@@ -189,6 +313,7 @@ export function createMessageRouter({
           ws,
           online: true,
           connectionState: 'connected',
+          restoredFromState: false,
           identityVerified: true,
           identityRejected: false,
           identityLastVerifiedAt: new Date().toISOString(),
@@ -197,7 +322,10 @@ export function createMessageRouter({
         });
       }
       if (!peer) return;
+      markPeerOnline(peer, Date.now(), 'hello');
+      applyActivitySnapshot(peer, (p as unknown as { activity?: unknown }).activity, Date.now(), 'hello');
       bus.emit(wasOnline ? EVENTS.DEVICE_UPDATED : EVENTS.DEVICE_JOINED, peerToSafe(peer));
+      if (!wasOnline) emitPeerActivity(peer, 'online', Date.now(), 'hello');
       updateTrayMenu();
       if (type === 'hello') {
         wsNet.safeSend(ws, { type: 'hello-ack', from: buildSignedPeerIdentity(state.myProfile as unknown as Record<string, unknown>, state.myPortRef.value) });
@@ -364,21 +492,55 @@ export function createMessageRouter({
       const peer   = state.peers.get(fromId);
       if (peer) {
         const wasOnline = !!peer.online;
+        const heartbeatAt = Number(msg.timestamp || Date.now());
         peer.online = true;
         peer.connectionState = 'connected';
+        peer.restoredFromState = false;
+        peer.screenshotRequestPending = false;
         peer.lastHeartbeat = Date.now();
         peer.systemInfo    = (msg.systemInfo as Record<string, unknown>) || peer.systemInfo;
         if (msg.liveMetrics) peer.liveMetrics = msg.liveMetrics as PeerSession['liveMetrics'];
+        markPeerOnline(peer, heartbeatAt, 'heartbeat');
+        applyActivitySnapshot(peer, msg.activity, heartbeatAt, 'heartbeat');
         if (!wasOnline) {
           bus.emit(EVENTS.DEVICE_JOINED, peerToSafe(peer));
+          emitPeerActivity(peer, 'online', heartbeatAt, 'heartbeat');
           updateTrayMenu();
+        } else {
+          bus.emit(EVENTS.DEVICE_UPDATED, peerToSafe(peer));
         }
         bus.emit(EVENTS.PEER_HEARTBEAT, {
           peerId:      fromId,
           timestamp:   msg.timestamp,
           systemInfo:  peer.systemInfo,
-          liveMetrics: peer.liveMetrics
+          liveMetrics: peer.liveMetrics,
+          activity: {
+            state: peer.activityState || 'active',
+            lastInputAt: peer.lastInputAt || null,
+            lastStateChangeAt: peer.lastStateChangeAt || null,
+            currentSessionStartedAt: peer.currentSessionStartedAt || null
+          }
         });
+      }
+      return;
+    }
+
+    if (type === 'activity-transition') {
+      const fromId = String(msg.fromId || '');
+      const peer = state.peers.get(fromId);
+      if (!peer) return;
+      const transition = msg.transition as { type?: PeerActivityEventType; at?: number } | undefined;
+      const transitionType = transition?.type;
+      const at = Number(transition?.at || Date.now());
+      if (transitionType === 'active' || transitionType === 'idle') {
+        peer.online = true;
+        peer.connectionState = 'connected';
+        peer.restoredFromState = false;
+        peer.screenshotRequestPending = false;
+        markPeerOnline(peer, at, 'transition');
+        applyActivitySnapshot(peer, msg.activity, at, 'transition');
+        updateActivityState(peer, transitionType, at, 'transition');
+        bus.emit(EVENTS.DEVICE_UPDATED, peerToSafe(peer));
       }
       return;
     }
@@ -390,8 +552,9 @@ export function createMessageRouter({
       const requester = state.peers.get(String(msg.fromId || ''));
       if (!requester || !hasAdminAccess(requester.role) || !requester.identityVerified) return;
       const reqId = String(msg.reqId || '');
+      const isPreviewPoll = String(msg.reason || '') === 'preview-poll';
       void (async () => {
-        const ss = captureScreenshot ? await captureScreenshot() : null;
+        const ss = captureScreenshot ? await captureScreenshot({ hideWindow: !isPreviewPoll }) : null;
         if (ss) {
           wsNet.safeSend(ws, {
             type:      'screenshot-response',
@@ -399,7 +562,8 @@ export function createMessageRouter({
             fromId:    state.myProfile?.id,
             base64:    ss.base64,
             name:      ss.name,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            reason:    isPreviewPoll ? 'preview-poll' : 'manual-request'
           });
         }
       })();
@@ -408,12 +572,29 @@ export function createMessageRouter({
 
     if (type === 'screenshot-response') {
       const fromId = String(msg.fromId || '');
+      const peer = state.peers.get(fromId);
+      const capturedAt = Date.parse(String(msg.timestamp || '')) || Date.now();
+      const requestReason = peer
+        ? String((peer as unknown as { latestScreenshotRequestReason?: string }).latestScreenshotRequestReason || msg.reason || '')
+        : String(msg.reason || '');
+      if (peer) {
+        peer.screenshotRequestPending = false;
+        (peer as unknown as { latestScreenshotRequestReason?: string }).latestScreenshotRequestReason = '';
+        peer.latestScreenshot = {
+          capturedAt,
+          name: typeof msg.name === 'string' ? msg.name : null,
+          size: typeof msg.base64 === 'string' ? Math.round((msg.base64.length * 3) / 4) : null,
+          mime: 'image/png'
+        };
+        bus.emit(EVENTS.DEVICE_UPDATED, peerToSafe(peer));
+      }
       bus.emit(EVENTS.PEER_SCREENSHOT, {
         peerId:    fromId,
         reqId:     msg.reqId,
         base64:    msg.base64,
         name:      msg.name,
-        timestamp: msg.timestamp
+        timestamp: msg.timestamp,
+        reason:    requestReason
       });
       return;
     }

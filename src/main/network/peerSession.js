@@ -2,6 +2,18 @@
 
 const HEARTBEAT_INTERVAL = 3_000;
 const { getLiveMetrics } = require('../../system/systemInfo');
+const ACTIVITY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_ACTIVITY_EVENTS_PER_PEER = 200;
+
+function pruneActivityEvents(events, now = Date.now()) {
+  if (!Array.isArray(events) || !events.length) return [];
+  const cutoff = now - ACTIVITY_RETENTION_MS;
+  return events
+    .map(event => ({ type: event?.type, at: Number(event?.at || 0) }))
+    .filter(event => event.at > 0 && event.at >= cutoff && ['online', 'offline', 'active', 'idle'].includes(event.type))
+    .sort((a, b) => a.at - b.at)
+    .slice(-MAX_ACTIVITY_EVENTS_PER_PEER);
+}
 
 function createPeerSession({
   state,
@@ -21,6 +33,15 @@ function createPeerSession({
 }) {
   const heartbeatTimers = new Map();
   const reconnectTimers = new Map();
+
+  function appendActivityEvent(peer, type, at) {
+    if (!Array.isArray(peer.activityEvents)) peer.activityEvents = [];
+    const safeAt = Number(at || Date.now());
+    const last = peer.activityEvents[peer.activityEvents.length - 1];
+    if (last && last.type === type && Math.abs(last.at - safeAt) < 1000) return;
+    peer.activityEvents.push({ type, at: safeAt });
+    peer.activityEvents = pruneActivityEvents(peer.activityEvents, safeAt);
+  }
 
   function stopReconnect(peerId) {
     const id = reconnectTimers.get(peerId);
@@ -63,6 +84,7 @@ function createPeerSession({
         role: state.myProfile?.role,
         systemInfo: state.myProfile?.systemInfo,
         liveMetrics: getLiveMetrics(),
+        activity: state.localActivity,
         timestamp: Date.now()
       });
     }, HEARTBEAT_INTERVAL);
@@ -81,10 +103,27 @@ function createPeerSession({
     peer.online = true;
     peer.lastHeartbeat = Date.now();
     peer.connectionState = 'connected';
+    peer.restoredFromState = false;
     peer.lastDisconnectedAt = null;
+    peer.activityState = peer.activityState === 'idle' ? 'idle' : 'active';
+    peer.lastStateChangeAt = peer.lastStateChangeAt || Date.now();
+    peer.lastInputAt = peer.lastInputAt || Date.now();
+    peer.currentSessionStartedAt = peer.currentSessionStartedAt || Date.now();
+    appendActivityEvent(peer, 'online', Date.now());
     stopReconnect(peer.id);
     reliableTransport?.notifyPeerAvailable(peer.id);
     bus.emit(EVENTS.DEVICE_JOINED, peerToSafe(peer));
+    bus.emit(EVENTS.PEER_ACTIVITY, {
+      peerId: peer.id,
+      state: peer.activityState,
+      at: Date.now(),
+      source: 'session',
+      transition: { type: 'online', at: Date.now() },
+      lastInputAt: peer.lastInputAt || null,
+      lastStateChangeAt: peer.lastStateChangeAt || null,
+      currentSessionStartedAt: peer.currentSessionStartedAt || null,
+      activityEvents: peer.activityEvents.slice(-24)
+    });
     updateTrayMenu();
     startHeartbeat(peer.id);
   }
@@ -100,9 +139,27 @@ function createPeerSession({
     if (peer) {
       peer.online = false;
       peer.connectionState = state.networkOnline ? 'degraded' : 'offline';
+      peer.screenshotRequestPending = false;
       peer.lastDisconnectedAt = Date.now();
+      peer.activityState = 'offline';
+      peer.lastStateChangeAt = Date.now();
+      appendActivityEvent(peer, 'offline', Date.now());
+      peer.currentSessionStartedAt = null;
     }
     broadcastToRenderer(EVENTS.PEER_STALE, { peerId: id });
+    if (peer) {
+      bus.emit(EVENTS.PEER_ACTIVITY, {
+        peerId: peer.id,
+        state: 'offline',
+        at: Date.now(),
+        source: 'session',
+        transition: { type: 'offline', at: Date.now() },
+        lastInputAt: peer.lastInputAt || null,
+        lastStateChangeAt: peer.lastStateChangeAt || null,
+        currentSessionStartedAt: null,
+        activityEvents: Array.isArray(peer.activityEvents) ? peer.activityEvents.slice(-24) : []
+      });
+    }
     bus.emit(EVENTS.DEVICE_LEFT, { id });
     updateTrayMenu();
   }

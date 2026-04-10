@@ -7,6 +7,7 @@ import type { AppRuntimeState } from '../shared/types/runtime';
 
 const storage = require('../../src/storage/storageService') as {
   saveProfile: (profile: unknown) => void;
+  loadProfile: () => unknown;
   loadDevices: () => { self?: { deviceId?: string } };
 };
 const { getOrCreateDeviceIdentity, buildDefaultProfile } = require('../../src/services/deviceIdentity') as {
@@ -49,7 +50,10 @@ const { getSystemInfo, getPrimaryNetworkInfo } = require('../../src/system/syste
   getPrimaryNetworkInfo: () => { ip: string };
 };
 const { captureScreenshot } = require('../../src/system/screenshotService') as {
-  captureScreenshot: (win: unknown) => Promise<{ base64: string; name: string; size: number } | null>;
+  captureScreenshot: (
+    win: unknown,
+    options?: { hideWindow?: boolean; persistToDisk?: boolean }
+  ) => Promise<{ base64: string; name: string; size: number } | null>;
 };
 const wsNet = require('../../src/network/wsServer') as {
   CHAT_PORT_BASE: number;
@@ -78,6 +82,7 @@ const { createTrayManager } = require('../../src/main/tray/trayManager');
 const { createNetworkMonitor } = require('../../src/main/network/networkMonitor');
 const { createMessageRouter } = require('./network/messageRouter') as typeof import('./network/messageRouter');
 const { createPeerSession } = require('../../src/main/network/peerSession');
+const { createScreenshotPollingManager } = require('./screenshot/screenshotPolling') as typeof import('./screenshot/screenshotPolling');
 const { registerLifecycle } = require('../../src/main/bootstrap/lifecycle');
 const { registerClientHandlers } = require('./ipc/registerClientHandlers') as typeof import('./ipc/registerClientHandlers');
 const { registerFullHandlers } = require('./ipc/registerFullHandlers') as typeof import('./ipc/registerFullHandlers');
@@ -85,7 +90,7 @@ const { createAdminModule } = require('./admin') as typeof import('./admin');
 const { createFileAuditSink } = require('./audit/fileAuditSink') as typeof import('./audit/fileAuditSink');
 const { createTrustStore } = require('./security/trustStore') as typeof import('./security/trustStore');
 const { createDeviceTrust } = require('./security/deviceTrust') as typeof import('./security/deviceTrust');
-const authService = require('../../src/services/authService') as { isFirstRun: () => boolean };
+const authService = require('../../src/services/authService') as { isFirstRun: () => boolean; listUsers?: () => Array<{ id?: string }> };
 
 const state: AppRuntimeState = createAppState(wsNet.CHAT_PORT_BASE);
 const owners = createStateOwners(state);
@@ -127,6 +132,18 @@ function broadcastToPeers(data: Record<string, unknown>, excludeId: string | nul
   wsNet.broadcastToPeers(data, excludeId);
 }
 
+function hasRememberedAdminSession(): boolean {
+  if (APP_MODE !== 'admin') return false;
+  try {
+    const profile = storage.loadProfile() as { authUserId?: string; rememberMe?: boolean } | null;
+    if (!profile?.rememberMe || !profile?.authUserId) return false;
+    const users = authService.listUsers?.() || [];
+    return users.some(user => user?.id === profile.authUserId);
+  } catch {
+    return false;
+  }
+}
+
 function flushPendingHelpRequests(targetAdminId: string | null = null): void {
   helpSvc.flushPendingHelpRequests(
     state.pendingOutgoingHelpRequests,
@@ -152,7 +169,9 @@ const windowManager = createWindowManager({
   appSourceDir,
   getStartPage: () => {
     if (APP_MODE !== 'admin') return 'index.html';
-    return authService.isFirstRun() ? 'setup.html' : 'login.html';
+    if (authService.isFirstRun()) return 'setup.html';
+    if (hasRememberedAdminSession()) return 'index.html';
+    return 'login.html';
   }
 });
 
@@ -199,7 +218,8 @@ const { handleP2PMessage } = createMessageRouter({
   rememberTrustedPeer: trustStore.rememberPeer,
   reliableTransport,
   onTrustDecision: auditSink.onAuditEntry,
-  captureScreenshot: () => captureScreenshot(state.mainWindow)
+  captureScreenshot: (options?: { hideWindow?: boolean; persistToDisk?: boolean }) =>
+    captureScreenshot(state.mainWindow, options)
 });
 
 const peerSession = createPeerSession({
@@ -225,6 +245,15 @@ const { startNetworkMonitor } = createNetworkMonitor({
   EVENTS,
   broadcastToRenderer,
   onNetworkRestored: peerSession.recoverPeers
+});
+
+const screenshotPollingManager = createScreenshotPollingManager({
+  state: owners.sessionState,
+  sendToPeer,
+  hasAdminAccess,
+  uuidv4,
+  broadcastToRenderer,
+  peerToSafe
 });
 
 const adminModule = createAdminModule({
@@ -259,6 +288,35 @@ const adminModule = createAdminModule({
 });
 
 ipcMain.handle('get-app-mode', () => APP_MODE);
+ipcMain.handle('get-screenshot-polling', () => screenshotPollingManager.getSnapshot());
+ipcMain.handle('set-screenshot-polling', (_event, payload: { enabled?: boolean; mode?: 'normal' | 'fast' | 'live' } = {}) => {
+  if (typeof payload.enabled === 'boolean') screenshotPollingManager.setEnabled(payload.enabled);
+  if (payload.mode === 'normal' || payload.mode === 'fast' || payload.mode === 'live') screenshotPollingManager.setMode(payload.mode);
+  return screenshotPollingManager.getSnapshot();
+});
+ipcMain.handle('auth:logout', async () => {
+  if (APP_MODE !== 'admin') return { success: false, error: 'Logout is only available in admin mode.' };
+  const profile = storage.loadProfile() as { authUserId?: string; rememberMe?: boolean; role?: string } | null;
+  if (profile && typeof profile === 'object') {
+    delete profile.authUserId;
+    profile.rememberMe = false;
+    if (profile.role && profile.role !== 'super_admin' && profile.role !== 'admin') profile.role = 'user';
+    storage.saveProfile(profile);
+    if (state.myProfile) {
+      delete (state.myProfile as { authUserId?: string }).authUserId;
+      (state.myProfile as { rememberMe?: boolean }).rememberMe = false;
+    }
+  }
+  trayManager.updateTrayMenu();
+  if (state.mainWindow && !state.mainWindow.isDestroyed()) {
+    await state.mainWindow.loadFile(path.join(appSourceDir, 'renderer', 'login.html'));
+    windowManager.applyWindowMode('main');
+    state.mainWindow.center();
+    state.mainWindow.show();
+    state.mainWindow.focus();
+  }
+  return { success: true };
+});
 
 const _ipcDeps = {
   ipcMain,
@@ -291,12 +349,14 @@ const _ipcDeps = {
 
 if (APP_MODE === 'admin') {
   registerFullHandlers(_ipcDeps);
+  screenshotPollingManager.start();
 } else {
   registerClientHandlers(_ipcDeps);
 }
 
 const { unblockInput } = require('../../src/services/inputBlocker') as { unblockInput: () => void };
 app.on('before-quit', () => {
+  screenshotPollingManager.stop();
   unblockInput();
   windowManager.destroyPreloadedWindows();
 });

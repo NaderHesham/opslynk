@@ -3,6 +3,12 @@ import type { AppRuntimeState } from '../../shared/types/runtime';
 export function createAppState(chatPortBase: number): AppRuntimeState {
   return {
     myProfile: null,
+    localActivity: {
+      state: 'active',
+      lastInputAt: Date.now(),
+      lastStateChangeAt: Date.now(),
+      idleThresholdMs: 300000
+    },
     peers: new Map(),
     chatHistory: {},
     helpRequests: [],

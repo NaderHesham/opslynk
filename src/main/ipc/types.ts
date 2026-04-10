@@ -63,7 +63,7 @@ export type HandleFn = <C extends keyof IpcChannelMap>(
 
 export type OnFn = <C extends keyof IpcEventMap>(channel: C, fn: (payload: IpcEventMap[C]) => void) => void;
 
-export interface AppRegistrarDeps extends Pick<RegisterDeps, 'os' | 'udp' | 'state'> {
+export interface AppRegistrarDeps extends Pick<RegisterDeps, 'os' | 'udp' | 'state' | 'hasAdminAccess' | 'sendToPeer'> {
   handle: HandleFn;
 }
 

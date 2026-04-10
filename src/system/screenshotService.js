@@ -11,10 +11,14 @@ const { SCREENSHOTS_DIR } = require('../storage/storageService');
  * Hides mainWindow briefly to exclude it from the screenshot.
  * Returns { base64, path, name, size } or null on failure.
  */
-async function captureScreenshot(mainWindow) {
-  const wasVisible = mainWindow?.isVisible();
-  if (wasVisible) mainWindow.hide();
-  await new Promise(r => setTimeout(r, 250));
+async function captureScreenshot(mainWindow, options = {}) {
+  const hideWindow = options.hideWindow !== false;
+  const persistToDisk = options.persistToDisk === true;
+  const wasVisible = !!mainWindow?.isVisible();
+  if (hideWindow && wasVisible) {
+    mainWindow.hide();
+    await new Promise(r => setTimeout(r, 250));
+  }
 
   try {
     const { width, height } = screen.getPrimaryDisplay().size;
@@ -26,8 +30,11 @@ async function captureScreenshot(mainWindow) {
 
     const pngBuf = sources[0].thumbnail.toPNG();
     const fname  = `ss_${Date.now()}.png`;
-    const fpath  = path.join(SCREENSHOTS_DIR, fname);
-    fs.writeFileSync(fpath, pngBuf);
+    let fpath = null;
+    if (persistToDisk) {
+      fpath = path.join(SCREENSHOTS_DIR, fname);
+      fs.writeFileSync(fpath, pngBuf);
+    }
 
     return {
       base64: pngBuf.toString('base64'),
@@ -39,9 +46,10 @@ async function captureScreenshot(mainWindow) {
     console.error('Screenshot failed:', err);
     return null;
   } finally {
-    if (wasVisible) {
+    if (hideWindow && wasVisible) {
       await new Promise(r => setTimeout(r, 100));
-      mainWindow.show();
+      if (typeof mainWindow.showInactive === 'function') mainWindow.showInactive();
+      else mainWindow.show();
     }
   }
 }

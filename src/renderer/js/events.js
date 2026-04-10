@@ -1,7 +1,7 @@
 function setupEvents() {
-      IPC.on('system:deviceUpdated', p => { const prev = peers[p.id]; peers[p.id] = { ...prev, ...p }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); if (p.id === activePeerId) renderActiveChatContext(); updateConnPill(); const nameChanged = prev && prev.username !== p.username; const wentOnline = prev && !prev.online && p.online; if (nameChanged || wentOnline) addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile details changed.', p.online ? 'Online now' : (getPeerConnectionMeta(p).label || 'Status refreshed')); });
-      IPC.on('system:deviceJoined', p => { peers[p.id] = { ...peers[p.id], ...p, online: true, connectionState: p.connectionState || 'connected' }; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); if (p.id === activePeerId) renderActiveChatContext(); updateConnPill(); addDashboardActivity('system', `${p.username || 'Peer'} came online`, 'A reachable endpoint joined the LAN session.', p.title || 'Ready'); });
-      IPC.on('system:deviceLeft', ({ id }) => { if (peers[id]) { peers[id].online = false; peers[id].connectionState = peers[id].connectionState === 'offline' ? 'offline' : 'degraded'; renderPeerList(); renderUsersTab(); renderGroupUI(); updateActivePeerStatus(); if (id === activePeerId) renderActiveChatContext(); addDashboardActivity('system', `${peers[id].username || 'Peer'} went offline`, 'This endpoint is temporarily unavailable for admin actions.', getPeerConnectionMeta(peers[id]).label); } updateConnPill(); });
+      IPC.on('system:deviceUpdated', p => { const prev = peers[p.id]; peers[p.id] = { ...prev, ...p }; renderPeerList(); renderUsersTab(); renderMonitorTab(); renderGroupUI(); updateActivePeerStatus(); if (p.id === activePeerId) renderActiveChatContext(); updateConnPill(); const nameChanged = prev && prev.username !== p.username; const wentOnline = prev && !prev.online && p.online; if (nameChanged || wentOnline) addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile details changed.', p.online ? 'Online now' : (getPeerConnectionMeta(p).label || 'Status refreshed')); });
+      IPC.on('system:deviceJoined', p => { peers[p.id] = { ...peers[p.id], ...p, online: true, restoredFromState: false, connectionState: p.connectionState || 'connected', activityState: p.activityState || 'active' }; renderPeerList(); renderUsersTab(); renderMonitorTab(); renderGroupUI(); updateActivePeerStatus(); if (p.id === activePeerId) renderActiveChatContext(); updateConnPill(); addDashboardActivity('system', `${p.username || 'Peer'} came online`, 'A reachable endpoint joined the LAN session.', p.title || 'Ready'); });
+      IPC.on('system:deviceLeft', ({ id }) => { if (peers[id]) { peers[id].online = false; peers[id].activityState = 'offline'; peers[id].connectionState = peers[id].connectionState === 'offline' ? 'offline' : 'degraded'; peers[id].lastStateChangeAt = Date.now(); renderPeerList(); renderUsersTab(); renderMonitorTab(); renderGroupUI(); updateActivePeerStatus(); if (id === activePeerId) renderActiveChatContext(); addDashboardActivity('system', `${peers[id].username || 'Peer'} went offline`, 'This endpoint is temporarily unavailable for admin actions.', getPeerConnectionMeta(peers[id]).label); } updateConnPill(); });
 
       IPC.on('network:message', ({ peerId, message }) => {
         if (!history[peerId]) history[peerId] = [];
@@ -13,28 +13,85 @@ function setupEvents() {
       IPC.on('network:broadcast', data => { if (data.urgency !== 'urgent') { beep(520, 0.18); } });
       IPC.on('network:status', ({ online }) => { networkOnline = !!online; updateConnPill(); });
 
-      IPC.on('peer:heartbeat', ({ peerId, systemInfo, liveMetrics }) => {
+      IPC.on('peer:heartbeat', ({ peerId, systemInfo, liveMetrics, activity }) => {
         if (peers[peerId]) {
           peers[peerId].connectionState = 'connected';
           peers[peerId].online = true;
+          peers[peerId].restoredFromState = false;
           if (systemInfo)   peers[peerId].systemInfo   = systemInfo;
           if (liveMetrics)  peers[peerId].liveMetrics  = liveMetrics;
+          if (activity) {
+            peers[peerId].activityState = activity.state || peers[peerId].activityState || 'active';
+            peers[peerId].lastInputAt = activity.lastInputAt || peers[peerId].lastInputAt || null;
+            peers[peerId].lastStateChangeAt = activity.lastStateChangeAt || peers[peerId].lastStateChangeAt || null;
+            peers[peerId].currentSessionStartedAt = activity.currentSessionStartedAt || peers[peerId].currentSessionStartedAt || null;
+          }
           if (peerId === activePeerId) renderActiveChatContext();
           const active = document.querySelector('.panel.active');
-          if (active?.id === 'tab-users' || active?.id === 'tab-dashboard') { renderPeerList(); renderUsersTab(); }
+          if (active?.id === 'tab-users' || active?.id === 'tab-dashboard' || active?.id === 'tab-monitor') { renderPeerList(); renderUsersTab(); renderMonitorTab(); }
         }
         updateConnPill();
       });
 
-      IPC.on('peer:screenshot', ({ peerId, base64, name, timestamp }) => {
-        showScreenshotResult(peerId, base64, name, timestamp);
+      IPC.on('peer:activity', ({ peerId, state, at, lastInputAt, lastStateChangeAt, currentSessionStartedAt, activityEvents, transition }) => {
+        if (!peers[peerId]) return;
+        peers[peerId].activityState = state || peers[peerId].activityState || 'offline';
+        if (state === 'active' || state === 'idle') peers[peerId].restoredFromState = false;
+        peers[peerId].lastInputAt = lastInputAt || peers[peerId].lastInputAt || null;
+        peers[peerId].lastStateChangeAt = lastStateChangeAt || at || peers[peerId].lastStateChangeAt || null;
+        peers[peerId].currentSessionStartedAt = currentSessionStartedAt ?? peers[peerId].currentSessionStartedAt ?? null;
+        if (Array.isArray(activityEvents)) peers[peerId].activityEvents = activityEvents;
+        const label = transition?.type === 'idle'
+          ? 'went idle'
+          : transition?.type === 'active'
+            ? 'became active'
+            : transition?.type === 'online'
+              ? 'started a session'
+              : 'ended the session';
+        addDashboardActivity('system', `${peers[peerId].username || 'Peer'} ${label}`, 'Activity tracking recorded a new presence transition.', state === 'idle'
+          ? `Idle since ${fmtClock(lastStateChangeAt || at)}`
+          : state === 'active'
+            ? `Last input ${fmtClock(lastInputAt || at)}`
+            : `Last seen ${fmtClock(at)}`);
+        renderPeerList();
+        renderUsersTab();
+        renderMonitorTab();
+        if (peerId === activePeerId) renderActiveChatContext();
+        updateConnPill();
+      });
+
+      IPC.on('peer:screenshot', ({ peerId, base64, name, timestamp, reason }) => {
+        if (peers[peerId]) {
+          peers[peerId].screenshotRequestPending = false;
+          peers[peerId].latestScreenshot = {
+            capturedAt: Date.parse(String(timestamp || '')) || Date.now(),
+            name: name || null,
+            size: typeof base64 === 'string' ? Math.round((base64.length * 3) / 4) : null,
+            mime: 'image/png'
+          };
+          peers[peerId].latestScreenshotPreview = typeof base64 === 'string' ? `data:image/png;base64,${base64}` : null;
+          renderUsersTab();
+          renderMonitorTab();
+        }
+        if (reason !== 'preview-poll') showScreenshotResult(peerId, base64, name, timestamp);
+      });
+
+      IPC.on('screenshot:polling', (snapshot) => {
+        if (snapshot && typeof snapshot === 'object') {
+          screenshotPolling = { ...screenshotPolling, ...snapshot };
+          renderDashboard();
+        }
       });
 
       IPC.on('peer:stale', ({ peerId }) => {
         if (peers[peerId]) {
           peers[peerId].online = false;
+          peers[peerId].activityState = 'offline';
+          peers[peerId].screenshotRequestPending = false;
+          peers[peerId].lastStateChangeAt = Date.now();
           peers[peerId].connectionState = 'degraded';
           renderPeerList();
+          renderMonitorTab();
           updateActivePeerStatus();
           if (peerId === activePeerId) renderActiveChatContext();
         }

@@ -1,6 +1,9 @@
 const IPC = {
   getInitData: () => window.OpsLynk.getInitData(),
   getAppMode: () => window.OpsLynk.getAppMode(),
+  getScreenshotPolling: () => window.OpsLynk.getScreenshotPolling?.(),
+  setScreenshotPolling: data => window.OpsLynk.setScreenshotPolling?.(data),
+  reportActivity: data => window.OpsLynk.reportActivity(data),
   sendChat: data => window.OpsLynk.sendChat(data),
   sendFileOffer: data => window.OpsLynk.sendFileOffer(data),
   sendBroadcast: data => window.OpsLynk.sendBroadcast(data),
@@ -26,6 +29,7 @@ const IPC = {
   stopForcedVideoBroadcast: () => window.OpsLynk.stopForcedVideoBroadcast(),
   auth: {
     listUsers: () => window.OpsLynk.auth.listUsers(),
+    logout: () => window.OpsLynk.auth.logout?.(),
     createUser: data => window.OpsLynk.auth.createUser(data),
     updateSelfProfile: data => window.OpsLynk.auth.updateSelfProfile(data),
     changePassword: data => window.OpsLynk.auth.changePassword(data),

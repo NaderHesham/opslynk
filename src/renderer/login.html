@@ -91,6 +91,26 @@
   .btn:hover   { opacity: .88; }
   .btn:active  { opacity: .74; }
   .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .remember-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+    margin-bottom: 6px;
+    user-select: none;
+  }
+  .remember-row input[type=checkbox] {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .remember-row label {
+    margin: 0;
+    font-size: 12px;
+    color: var(--txt2);
+    cursor: pointer;
+  }
   .form-err {
     margin-top: 14px; padding: 10px 14px;
     background: rgba(255,107,125,.08); border: 1px solid rgba(255,107,125,.25);
@@ -122,11 +142,19 @@
     </div>
   </div>
 
+  <div class="remember-row">
+    <input type="checkbox" id="rememberMe">
+    <label for="rememberMe">Remember me</label>
+  </div>
+
   <button class="btn" id="submitBtn" onclick="doLogin()">Sign In</button>
   <div class="form-err" id="form-err"></div>
 </div>
 
 <script>
+  const REMEMBER_KEY = 'opslynk.auth.rememberMe';
+  const LAST_USER_KEY = 'opslynk.auth.lastUsername';
+
   function togglePw() {
     const el  = document.getElementById('password');
     const btn = document.querySelector('.toggle-pw');
@@ -134,9 +162,21 @@
     else                        { el.type = 'password'; btn.textContent = '👁'; }
   }
 
+  function restoreRememberedLoginState() {
+    try {
+      const remember = localStorage.getItem(REMEMBER_KEY) === '1';
+      const lastUser = localStorage.getItem(LAST_USER_KEY) || '';
+      document.getElementById('rememberMe').checked = remember;
+      if (remember && lastUser) {
+        document.getElementById('username').value = lastUser;
+      }
+    } catch {}
+  }
+
   async function doLogin() {
     const username = document.getElementById('username').value.trim();
     const password = document.getElementById('password').value;
+    const rememberMe = document.getElementById('rememberMe').checked;
     const formErr  = document.getElementById('form-err');
     formErr.classList.remove('show');
 
@@ -151,8 +191,17 @@
     btn.textContent = 'Signing in…';
 
     try {
-      const result = await window.OpsLynk.auth.login({ username, password });
+      const result = await window.OpsLynk.auth.login({ username, password, rememberMe });
       if (result.success) {
+        try {
+          if (rememberMe) {
+            localStorage.setItem(REMEMBER_KEY, '1');
+            localStorage.setItem(LAST_USER_KEY, username);
+          } else {
+            localStorage.removeItem(REMEMBER_KEY);
+            localStorage.removeItem(LAST_USER_KEY);
+          }
+        } catch {}
         window.location.href = 'index.html';
       } else {
         formErr.textContent = 'Invalid username or password.';
@@ -168,6 +217,7 @@
   }
 
   document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  restoreRememberedLoginState();
   document.getElementById('username').focus();
 </script>
 </body>

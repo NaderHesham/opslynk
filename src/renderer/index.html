@@ -57,6 +57,9 @@
         <button class="tb atab" data-tab="help" data-admin-only onclick="switchTab('help')" id="helptabbtn" title="Help Requests" aria-label="Help Requests">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         </button>
+        <button class="tb atab" data-tab="monitor" data-admin-only onclick="switchTab('monitor')" title="Monitor" aria-label="Monitor">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 20h8"/><path d="M12 17v3"/></svg>
+        </button>
         <button class="tb utab" data-tab="ask" onclick="switchTab('ask')" title="Ask For Help" aria-label="Ask For Help">
           <svg viewBox="0 0 24 24"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
         </button>
@@ -131,7 +134,7 @@
                 </div>
               </section>
 
-              <section class="dash-section dash-device-section">
+              <section class="dash-section dash-device-section" hidden>
                 <div class="dash-section-header">
                   <div>
                     <div class="dash-section-title">Device Grid</div>
@@ -146,6 +149,28 @@
                 <div class="dash-device-grid" id="dashDeviceGrid">
                   <div class="empty">
                     <div class="ei">Devices</div>No discovered devices yet
+                  </div>
+                </div>
+              </section>
+
+              <section class="dash-section dash-screenshot-section" hidden>
+                <div class="dash-section-header">
+                  <div>
+                    <div class="dash-section-title">Live Wall</div>
+                    <div class="dash-section-sub" id="dashLiveWallSub">Latest client previews with staggered refresh polling (default 5s)</div>
+                  </div>
+                </div>
+                <div class="dash-shot-toolbar">
+                  <div class="dash-shot-toolbar-actions">
+                    <button class="dash-filter-pill" id="dashScreenshotMode-normal" type="button" onclick="setScreenshotPollingMode('normal')">Normal</button>
+                    <button class="dash-filter-pill" id="dashScreenshotMode-fast" type="button" onclick="setScreenshotPollingMode('fast')">Fast</button>
+                    <button class="dash-filter-pill" id="dashScreenshotMode-live" type="button" onclick="setScreenshotPollingMode('live')">Live</button>
+                    <button class="dash-filter-pill" id="dashScreenshotToggle" type="button" onclick="toggleScreenshotPolling()">Pause</button>
+                  </div>
+                </div>
+                <div class="dash-screenshot-grid" id="dashScreenshotGrid">
+                  <div class="empty">
+                    <div class="ei">Preview</div>No screenshot previews yet
                   </div>
                 </div>
               </section>
@@ -654,6 +679,35 @@
         </div>
       </div>
 
+      <!-- MONITOR (admin) -->
+      <div class="panel" id="tab-monitor" data-admin-only>
+        <div class="pscroll ops-view ops-view-monitor">
+          <div class="ptitle">🖥️ Monitor</div>
+          <div class="psub" id="monitorLiveWallSub" style="margin-bottom:10px;">Live wall mode: Normal (5s target refresh)</div>
+          <div class="filterbar">
+            <select id="monitorGroupFilter" onchange="setMonitorGroupFilter(this.value)">
+              <option value="all">All Devices</option>
+            </select>
+            <div class="filter-pills">
+              <button class="filter-pill active" id="monitorMode-normal" onclick="setScreenshotPollingMode('normal')">Normal</button>
+              <button class="filter-pill" id="monitorMode-fast" onclick="setScreenshotPollingMode('fast')">Fast</button>
+              <button class="filter-pill" id="monitorMode-live" onclick="setScreenshotPollingMode('live')">Live</button>
+              <button class="filter-pill" id="monitorMode-toggle" onclick="toggleScreenshotPolling()">Pause</button>
+            </div>
+          </div>
+          <div class="filterbar" style="margin-top:8px;">
+            <div class="filter-pills">
+              <button class="filter-pill active" id="monitorAction-preview" onclick="setMonitorActionMode('preview')">Preview Action</button>
+              <button class="filter-pill" id="monitorAction-remote" onclick="setMonitorActionMode('remote')">Remote Action</button>
+            </div>
+            <div class="psub" id="monitorActionSub" style="margin:0 0 0 auto;">Clicking a device opens its latest preview.</div>
+          </div>
+          <div id="monitorLiveGrid" class="dash-screenshot-grid">
+            <div class="empty"><div class="ei">Preview</div>No live devices yet</div>
+          </div>
+        </div>
+      </div>
+
       <!-- ASK FOR HELP (user) -->
       <div class="panel" id="tab-ask">
         <div class="afh-wrap">
@@ -775,23 +829,10 @@
         <div class="mfield"><label>Display Name</label><input id="modname" placeholder="Your name"></div>
         <div class="group-card profacct-card" id="profacct-card" style="display:none;">
           <div class="profacct-head">My Account</div>
-          <div class="profacct-copy">Manage your personal Super Admin identity and password from this profile surface.</div>
-          <div class="mfield">
-            <label for="profCurrentPw">Current Password</label>
-            <input id="profCurrentPw" type="password" placeholder="Current password">
-          </div>
-          <div class="mfield">
-            <label for="profNewPw">New Password</label>
-            <input id="profNewPw" type="password" placeholder="New password">
-          </div>
-          <div class="mfield">
-            <label for="profConfirmPw">Confirm New Password</label>
-            <input id="profConfirmPw" type="password" placeholder="Confirm new password">
-          </div>
+          <div class="profacct-copy">Password controls stay hidden by default and open in a dedicated secure panel.</div>
           <div class="mactions acct-self-actions">
-            <button class="btnp" type="button" onclick="changeMyPasswordFromProfile()">Update Password</button>
+            <button class="btnp" type="button" onclick="openSelfPasswordModal()">Change Password</button>
           </div>
-          <div class="acct-self-msg" id="profacct-msg" style="display:none;"></div>
         </div>
         <div class="mfield"><label>Avatar Color</label>
           <div class="swatches" id="swatches"></div>
@@ -817,6 +858,29 @@
     </div>
   </div>
 
+  <div class="moverlay" id="selfPwModal">
+    <div class="mbox" style="width:460px;max-width:calc(100vw - 28px);">
+      <h3>Update Password</h3>
+      <div class="mfield">
+        <label for="selfPwCurrent">Current Password</label>
+        <input id="selfPwCurrent" type="password" placeholder="Current password">
+      </div>
+      <div class="mfield">
+        <label for="selfPwNext">New Password</label>
+        <input id="selfPwNext" type="password" placeholder="New password">
+      </div>
+      <div class="mfield">
+        <label for="selfPwConfirm">Confirm New Password</label>
+        <input id="selfPwConfirm" type="password" placeholder="Confirm new password">
+      </div>
+      <div class="acct-self-msg" id="selfPwMsg" style="display:none;"></div>
+      <div class="mactions">
+        <button class="btng" type="button" onclick="closeSelfPasswordModal()">Cancel</button>
+        <button class="btnp" type="button" onclick="submitSelfPasswordChange()">Update Password</button>
+      </div>
+    </div>
+  </div>
+
   <div class="moverlay" id="specmodal">
     <div class="mbox" style="width:620px;max-width:calc(100vw - 28px);">
       <div class="spec-head">
@@ -829,8 +893,49 @@
       <div class="spec-grid" id="specgrid"></div>
       <div class="mactions">
         <button class="btng" onclick="closeSpecsModal()">Close</button>
-        <button class="btng" onclick="exportSpecs('json')">Export JSON</button>
         <button class="btnp" onclick="exportSpecs('txt')">Export TXT</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="moverlay" id="userStatsModal">
+    <div class="mbox" style="width:720px;max-width:calc(100vw - 28px);">
+      <div class="spec-head">
+        <div style="flex:1;min-width:0;">
+          <div class="uname" id="userStatsTitle">User - Activity Stats</div>
+          <div class="spec-sub" id="userStatsSub">Activity details</div>
+        </div>
+      </div>
+      <div id="userStatsBody"></div>
+      <div class="mactions">
+        <button class="btng" onclick="closeUserStatsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="moverlay" id="userTimelineModal">
+    <div class="mbox" style="width:min(1100px, calc(100vw - 28px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;">
+      <div class="spec-head">
+        <div style="flex:1;min-width:0;">
+          <div class="uname" id="userTimelineTitle">User - Detailed Timeline</div>
+          <div class="spec-sub" id="userTimelineSub">Timeline details</div>
+        </div>
+      </div>
+      <div class="dash-filter-pills" style="margin: 4px 0 10px;" aria-label="Timeline filters">
+        <button class="dash-filter-pill active" id="timelineFilter-all" type="button" onclick="setUserTimelineFilter('all')">All</button>
+        <button class="dash-filter-pill" id="timelineFilter-active" type="button" onclick="setUserTimelineFilter('active')">Active</button>
+        <button class="dash-filter-pill" id="timelineFilter-idle" type="button" onclick="setUserTimelineFilter('idle')">Idle</button>
+        <button class="dash-filter-pill" id="timelineFilter-offline" type="button" onclick="setUserTimelineFilter('offline')">Offline</button>
+        <span id="userTimelineFilterLabel" style="margin-left:auto;font-size:10px;color:var(--txt3);">All states</span>
+      </div>
+      <div class="stats-table-wrap timeline-modal-table" style="flex:1;overflow:auto;">
+        <table class="stats-table">
+          <thead><tr><th>From</th><th>To</th><th>Duration</th><th>State</th></tr></thead>
+          <tbody id="userTimelineTableBody"></tbody>
+        </table>
+      </div>
+      <div class="mactions">
+        <button class="btng" onclick="closeUserTimelineModal()">Back</button>
       </div>
     </div>
   </div>
@@ -848,6 +953,36 @@
       <div class="ss-img-wrap">
         <div class="ss-loading" id="ssLoading">Requesting screenshot…</div>
         <img id="screenshotImg" style="display:none;" alt="Remote screenshot">
+      </div>
+    </div>
+  </div>
+
+  <div class="moverlay" id="monitorRemoteModal">
+    <div class="mbox monitor-remote-modal">
+      <div class="spec-head">
+        <div style="flex:1;min-width:0;">
+          <div class="uname" id="monitorRemoteTitle">Remote Session</div>
+          <div class="spec-sub" id="monitorRemoteSub">Forced remote session handoff placeholder</div>
+        </div>
+      </div>
+      <div class="activity-timeline-card compact">
+        <div class="activity-timeline-head">
+          <strong>Remote Status</strong>
+          <span id="monitorRemoteBadge">Idle</span>
+        </div>
+        <div class="activity-summary-grid compact">
+          <div class="activity-summary-card"><strong>Target</strong><span id="monitorRemoteTarget">-</span></div>
+          <div class="activity-summary-card"><strong>Machine</strong><span id="monitorRemoteMachine">-</span></div>
+          <div class="activity-summary-card"><strong>Connection</strong><span id="monitorRemoteConnection">-</span></div>
+          <div class="activity-summary-card"><strong>Requested At</strong><span id="monitorRemoteRequestedAt">-</span></div>
+        </div>
+      </div>
+      <div class="activity-timeline-card compact">
+        <div class="activity-line-empty" id="monitorRemoteHint">This is a Sprint 5 placeholder. Live forced remote desktop stream will mount in this panel.</div>
+      </div>
+      <div class="mactions">
+        <button class="btng" onclick="closeMonitorRemoteModal()">Close</button>
+        <button class="btnp" id="monitorRemoteRequestBtn" onclick="requestMonitorRemoteSession()">Connect Now</button>
       </div>
     </div>
   </div>
@@ -874,6 +1009,9 @@
           <div class="sett-theme-pill" id="settings-theme-value">Dark</div>
         </div>
 
+        <div class="sett-section-label">Session</div>
+        <button class="sett-danger-btn" type="button" onclick="logoutCurrentSession()">Log Out</button>
+
         <div class="sett-divider"></div>
         <div class="sett-footer">More settings coming soon — OpsLynk v2</div>
       </div>
@@ -885,6 +1023,7 @@
   <script src="js/render.js"></script>
   <script src="js/chat.js"></script>
   <script src="js/broadcast.js"></script>
+  <script src="js/activity.js"></script>
   <script src="js/help.js"></script>
   <script src="js/profile.js"></script>
   <script src="js/accounts.js"></script>

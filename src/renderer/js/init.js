@@ -15,6 +15,8 @@ async function init() {
 
       const [d, resolvedMode] = await Promise.all([IPC.getInitData(), _appModePromise]);
       _appMode = resolvedMode;
+      const polling = await IPC.getScreenshotPolling?.().catch(() => null);
+      if (polling && typeof polling === 'object') screenshotPolling = { ...screenshotPolling, ...polling };
 
       // Remove admin-only DOM elements before any rendering so they never flash
       console.log('[OpsLynk] _appMode resolved:', _appMode);
@@ -39,7 +41,18 @@ async function init() {
           role: existing.role || p.role,
           username: existing.username || p.username,
           online: Boolean(existing.online || p.online),
-          connectionState: existing.connectionState || p.connectionState || (p.online ? 'connected' : 'offline')
+          connectionState: existing.connectionState || p.connectionState || (p.online ? 'connected' : 'offline'),
+          restoredFromState: existing.restoredFromState ?? p.restoredFromState ?? false,
+          activityState: existing.activityState || p.activityState || (p.online ? 'active' : 'offline'),
+          lastInputAt: existing.lastInputAt || p.lastInputAt || null,
+          lastStateChangeAt: existing.lastStateChangeAt || p.lastStateChangeAt || null,
+          currentSessionStartedAt: existing.currentSessionStartedAt || p.currentSessionStartedAt || null,
+          idleThresholdMs: existing.idleThresholdMs || p.idleThresholdMs || null,
+          activityEvents: existing.activityEvents || p.activityEvents || [],
+          latestScreenshot: existing.latestScreenshot || p.latestScreenshot || null,
+          latestScreenshotRequestedAt: existing.latestScreenshotRequestedAt || p.latestScreenshotRequestedAt || null,
+          screenshotRequestPending: existing.screenshotRequestPending ?? p.screenshotRequestPending ?? false,
+          latestScreenshotPreview: existing.latestScreenshotPreview || null
         };
       });
       ensureDashboardTabButton();
@@ -49,6 +62,7 @@ async function init() {
       renderMyProfile();
       renderPeerList();
       renderUsersTab();
+      renderMonitorTab();
 
       document.getElementById('afh-machine').textContent = d.hostname || '-';
       document.getElementById('afh-user').textContent = me.username;
@@ -66,6 +80,7 @@ async function init() {
       if (d.helpRequests) d.helpRequests.forEach(r => appendHelpCard(r));
       addDashboardActivity('system', 'Session initialized', 'Admin workspace loaded and ready to monitor connected peers.', d.hostname || 'This device');
       setupEmojiPicker();
+      startActivityTracking();
       ensureChatLayout();
       renderGroupUI();
       renderHelpRequests();

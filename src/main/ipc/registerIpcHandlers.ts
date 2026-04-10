@@ -30,7 +30,9 @@ export function registerIpcHandlers(deps: RegisterDeps): void {
     handle,
     os: deps.os,
     udp: deps.udp,
-    state: deps.state
+    state: deps.state,
+    hasAdminAccess: deps.hasAdminAccess,
+    sendToPeer: deps.sendToPeer
   });
 
   registerWindowHandlers({

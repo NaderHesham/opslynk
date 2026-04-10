@@ -4,6 +4,27 @@ import type { AdminCommand } from '../contracts/admin';
 export type UserRole = 'user' | 'admin' | 'super_admin';
 export type PeerStatus = 'online' | 'offline';
 export type PeerConnectionState = 'discovering' | 'handshaking' | 'connected' | 'degraded' | 'offline';
+export type PeerActivityState = 'active' | 'idle' | 'offline';
+export type PeerActivityEventType = 'online' | 'offline' | 'active' | 'idle';
+
+export interface ActivitySnapshot {
+  state: Exclude<PeerActivityState, 'offline'>;
+  lastInputAt: number;
+  lastStateChangeAt: number;
+  idleThresholdMs: number;
+}
+
+export interface ActivityEvent {
+  type: PeerActivityEventType;
+  at: number;
+}
+
+export interface ScreenshotPreviewMeta {
+  capturedAt: number;
+  name?: string | null;
+  size?: number | null;
+  mime?: string | null;
+}
 
 export interface PeerIdentity {
   id: string;
@@ -24,6 +45,7 @@ export interface PeerSession extends PeerIdentity {
   ws?: unknown;
   online: boolean;
   connectionState?: PeerConnectionState;
+  restoredFromState?: boolean;
   lastDisconnectedAt?: number;
   identityVerified?: boolean;
   identityRejected?: boolean;
@@ -31,6 +53,15 @@ export interface PeerSession extends PeerIdentity {
   lastSeen?: number;
   lastHeartbeat?: number;
   liveMetrics?: { cpuPct: number; ramUsedPct: number; ramFreeGb: string } | null;
+  activityState?: PeerActivityState;
+  lastInputAt?: number;
+  lastStateChangeAt?: number;
+  currentSessionStartedAt?: number | null;
+  idleThresholdMs?: number;
+  activityEvents?: ActivityEvent[];
+  latestScreenshot?: ScreenshotPreviewMeta | null;
+  latestScreenshotRequestedAt?: number | null;
+  screenshotRequestPending?: boolean;
 }
 
 export interface FileTransferMetadata {
@@ -71,6 +102,7 @@ export interface PendingReliableMessage {
 
 export interface AppRuntimeState {
   myProfile: (PeerIdentity & { soundEnabled?: boolean }) | null;
+  localActivity: ActivitySnapshot;
   peers: Map<string, PeerSession>;
   chatHistory: Record<string, Array<Record<string, unknown>>>;
   helpRequests: HelpRequest[];
@@ -110,6 +142,7 @@ export type WindowRuntimeState = Pick<
 export type SessionRuntimeState = Pick<
   AppRuntimeState,
   | 'myProfile'
+  | 'localActivity'
   | 'peers'
   | 'myPortRef'
   | 'networkOnline'
@@ -117,6 +150,7 @@ export type SessionRuntimeState = Pick<
 
 export type RecordsRuntimeState = Pick<
   AppRuntimeState,
+  | 'peers'
   | 'chatHistory'
   | 'helpRequests'
   | 'pendingOutgoingHelpRequests'
@@ -145,6 +179,7 @@ export type NetworkRuntimeState = Pick<
 export type IpcRuntimeState = Pick<
   AppRuntimeState,
   | 'myProfile'
+  | 'localActivity'
   | 'peers'
   | 'chatHistory'
   | 'helpRequests'

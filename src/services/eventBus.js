@@ -44,6 +44,7 @@ const EVENTS = {
 
   // Heartbeat / staleness
   PEER_HEARTBEAT   : 'peer:heartbeat',
+  PEER_ACTIVITY    : 'peer:activity',
   PEER_STALE       : 'peer:stale',
 
   // Remote screenshot

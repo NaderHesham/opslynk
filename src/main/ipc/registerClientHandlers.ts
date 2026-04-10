@@ -14,7 +14,14 @@ export function registerClientHandlers(deps: RegisterDeps): void {
     ipcMain.handle(channel, (_e, payload) => fn((payload as Parameters<typeof fn>[0]) ?? (undefined as Parameters<typeof fn>[0])));
   };
 
-  registerAppHandlers({ handle, os: deps.os, udp: deps.udp, state: deps.state });
+  registerAppHandlers({
+    handle,
+    os: deps.os,
+    udp: deps.udp,
+    state: deps.state,
+    hasAdminAccess: deps.hasAdminAccess,
+    sendToPeer: deps.sendToPeer
+  });
   registerWindowHandlers({ handle, state: deps.state, applyWindowMode: deps.applyWindowMode });
   registerChatHandlers({
     handle,

@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('OpsLynk', {
   // ── INIT ───────────────────────────────────────────────────────────────────
   getInitData:  () => ipcRenderer.invoke('get-init-data'),
   getAppMode:   () => ipcRenderer.invoke('get-app-mode'),
+  reportActivity: (data) => ipcRenderer.invoke('report-activity', data),
+  getScreenshotPolling: () => ipcRenderer.invoke('get-screenshot-polling'),
+  setScreenshotPolling: (data) => ipcRenderer.invoke('set-screenshot-polling', data),
 
   // ── CHAT ───────────────────────────────────────────────────────────────────
   sendChat:      (data) => ipcRenderer.invoke('send-chat', data),
@@ -63,6 +66,7 @@ contextBridge.exposeInMainWorld('OpsLynk', {
     isFirstRun:     ()     => ipcRenderer.invoke('auth:is-first-run'),
     setup:          (data) => ipcRenderer.invoke('auth:setup', data),
     login:          (data) => ipcRenderer.invoke('auth:login', data),
+    logout:         ()     => ipcRenderer.invoke('auth:logout'),
     createUser:     (data) => ipcRenderer.invoke('auth:create-user', data),
     updateSelfProfile: (data) => ipcRenderer.invoke('auth:update-self-profile', data),
     changePassword: (data) => ipcRenderer.invoke('auth:change-password', data),
