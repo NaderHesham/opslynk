@@ -38,3 +38,5 @@ native/InputBlocker/obj/
 # Temp
 tmp/
 temp/
+asar_list.txt
+main.js
