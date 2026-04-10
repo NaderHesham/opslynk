@@ -15,7 +15,7 @@ function openProfileModal() {
       });
       modalAvatar = me.avatar || null;
       const a = document.getElementById('profprev'); applyAvatar(a, { ...me, avatar: modalAvatar, role: _appMode === 'client' ? 'user' : me.role });
-      document.getElementById('profprevname').innerHTML = `${esc(getCurrentUserDisplayName(me))} ${_appMode !== 'client' ? roleBadgeHTML(me.role) : ''}`;
+      document.getElementById('profprevname').innerHTML = `${esc(getCurrentUserDisplayName(me))} ${verifiedSuperIconHTML(me.role)} ${roleBadgeHTML(me.role)}`;
       document.getElementById('profprevtitle').textContent = me.title || 'No title set';
       document.querySelectorAll('.swatch').forEach(s => s.classList.toggle('sel', s.dataset.color === me.color));
       document.getElementById('profmodal').classList.add('show');

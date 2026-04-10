@@ -11,6 +11,7 @@ const IPC = {
   sendHelpRequest: data => window.OpsLynk.sendHelpRequest(data),
   ackHelp: data => window.OpsLynk.ackHelp(data),
   exportPeerSpecs: data => window.OpsLynk.exportPeerSpecs(data),
+  executePeerDeviceAction: data => window.OpsLynk.executePeerDeviceAction(data),
   saveUserGroup: data => window.OpsLynk.saveUserGroup(data),
   deleteUserGroup: data => window.OpsLynk.deleteUserGroup(data),
   updateProfile: data => window.OpsLynk.updateProfile(data),

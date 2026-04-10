@@ -369,14 +369,22 @@ body::after {
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 3px;
       flex-wrap: nowrap;
       min-width: 0
     }
 
-#my-profile .mname-text {
+#my-profile .mname-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
       min-width: 0;
       flex: 1;
+    }
+
+#my-profile .mname-text {
+      min-width: 0;
+      flex: 0 1 auto;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis

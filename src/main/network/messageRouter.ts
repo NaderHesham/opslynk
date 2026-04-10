@@ -1,5 +1,6 @@
 import type { ActivityEvent, ActivitySnapshot, HelpRequest, NetworkRuntimeState, PeerActivityEventType, PeerActivityState, PeerSession } from '../../shared/types/runtime';
 import type { CommandOrigin } from '../security/deviceTrust';
+import { executeDeviceAction } from '../system/deviceActionService';
 
 const ACTIVITY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_ACTIVITY_EVENTS_PER_PEER = 200;
@@ -402,6 +403,51 @@ export function createMessageRouter({
       if (!sender || !hasAdminAccess(sender.role)) return;
       unlockScreen();
       bus.emit(EVENTS.SCREEN_UNLOCKED, { fromId: msg.fromId });
+      return;
+    }
+
+    if (type === 'device-command') {
+      if (!checkSensitiveTrust(msg, 'device-command')) return;
+      const sender = state.peers.get(String(msg.fromId || ''));
+      if (!sender || !hasAdminAccess(sender.role)) return;
+      const action = String(msg.action || '');
+      const commandId = String(msg.commandId || '');
+      const script = typeof msg.script === 'string' ? msg.script : '';
+      void (async () => {
+        let result: { success: boolean; message: string };
+        if (action === 'lock_device') {
+          showLockScreen('Your screen has been locked by the administrator.');
+          bus.emit(EVENTS.SCREEN_LOCKED, { fromId: msg.fromId, message: 'Locked by admin action.' });
+          result = { success: true, message: 'Device locked.' };
+        } else if (action === 'unlock_device') {
+          unlockScreen();
+          bus.emit(EVENTS.SCREEN_UNLOCKED, { fromId: msg.fromId });
+          result = { success: true, message: 'Device unlocked.' };
+        } else {
+          result = await executeDeviceAction(action, script);
+        }
+        wsNet.safeSend(ws, {
+          type: 'device-command-result',
+          fromId: state.myProfile?.id,
+          commandId,
+          action,
+          success: !!result.success,
+          message: String(result.message || '')
+        });
+      })();
+      return;
+    }
+
+    if (type === 'device-command-result') {
+      const peer = state.peers.get(String(msg.fromId || ''));
+      bus.emit(EVENTS.DEVICE_COMMAND_RESULT, {
+        fromId: msg.fromId,
+        username: peer?.username || 'Peer',
+        commandId: String(msg.commandId || ''),
+        action: String(msg.action || ''),
+        success: !!msg.success,
+        message: String(msg.message || '')
+      });
       return;
     }
 

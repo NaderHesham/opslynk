@@ -987,6 +987,54 @@
     </div>
   </div>
 
+  <div class="moverlay" id="userActionsModal" onclick="if(event.target===this) closeUserActionsModal()">
+    <div class="mbox user-actions-modal">
+      <div class="spec-head" style="margin-bottom:10px;">
+        <div style="flex:1;min-width:0;">
+          <div class="uname" id="userActionsTitle">User · Actions</div>
+          <div class="spec-sub" id="userActionsSub">Device actions</div>
+        </div>
+      </div>
+      <div class="user-actions-grid">
+        <button class="ubtn" id="userActionLockBtn" onclick="executeActiveUserAction('lock_toggle')">Lock Device</button>
+        <button class="ubtn" onclick="executeActiveUserAction('restart_device')">Restart Device</button>
+        <button class="ubtn" onclick="executeActiveUserAction('shutdown_device')">Shutdown Device</button>
+        <button class="ubtn" onclick="executeActiveUserAction('signout_device')">Signout Device</button>
+        <button class="ubtn" onclick="executeActiveUserAction('clean_temp')">Clean Temp</button>
+        <button class="ubtn" onclick="executeActiveUserAction('flush_dns')">Flush DNS</button>
+        <button class="ubtn" onclick="executeActiveUserAction('run_script')">Run Script</button>
+      </div>
+      <div class="mactions">
+        <button class="btng" type="button" onclick="closeUserActionsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="moverlay" id="runScriptModal" onclick="if(event.target===this) closeRunScriptModal()">
+    <div class="mbox" style="width:640px;max-width:calc(100vw - 28px);">
+      <h3 id="runScriptTitle">Run Script</h3>
+      <div class="mfield">
+        <label for="runScriptInput">PowerShell Script</label>
+        <textarea id="runScriptInput" rows="10" placeholder="Write PowerShell script here..."></textarea>
+      </div>
+      <div class="mactions">
+        <button class="btng" type="button" onclick="closeRunScriptModal()">Cancel</button>
+        <button class="btnp" type="button" onclick="submitRunScriptAction()">Run Script</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="moverlay" id="appConfirmModal" onclick="if(event.target===this) cancelAppConfirm()">
+    <div class="mbox app-confirm-modal">
+      <h3 id="appConfirmTitle">Confirm</h3>
+      <div class="app-confirm-message" id="appConfirmMessage">Are you sure?</div>
+      <div class="mactions">
+        <button class="btng" type="button" onclick="cancelAppConfirm()">Cancel</button>
+        <button class="btnd" type="button" id="appConfirmOkBtn" onclick="submitAppConfirm()">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ─── SETTINGS OVERLAY ──────────────────────────────────────── -->
   <div id="settings-overlay" onclick="settingsOverlayClick(event)">
     <div class="sett-panel">

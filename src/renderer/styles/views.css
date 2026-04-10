@@ -2841,6 +2841,34 @@
       gap: 4px
     }
 
+.user-actions-modal {
+      width: min(700px, calc(100vw - 28px));
+      max-width: calc(100vw - 28px)
+    }
+
+.user-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px
+    }
+
+.user-actions-grid .ubtn {
+      min-height: 36px;
+      justify-content: center
+    }
+
+.app-confirm-modal {
+      width: min(480px, calc(100vw - 28px));
+      max-width: calc(100vw - 28px)
+    }
+
+.app-confirm-message {
+      margin: 4px 0 12px;
+      font-size: 12px;
+      line-height: 1.65;
+      color: var(--txt2)
+    }
+
 .ubtn.ghost {
       background: transparent;
       border-color: var(--b);

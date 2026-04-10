@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('OpsLynk', {
   sendHelpRequest: (data) => ipcRenderer.invoke('send-help-request', data),
   ackHelp:         (data) => ipcRenderer.invoke('ack-help', data),
   exportPeerSpecs: (data) => ipcRenderer.invoke('export-peer-specs', data),
+  executePeerDeviceAction: (data) => ipcRenderer.invoke('execute-peer-device-action', data),
 
   // ── GROUPS ─────────────────────────────────────────────────────────────────
   saveUserGroup:   (data) => ipcRenderer.invoke('save-user-group', data),

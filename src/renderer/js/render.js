@@ -658,8 +658,9 @@ function renderMyProfile() {
       const meForAvatar = _appMode === 'client' ? { ...me, role: 'user' } : me;
       const currentUserName = getCurrentUserDisplayName(me);
       applyAvatar(av, meForAvatar);
-      const badge = _appMode !== 'client' ? roleBadgeHTML(me.role) : '';
-      document.getElementById('myname').innerHTML = `<span class="mname-text">${esc(currentUserName)}</span>${badge}`;
+      const verifiedIcon = verifiedSuperIconHTML(me.role);
+      const badge = roleBadgeHTML(me.role);
+      document.getElementById('myname').innerHTML = `<span class="mname-main"><span class="mname-text">${esc(currentUserName)}</span>${verifiedIcon}</span>${badge}`;
       document.getElementById('mytitle').textContent = getPeerDisplayTitle(me);
       const isSuper = _appMode !== 'client' && isSuperAdminRole(me.role);
       document.getElementById('admin-badge').textContent = isSuper ? 'CONTROL' : 'READY';
@@ -703,6 +704,7 @@ function renderPeerList() {
       const onlinePeers = sorted.filter(p => p.online);
       const offlinePeers = sorted.filter(p => !p.online);
       const renderPeerCard = p => {
+        const verifiedIcon = verifiedSuperIconHTML(p.role);
         const roleBadge = roleBadgeHTML(p.role);
         const subtitle = esc(getPeerDisplayTitle(p));
         const trust = getPeerTrustState(p);
@@ -719,7 +721,7 @@ function renderPeerList() {
         el.innerHTML = `
       ${avatarHTML(p, 's32')}
       <div class="pmeta">
-        <div class="pname"><span class="pname-text">${esc(p.username)}</span>${roleBadge}</div>
+        <div class="pname"><span class="pname-text">${esc(p.username)}</span>${verifiedIcon}${roleBadge}</div>
         <div class="psub">
           <span class="psubtitle">${subtitle}</span>
           <span class="psubtitle trust-line ${trust.key}">${trust.label}</span>
@@ -911,6 +913,135 @@ function closeUserStatsModal() {
       document.getElementById('userStatsModal')?.classList.remove('show');
 }
 
+function openUserActionsModal(peerId) {
+      const peer = peers[peerId];
+      const modal = document.getElementById('userActionsModal');
+      if (!peer || !modal) return;
+      userActionPeerId = peerId;
+      const title = document.getElementById('userActionsTitle');
+      const sub = document.getElementById('userActionsSub');
+      const lockBtn = document.getElementById('userActionLockBtn');
+      if (title) title.textContent = `${peer.username || 'User'} · Actions`;
+      if (sub) sub.textContent = `${peer.systemInfo?.hostname || getPeerDisplayTitle(peer)} · ${peer.online ? 'Connected' : 'Offline'}`;
+      if (lockBtn) lockBtn.textContent = peer.deviceLocked ? 'Unlock Device' : 'Lock Device';
+      modal.classList.add('show');
+}
+
+function closeUserActionsModal() {
+      document.getElementById('userActionsModal')?.classList.remove('show');
+      userActionPeerId = null;
+}
+
+function openRunScriptModal(peerId) {
+      const peer = peers[peerId];
+      if (!peer) return;
+      const modal = document.getElementById('runScriptModal');
+      const title = document.getElementById('runScriptTitle');
+      const input = document.getElementById('runScriptInput');
+      if (!modal || !title || !input) return;
+      if (!peer.online) {
+        showToast('Action blocked', `${peer.username || 'Peer'} is offline.`, 'warn');
+        return;
+      }
+      modal.dataset.peerId = peerId;
+      title.textContent = `Run Script · ${peer.username || 'User'}`;
+      input.value = '';
+      modal.classList.add('show');
+      setTimeout(() => input.focus(), 30);
+}
+
+function closeRunScriptModal() {
+      const modal = document.getElementById('runScriptModal');
+      const input = document.getElementById('runScriptInput');
+      if (!modal) return;
+      modal.classList.remove('show');
+      modal.dataset.peerId = '';
+      if (input) input.value = '';
+}
+
+function submitRunScriptAction() {
+      const modal = document.getElementById('runScriptModal');
+      const input = document.getElementById('runScriptInput');
+      const peerId = String(modal?.dataset?.peerId || '');
+      const script = String(input?.value || '').trim();
+      if (!peerId) return;
+      if (!script) {
+        showToast('Script required', 'Please enter PowerShell script.', 'warn');
+        return;
+      }
+      closeRunScriptModal();
+      void executePeerDeviceAction(peerId, 'run_script', script);
+}
+
+function executeActiveUserAction(action) {
+      const peerId = String(userActionPeerId || '');
+      if (!peerId) return;
+      if (action === 'run_script') {
+        closeUserActionsModal();
+        openRunScriptModal(peerId);
+        return;
+      }
+      if (action === 'lock_toggle') {
+        const peer = peers[peerId];
+        const next = peer?.deviceLocked ? 'unlock_device' : 'lock_device';
+        void executePeerDeviceAction(peerId, next);
+        return;
+      }
+      void executePeerDeviceAction(peerId, action);
+}
+
+async function executePeerDeviceAction(peerId, action, scriptOverride = '') {
+      const peer = peers[peerId];
+      if (!peer) {
+        showToast('Action failed', 'Peer not found.', 'warn');
+        return;
+      }
+      if (!peer.online) {
+        showToast('Action blocked', `${peer.username || 'Peer'} is offline.`, 'warn');
+        return;
+      }
+
+      const labels = {
+        lock_device: 'Lock Device',
+        unlock_device: 'Unlock Device',
+        restart_device: 'Restart Device',
+        shutdown_device: 'Shutdown Device',
+        signout_device: 'Signout Device',
+        clean_temp: 'Clean Temp',
+        flush_dns: 'Flush DNS',
+        run_script: 'Run Script'
+      };
+
+      const script = action === 'run_script' ? String(scriptOverride || '').trim() : '';
+      if (action === 'run_script' && !script) return;
+
+      if (action === 'restart_device' || action === 'shutdown_device' || action === 'signout_device') {
+        const ok = await appConfirm({
+          title: labels[action],
+          message: `Confirm ${labels[action]} for ${peer.username || 'this user'}?`,
+          okLabel: 'Confirm'
+        });
+        if (!ok) return;
+      }
+
+      try {
+        const result = await IPC.executePeerDeviceAction({ peerId, action, script: script || undefined });
+        if (result?.success) {
+          addDashboardActivity('system', `${peer.username || 'Peer'} · ${labels[action]}`, 'Device action command queued.', peer.systemInfo?.hostname || getPeerDisplayTitle(peer));
+          showToast('Action sent', `${labels[action]} sent to ${peer.username || 'peer'}.`);
+          if (action === 'lock_device') peers[peerId].deviceLocked = true;
+          if (action === 'unlock_device') peers[peerId].deviceLocked = false;
+          const lockBtn = document.getElementById('userActionLockBtn');
+          if (lockBtn && userActionPeerId === peerId) lockBtn.textContent = peers[peerId].deviceLocked ? 'Unlock Device' : 'Lock Device';
+          return;
+        }
+        showToast('Action failed', result?.error || 'Could not send action command.', 'warn');
+      } catch (error) {
+        console.error('[OpsLynk] executePeerDeviceAction failed', error);
+        showToast('Action failed', 'Unexpected error while sending action command.', 'warn');
+      }
+}
+
 function renderUsersTab() {
       const list = document.getElementById('userslist');
       if (!list) return;
@@ -938,7 +1069,6 @@ function renderUsersTab() {
       list.innerHTML = filtered.length ? `<div class="directory-grid compact">${filtered.map(p => {
         const initials = esc(String(p.username || '?').slice(0, 2).toUpperCase());
         const connection = getPeerConnectionMeta(p);
-        const activitySummary = getPeerActivitySummary(p);
         const hostname = esc(p.systemInfo?.hostname || '-');
         const ip = esc(p.systemInfo?.ip || '-');
         const roleLabel = esc(getRoleLabel(p.role));
@@ -969,6 +1099,7 @@ function renderUsersTab() {
           <button class="ubtn" onclick="event.stopPropagation(); openSpecsModal('${p.id}')">View Specs</button>
         </div>
         <button class="ubtn" onclick="event.stopPropagation(); openUserStatsModal('${p.id}')">View Stats</button>
+        <button class="ubtn" onclick="event.stopPropagation(); openUserActionsModal('${p.id}')">Actions</button>
       </div>
     </article>`;
       }).join('')}</div>`

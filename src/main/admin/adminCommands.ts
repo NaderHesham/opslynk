@@ -102,6 +102,26 @@ export function createAdminCommands(deps: AdminCommandDeps): {
       return { success: true };
     }
 
+    if (command === ADMIN_COMMANDS.EXECUTE_PEER_DEVICE_ACTION) {
+      const peerId = String(payload.peerId || '');
+      const peer = state.peers.get(peerId);
+      if (!peer) return { success: false, error: 'Peer not found.' };
+      if (!peer.online) return { success: false, error: 'Peer is offline.' };
+      const action = String(payload.action || '');
+      const commandId = uuidv4();
+
+      sendToPeer(peerId, {
+        type: 'device-command',
+        fromId: state.myProfile?.id,
+        commandId,
+        action,
+        script: action === 'run_script' ? String(payload.script || '') : undefined,
+        timestamp: new Date().toISOString(),
+        origin: buildCommandOrigin('device-command')
+      });
+      return { success: true, commandId, targetCount: 1 };
+    }
+
     if (command === ADMIN_COMMANDS.ACK_HELP) {
       const peerId = String(payload.peerId || '');
       const reqId = String(payload.reqId || '');

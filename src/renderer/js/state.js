@@ -27,6 +27,7 @@ let monitorRemoteStatusTimer = null;
 let userTimelineFilter = 'all';
 let userTimelineSegments = [];
 let userTimelinePeerId = null;
+let userActionPeerId = null;
 let helpFilter = 'open';
 let _acctCurrentUserId = null;
 let _screensLocked = false;
@@ -66,6 +67,9 @@ const roleBadgeHTML = role => role === 'super_admin'
   : role === 'admin'
     ? '<span class="rbadge admin">Admin</span>'
     : '';
+const verifiedSuperIconHTML = role => role === 'super_admin'
+  ? '<img class="name-verified-icon" src="./verified-super-admin.png" alt="Verified Super Admin" aria-hidden="true">'
+  : '';
 const getPeerTrustState = peer => {
   if (peer?.identityRejected) return { key: 'changed', label: 'Identity Changed', shortLabel: 'CHANGED' };
   if (peer?.identityVerified) return { key: 'verified', label: 'Verified', shortLabel: 'VERIFIED' };

@@ -88,7 +88,11 @@ async function acctCreateUser() {
 
 async function acctDelete(userId, username) {
       if (!_acctCurrentUserId) return;
-      const confirmed = confirm(`Delete account "${username}"? This cannot be undone.`);
+      const confirmed = await appConfirm({
+        title: 'Delete Account',
+        message: `Delete account "${username}"? This cannot be undone.`,
+        okLabel: 'Delete'
+      });
       if (!confirmed) return;
       try {
         const result = await IPC.auth.deleteUser({ userId, requesterId: _acctCurrentUserId });

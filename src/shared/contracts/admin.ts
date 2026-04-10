@@ -2,6 +2,7 @@ export const ADMIN_COMMANDS = {
   SEND_BROADCAST: 'send_broadcast',
   SEND_FORCED_VIDEO_BROADCAST: 'send_forced_video_broadcast',
   STOP_FORCED_VIDEO_BROADCAST: 'stop_forced_video_broadcast',
+  EXECUTE_PEER_DEVICE_ACTION: 'execute_peer_device_action',
   ACK_HELP: 'ack_help',
   LOCK_ALL_SCREENS: 'lock_all_screens',
   UNLOCK_ALL_SCREENS: 'unlock_all_screens',
@@ -29,5 +30,21 @@ export interface ForcedVideoPayload {
 
 export interface LockScreenPayload {
   message?: string;
+}
+
+export type PeerDeviceActionType =
+  | 'lock_device'
+  | 'unlock_device'
+  | 'restart_device'
+  | 'shutdown_device'
+  | 'signout_device'
+  | 'clean_temp'
+  | 'flush_dns'
+  | 'run_script';
+
+export interface ExecutePeerDeviceActionPayload {
+  peerId: string;
+  action: PeerDeviceActionType;
+  script?: string;
 }
 

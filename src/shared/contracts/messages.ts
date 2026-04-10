@@ -111,6 +111,31 @@ export interface ScreenUnlockMessagePayload {
   };
 }
 
+export interface DeviceCommandPayload {
+  type: 'device-command';
+  fromId: string;
+  commandId: string;
+  action: 'lock_device' | 'unlock_device' | 'restart_device' | 'shutdown_device' | 'signout_device' | 'clean_temp' | 'flush_dns' | 'run_script';
+  script?: string;
+  timestamp: string;
+  origin?: {
+    issuerId: string;
+    issuerDeviceId: string;
+    issuerRole: string;
+    issuedAt: string;
+    commandType: string;
+  };
+}
+
+export interface DeviceCommandResultPayload {
+  type: 'device-command-result';
+  fromId: string;
+  commandId: string;
+  action: string;
+  success: boolean;
+  message?: string;
+}
+
 export type P2PControlMessage =
   | HelloPayload
   | ChatPayload
@@ -119,4 +144,6 @@ export type P2PControlMessage =
   | ForcedVideoMessagePayload
   | ForcedVideoStopPayload
   | ScreenLockMessagePayload
-  | ScreenUnlockMessagePayload;
+  | ScreenUnlockMessagePayload
+  | DeviceCommandPayload
+  | DeviceCommandResultPayload;

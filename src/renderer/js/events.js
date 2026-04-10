@@ -191,6 +191,29 @@ function setupEvents() {
 
       IPC.on('admin:screenLocked', () => setLockUi(true));
       IPC.on('admin:screenUnlocked', () => setLockUi(false));
+      IPC.on('admin:deviceCommandResult', ({ fromId, username, action, success, message }) => {
+        if (success && peers[fromId]) {
+          if (action === 'lock_device') peers[fromId].deviceLocked = true;
+          if (action === 'unlock_device') peers[fromId].deviceLocked = false;
+          const lockBtn = document.getElementById('userActionLockBtn');
+          if (lockBtn && userActionPeerId === fromId) {
+            lockBtn.textContent = peers[fromId].deviceLocked ? 'Unlock Device' : 'Lock Device';
+          }
+        }
+        const labels = {
+          lock_device: 'Lock Device',
+          unlock_device: 'Unlock Device',
+          restart_device: 'Restart Device',
+          shutdown_device: 'Shutdown Device',
+          signout_device: 'Signout Device',
+          clean_temp: 'Clean Temp',
+          flush_dns: 'Flush DNS',
+          run_script: 'Run Script'
+        };
+        const actionLabel = labels[action] || 'Device Action';
+        if (success) showToast(`${actionLabel} completed`, `${username || 'Peer'}: ${message || 'Done.'}`);
+        else showToast(`${actionLabel} failed`, `${username || 'Peer'}: ${message || 'Error.'}`, 'warn');
+      });
 
       IPC.getDeviceId?.().then(id => {
         console.log('[OpsLynk] get-device-id returned:', id);

@@ -29,6 +29,14 @@ export function normalizeAdminPayload(command: AdminCommand, payload: Record<str
     };
   }
 
+  if (command === ADMIN_COMMANDS.EXECUTE_PEER_DEVICE_ACTION) {
+    return {
+      peerId: payload.peerId,
+      action: payload.action,
+      script: payload.script
+    };
+  }
+
   if (command === ADMIN_COMMANDS.ACK_HELP) {
     return { peerId: payload.peerId, reqId: payload.reqId };
   }

@@ -45,6 +45,49 @@ function showToast(title, body, type = '') {
       document.getElementById('tc').appendChild(t); setTimeout(() => t?.remove(), 6000);
     }
 
+let _appConfirmResolve = null;
+
+function appConfirm({
+      title = 'Confirm',
+      message = 'Are you sure?',
+      okLabel = 'Confirm'
+    } = {}) {
+      return new Promise(resolve => {
+        const modal = document.getElementById('appConfirmModal');
+        const titleEl = document.getElementById('appConfirmTitle');
+        const msgEl = document.getElementById('appConfirmMessage');
+        const okBtn = document.getElementById('appConfirmOkBtn');
+        if (!modal || !titleEl || !msgEl || !okBtn) {
+          resolve(false);
+          return;
+        }
+        _appConfirmResolve = resolve;
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        okBtn.textContent = okLabel;
+        modal.classList.add('show');
+        setTimeout(() => okBtn.focus(), 20);
+      });
+}
+
+function closeAppConfirm(value) {
+      const modal = document.getElementById('appConfirmModal');
+      if (modal) modal.classList.remove('show');
+      if (_appConfirmResolve) {
+        const resolve = _appConfirmResolve;
+        _appConfirmResolve = null;
+        resolve(Boolean(value));
+      }
+}
+
+function cancelAppConfirm() {
+      closeAppConfirm(false);
+}
+
+function submitAppConfirm() {
+      closeAppConfirm(true);
+}
+
 function beep(f = 440, d = 0.12, v = 0.3) { try { const c = new AudioContext(), o = c.createOscillator(), g = c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value = f; g.gain.setValueAtTime(v, c.currentTime); g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + d); o.start(); o.stop(c.currentTime + d); } catch { } }
 
 function applyTheme(theme) {
@@ -83,7 +126,7 @@ function settingsOverlayClick(e) {
       }
 
 async function logoutCurrentSession() {
-        const confirmed = window.confirm('Log out now?');
+        const confirmed = await appConfirm({ title: 'Log Out', message: 'Log out now?', okLabel: 'Log Out' });
         if (!confirmed) return;
         try {
           const result = await window.OpsLynk.auth.logout();

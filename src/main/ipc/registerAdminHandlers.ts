@@ -6,4 +6,6 @@ export function registerAdminHandlers({
   adminModule
 }: AdminRegistrarDeps): void {
   handle(IPC_CHANNELS.admin.EXPORT_PEER_SPECS, (payload) => adminModule.run(adminModule.COMMANDS.EXPORT_PEER_SPECS, payload));
+  handle(IPC_CHANNELS.admin.EXECUTE_PEER_DEVICE_ACTION, (payload) =>
+    adminModule.run(adminModule.COMMANDS.EXECUTE_PEER_DEVICE_ACTION, payload) as Promise<{ success: boolean; error?: string; commandId?: string; targetCount?: number }>);
 }

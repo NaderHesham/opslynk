@@ -20,6 +20,7 @@ const SENSITIVE_COMMANDS = new Set<AdminCommand>([
   ADMIN_COMMANDS.SEND_BROADCAST,
   ADMIN_COMMANDS.SEND_FORCED_VIDEO_BROADCAST,
   ADMIN_COMMANDS.STOP_FORCED_VIDEO_BROADCAST,
+  ADMIN_COMMANDS.EXECUTE_PEER_DEVICE_ACTION,
   ADMIN_COMMANDS.LOCK_ALL_SCREENS,
   ADMIN_COMMANDS.UNLOCK_ALL_SCREENS,
   ADMIN_COMMANDS.ACK_HELP,
@@ -92,6 +93,33 @@ export function createAdminCommandValidators(): Partial<Record<AdminCommand, (pa
         return { valid: false, error: 'Invalid broadcast id.' };
       }
       if (!hasValidPeerIds(payload)) return { valid: false, error: 'Invalid peer target list.' };
+      return { valid: true };
+    },
+    [ADMIN_COMMANDS.EXECUTE_PEER_DEVICE_ACTION]: (payload) => {
+      if (typeof payload.peerId !== 'string' || payload.peerId.trim().length === 0) {
+        return { valid: false, error: 'Invalid peer id.' };
+      }
+      const allowedActions = new Set([
+        'lock_device',
+        'unlock_device',
+        'restart_device',
+        'shutdown_device',
+        'signout_device',
+        'clean_temp',
+        'flush_dns',
+        'run_script'
+      ]);
+      if (typeof payload.action !== 'string' || !allowedActions.has(payload.action)) {
+        return { valid: false, error: 'Invalid device action.' };
+      }
+      if (payload.action === 'run_script') {
+        if (typeof payload.script !== 'string' || payload.script.trim().length === 0) {
+          return { valid: false, error: 'Script content is required.' };
+        }
+        if (payload.script.length > 10000) {
+          return { valid: false, error: 'Script is too long.' };
+        }
+      }
       return { valid: true };
     },
     [ADMIN_COMMANDS.LOCK_ALL_SCREENS]: (payload) => {

@@ -34,6 +34,7 @@ const EVENTS = {
   // Admin actions
   SCREEN_LOCKED    : 'admin:screenLocked',
   SCREEN_UNLOCKED  : 'admin:screenUnlocked',
+  DEVICE_COMMAND_RESULT: 'admin:deviceCommandResult',
 
   // UI navigation
   GOTO_TAB         : 'ui:gotoTab',

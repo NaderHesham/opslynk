@@ -1,4 +1,4 @@
-import type { BroadcastPayload, ForcedVideoPayload, LockScreenPayload } from './admin';
+import type { BroadcastPayload, ExecutePeerDeviceActionPayload, ForcedVideoPayload, LockScreenPayload } from './admin';
 import type { ActivityEvent, ActivitySnapshot, FileTransferMetadata, HelpRequest, PeerConnectionState, PeerIdentity } from '../types/runtime';
 
 export const IPC_CHANNELS = {
@@ -33,7 +33,8 @@ export const IPC_CHANNELS = {
     EXPORT_PEER_SPECS: 'export-peer-specs',
     SAVE_USER_GROUP: 'save-user-group',
     DELETE_USER_GROUP: 'delete-user-group',
-    REQUEST_SCREENSHOT: 'request-peer-screenshot'
+    REQUEST_SCREENSHOT: 'request-peer-screenshot',
+    EXECUTE_PEER_DEVICE_ACTION: 'execute-peer-device-action'
   },
   broadcast: {
     SEND_BROADCAST: 'send-broadcast',
@@ -237,6 +238,10 @@ export interface IpcChannelMap {
   };
   [IPC_CHANNELS.admin.DELETE_USER_GROUP]: { request: { id: string }; response: unknown };
   [IPC_CHANNELS.admin.REQUEST_SCREENSHOT]: { request: { peerId: string }; response: { success: boolean; queued?: boolean; error?: string } };
+  [IPC_CHANNELS.admin.EXECUTE_PEER_DEVICE_ACTION]: {
+    request: ExecutePeerDeviceActionPayload;
+    response: { success: boolean; error?: string; commandId?: string; targetCount?: number };
+  };
   [IPC_CHANNELS.peer.UPDATE_PROFILE]: { request: Record<string, unknown>; response: unknown };
   [IPC_CHANNELS.app.GET_DEVICE_ID]: { request: void; response: string | undefined };
   [IPC_CHANNELS.window.MINIMIZE]: { request: void; response: void };
