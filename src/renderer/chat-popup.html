@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat Popup</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: rgba(7, 12, 24, 0.96);
+      --bg2: rgba(13, 18, 33, 0.98);
+      --bd: rgba(111, 137, 214, 0.28);
+      --txt: #e8edf9;
+      --txt2: #b6c2e0;
+      --accent: #8b7dff;
+      --accent2: #d6a947;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 100%;
+      height: 100vh;
+      background: transparent;
+      font-family: "Outfit", "Segoe UI", sans-serif;
+      color: var(--txt);
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      padding: 10px;
+    }
+    .card {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid var(--bd);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01)),
+        linear-gradient(120deg, var(--bg2), var(--bg));
+      box-shadow:
+        0 18px 34px rgba(0,0,0,.36),
+        inset 0 1px 0 rgba(255,255,255,.06);
+      padding: 12px 13px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .title {
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 10px rgba(34,211,238,.55);
+      animation: pulse 1.35s ease-out infinite;
+    }
+    .close {
+      border: none;
+      background: transparent;
+      color: #93a2c8;
+      font-size: 16px;
+      cursor: pointer;
+      width: 24px;
+      height: 24px;
+      border-radius: 8px;
+    }
+    .close:hover { background: rgba(255,255,255,.08); color: #fff; }
+    .from {
+      font-size: 10px;
+      color: var(--txt2);
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .msg {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--txt);
+      max-height: 56px;
+      overflow: hidden;
+    }
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn {
+      border-radius: 10px;
+      border: 1px solid rgba(148,163,184,.25);
+      background: rgba(15,23,42,.55);
+      color: #dbe3f4;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn:hover { border-color: rgba(148,163,184,.45); }
+    .btn.reply {
+      border-color: rgba(139,125,255,.45);
+      background: rgba(139,125,255,.2);
+      color: #d8d2ff;
+    }
+    .btn.open {
+      border-color: rgba(214,169,71,.45);
+      background: rgba(214,169,71,.18);
+      color: #ffe8b2;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34,211,238,.35), 0 0 10px rgba(34,211,238,.45); }
+      70% { box-shadow: 0 0 0 8px rgba(34,211,238,0), 0 0 16px rgba(34,211,238,.55); }
+      100% { box-shadow: 0 0 0 0 rgba(34,211,238,0), 0 0 10px rgba(34,211,238,.45); }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <div class="title"><span class="dot"></span>New Chat Message</div>
+      <button class="close" onclick="dismiss()">×</button>
+    </div>
+    <div>
+      <div class="from" id="from">From User</div>
+      <div class="msg" id="message">...</div>
+    </div>
+    <div class="actions">
+      <button class="btn reply" onclick="replyIntent()">Reply</button>
+      <button class="btn open" onclick="openChat()">Open Chat</button>
+    </div>
+  </div>
+
+  <script>
+    let payload = null;
+    function dismiss() {
+      window.OpsLynk?.dismissChatPopup?.();
+      window.close();
+    }
+    function openChat() {
+      if (!payload?.peerId) return dismiss();
+      window.OpsLynk?.chatPopupOpenChat?.({ peerId: payload.peerId });
+      window.close();
+    }
+    function replyIntent() {
+      if (!payload?.peerId) return dismiss();
+      window.OpsLynk?.chatPopupReplyIntent?.({ peerId: payload.peerId, replyText: payload.text || '' });
+      window.close();
+    }
+    window.OpsLynk?.on('chat-popup-data', (data) => {
+      payload = data || {};
+      document.getElementById('from').textContent = String(payload.username || 'User');
+      document.getElementById('message').textContent = String(payload.text || '');
+    });
+  </script>
+</body>
+</html>

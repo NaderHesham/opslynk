@@ -52,6 +52,9 @@ async function init() {
           latestScreenshot: existing.latestScreenshot || p.latestScreenshot || null,
           latestScreenshotRequestedAt: existing.latestScreenshotRequestedAt || p.latestScreenshotRequestedAt || null,
           screenshotRequestPending: existing.screenshotRequestPending ?? p.screenshotRequestPending ?? false,
+          remoteLockActive: typeof p.remoteLockActive === 'boolean' ? p.remoteLockActive : !!existing.remoteLockActive,
+          remoteVideoActive: typeof p.remoteVideoActive === 'boolean' ? p.remoteVideoActive : !!existing.remoteVideoActive,
+          remoteControlUpdatedAt: p.remoteControlUpdatedAt || existing.remoteControlUpdatedAt || null,
           latestScreenshotPreview: existing.latestScreenshotPreview || null
         };
       });
@@ -96,6 +99,6 @@ document.addEventListener('visibilitychange', syncNetworkStatus);
 updateBroadcastCharCount();
 setBroadcastAckCount(0);
 setUrg('normal');
-setLockUi(false);
+if (typeof restoreAdminActionUiState === 'function') restoreAdminActionUiState();
 
 init();

@@ -50,6 +50,41 @@ export function registerClientHandlers(deps: RegisterDeps): void {
     if (win && !win.isDestroyed()) win.close();
   });
 
+  deps.ipcMain.handle('chat-popup-dismiss', (e) => {
+    const win = deps.BrowserWindow.fromWebContents(e.sender);
+    if (win && !win.isDestroyed()) win.close();
+    return { success: true };
+  });
+
+  deps.ipcMain.handle('chat-popup-open-chat', (e, payload: { peerId: string }) => {
+    const peerId = String(payload?.peerId || '');
+    const win = deps.BrowserWindow.fromWebContents(e.sender);
+    if (win && !win.isDestroyed()) win.close();
+    if (deps.state.mainWindow && !deps.state.mainWindow.isDestroyed()) {
+      if (deps.state.mainWindow.isMinimized()) deps.state.mainWindow.restore();
+      deps.state.mainWindow.show();
+      deps.state.mainWindow.focus();
+    }
+    deps.broadcastToRenderer('ui:gotoTab', 'chat');
+    deps.broadcastToRenderer('ui:openChatPeer', { peerId });
+    return { success: true };
+  });
+
+  deps.ipcMain.handle('chat-popup-reply-intent', (e, payload: { peerId: string; replyText?: string }) => {
+    const peerId = String(payload?.peerId || '');
+    const replyText = String(payload?.replyText || '');
+    const win = deps.BrowserWindow.fromWebContents(e.sender);
+    if (win && !win.isDestroyed()) win.close();
+    if (deps.state.mainWindow && !deps.state.mainWindow.isDestroyed()) {
+      if (deps.state.mainWindow.isMinimized()) deps.state.mainWindow.restore();
+      deps.state.mainWindow.show();
+      deps.state.mainWindow.focus();
+    }
+    deps.broadcastToRenderer('ui:gotoTab', 'chat');
+    deps.broadcastToRenderer('ui:openChatPeer', { peerId, replyText });
+    return { success: true };
+  });
+
   // Broadcast reply — client sends reply from toast.html back to admin
   handle(IPC_CHANNELS.broadcast.SEND_REPLY, ({ peerId, text, broadcastId }) => {
     deps.sendToPeer(peerId, { type: 'broadcast-reply', fromId: deps.state.myProfile?.id, text, broadcastId });

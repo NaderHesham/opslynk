@@ -1,4 +1,4 @@
-function switchTab(t) {
+function switchTab(t, options = {}) {
       let targetTab = t;
       let workspaceTab = null;
       if (t === 'groups' || t === 'accounts') {
@@ -14,6 +14,11 @@ function switchTab(t) {
         b.classList.toggle('active', isUsersFamily ? buttonTab === 'users' : buttonTab === targetTab);
       });
       document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + targetTab));
+      if (targetTab === 'chat' && !options?.keepSelection) {
+        activePeerId = null;
+        ensureChatLayout();
+        renderPeerList();
+      }
 
       if (workspaceTab) setUsersWorkspaceTab(workspaceTab);
       if (targetTab === 'chat') ensureChatLayout();

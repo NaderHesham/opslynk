@@ -42,7 +42,10 @@ function createPersistence({ storage, state }) {
       currentSessionStartedAt: Number(peer.currentSessionStartedAt || 0) || null,
       idleThresholdMs: Number(peer.idleThresholdMs || 0) || null,
       activityEvents,
-      latestScreenshot: peer.latestScreenshot || null
+      latestScreenshot: peer.latestScreenshot || null,
+      remoteLockActive: !!peer.remoteLockActive,
+      remoteVideoActive: !!peer.remoteVideoActive,
+      remoteControlUpdatedAt: Number(peer.remoteControlUpdatedAt || 0) || null
     };
   }
 
@@ -52,6 +55,8 @@ function createPersistence({ storage, state }) {
       pendingOutgoingHelpRequests: state.pendingOutgoingHelpRequests,
       pendingReliableMessages: state.pendingReliableMessages,
       userGroups: state.userGroups,
+      enforcedLock: state.enforcedLock || { locked: false, message: '', lockedAt: null, byPeerId: null },
+      enforcedVideo: state.enforcedVideo || { active: false, fromId: null, fromName: '', videoB64: '', mime: 'video/mp4', fileName: '', label: '', broadcastId: null, timestamp: null },
       savedPeers: [...state.peers.values()]
         .map(serializePeer)
         .filter(Boolean)

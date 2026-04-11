@@ -1960,8 +1960,10 @@
 #tab-groups .group-list,
 #tab-users .group-list {
       display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
       gap: 10px;
-      margin-top: 14px
+      margin-top: 14px;
+      align-content: start
     }
 
 #tab-groups .group-row,
@@ -3144,6 +3146,231 @@
       color: var(--txt3);
       text-align: center;
       font-size: 11px
+    }
+
+.group-card-v2 {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, .03), rgba(255, 255, 255, .015)),
+        color-mix(in srgb, var(--glass) 72%, transparent);
+      border: 1px solid var(--b);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, .12)
+    }
+
+.group-row-badges {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px
+    }
+
+.group-state-badge {
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid transparent
+    }
+
+.group-state-badge.off {
+      background: rgba(239, 68, 68, .14);
+      color: #ef4444;
+      border-color: rgba(239, 68, 68, .38);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, .32), 0 0 9px rgba(239, 68, 68, .2);
+      animation: groupAlertPulse 1.15s ease-out infinite
+    }
+
+.group-state-badge.on {
+      background: rgba(168, 85, 247, .18);
+      color: #c084fc;
+      border-color: rgba(192, 132, 252, .42);
+      box-shadow: 0 0 14px rgba(168, 85, 247, .38);
+      animation: groupNeonPulse 1.15s ease-out infinite
+    }
+
+.group-row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end
+    }
+
+.directory-actions.compact {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      align-items: stretch
+    }
+
+.directory-actions.compact .ubtn {
+      width: 100%;
+      justify-content: center;
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      min-height: 36px;
+      line-height: 1.2;
+      padding: 8px 10px
+    }
+
+#usersWorkspacePanel-groups .group-directory-card.directory-card.compact {
+      max-width: none;
+      width: 100%;
+      padding: 14px
+    }
+
+.group-state-btn.off {
+      border-color: rgba(239, 68, 68, .45);
+      color: #fecaca;
+      background: rgba(239, 68, 68, .14);
+      box-shadow: 0 0 0 0 rgba(239, 68, 68, .36), 0 0 10px rgba(239, 68, 68, .22);
+      animation: groupAlertPulse 1.05s ease-out infinite !important
+    }
+
+.group-state-btn.on {
+      border-color: rgba(192, 132, 252, .5);
+      color: #d8b4fe;
+      background: rgba(168, 85, 247, .2);
+      box-shadow: 0 0 0 0 rgba(168, 85, 247, .36), 0 0 12px rgba(168, 85, 247, .3);
+      animation: groupNeonPulse 1.05s ease-out infinite !important
+    }
+
+.group-create-actions {
+      flex-wrap: wrap;
+      gap: 8px
+    }
+
+.group-delete-select,
+.group-delete-password {
+      min-height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--b);
+      background: var(--input);
+      color: var(--txt);
+      padding: 7px 10px;
+      font-size: 11px
+    }
+
+.group-delete-select {
+      min-width: 200px
+    }
+
+.group-delete-password {
+      min-width: 170px
+    }
+
+.ubtn.danger {
+      border-color: rgba(239, 68, 68, .35);
+      color: #fecaca;
+      background: rgba(239, 68, 68, .12)
+    }
+
+.ubtn.danger:hover {
+      border-color: rgba(239, 68, 68, .55);
+      background: rgba(239, 68, 68, .2)
+    }
+
+.group-video-file {
+      border: 1px solid var(--b);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: var(--txt2);
+      background: var(--glass2)
+    }
+
+.profile-preview-shell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 9px 10px;
+      background: var(--card);
+      border-radius: 10px;
+      border: 1px solid var(--border)
+    }
+
+.profile-preview-meta {
+      flex: 1;
+      min-width: 0
+    }
+
+#profmodal #profprevname.mname {
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+      min-width: 0
+    }
+
+#profmodal #profprevname .mname-main {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      flex: 0 1 auto;
+      max-width: calc(100% - 84px)
+    }
+
+#profmodal #profprevname .mname-text {
+      min-width: 0;
+      flex: 0 1 auto;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+#profmodal #profprevname .rbadge {
+      flex-shrink: 0;
+      padding: 2px 6px;
+      font-size: 7px;
+      line-height: 1;
+      margin-left: 2px
+    }
+
+#profmodal #profprevtitle.mtitle {
+      font-size: 9px;
+      color: var(--txt2);
+      margin-top: 1px
+    }
+
+@keyframes groupNeonPulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(168, 85, 247, .42), 0 0 12px rgba(168, 85, 247, .34);
+        transform: scale(1)
+      }
+      60% {
+        box-shadow: 0 0 0 11px rgba(168, 85, 247, 0), 0 0 24px rgba(168, 85, 247, .62);
+        transform: scale(1.02)
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(168, 85, 247, 0), 0 0 12px rgba(168, 85, 247, .34);
+        transform: scale(1)
+      }
+    }
+
+@keyframes groupAlertPulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, .38), 0 0 10px rgba(239, 68, 68, .28);
+        transform: scale(1)
+      }
+      60% {
+        box-shadow: 0 0 0 11px rgba(239, 68, 68, 0), 0 0 20px rgba(239, 68, 68, .5);
+        transform: scale(1.02)
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), 0 0 10px rgba(239, 68, 68, .28);
+        transform: scale(1)
+      }
     }
 
 .acct-card-list {

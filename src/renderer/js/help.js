@@ -157,7 +157,7 @@ function appendHelpCard(req) {
     </div>`;
       if (acked) card.style.opacity = '.4';
       list.prepend(card);
-      helpBadge = document.querySelectorAll('#helplist .hcard:not([style*="opacity"])').length;
+      helpBadge = document.querySelectorAll('#helplist .hcard[data-status="open"]').length;
       setHelpBadgeCount();
       addDashboardActivity('help', `Help request from ${req.username || 'user'}`, req.description || 'No details provided.', req.machine || 'LAN peer');
       renderHelpRequests();
@@ -176,11 +176,35 @@ async function ackHelp(reqId, fromId, btn) {
         card.classList.remove('focus');
       }
       if (activeHelpRequestId === reqId) renderActiveChatContext();
-      helpBadge = document.querySelectorAll('#helplist .hcard:not([style*="opacity"])').length;
+      helpBadge = document.querySelectorAll('#helplist .hcard[data-status="open"]').length;
       setHelpBadgeCount();
       addDashboardActivity('system', 'Ticket acknowledged', 'A help request has been marked as acknowledged.', reqId);
       renderHelpRequests();
       renderDashboard();
+    }
+
+async function clearHelpRequests() {
+      const ok = await appConfirm({
+        title: 'Clear Help Requests',
+        message: 'Remove all help tickets from the queue?',
+        okLabel: 'Clear'
+      });
+      if (!ok) return;
+      const result = await IPC.clearHelpRequests();
+      if (!result?.success) {
+        showToast('Clear failed', result?.error || 'Could not clear requests.', 'warn');
+        return;
+      }
+      const list = document.getElementById('helplist');
+      if (list) {
+        list.innerHTML = '<div class="empty-glass"><div class="ei">Tickets</div>No help requests match the current filters.</div>';
+      }
+      activeHelpRequestId = null;
+      helpBadge = 0;
+      setHelpBadgeCount();
+      renderActiveChatContext();
+      renderDashboard();
+      showToast('Help requests cleared', 'The queue is now empty.');
     }
 
 function focusHelpRequest(reqId) {

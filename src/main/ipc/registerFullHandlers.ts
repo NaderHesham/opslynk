@@ -56,6 +56,11 @@ export function registerFullHandlers(deps: RegisterDeps): void {
   // Help ACK — admin-only, not included in registerClientHandlers
   handle(IPC_CHANNELS.help.ACK_HELP, (payload) =>
     deps.adminModule.run(deps.adminModule.COMMANDS.ACK_HELP, payload as Record<string, unknown>));
+  handle(IPC_CHANNELS.help.CLEAR_HELP_REQUESTS, async () =>
+    (await deps.adminModule.run(
+      deps.adminModule.COMMANDS.CLEAR_HELP_REQUESTS,
+      {} as Record<string, unknown>
+    )) as { success: boolean; cleared?: number; error?: string });
 
   // On-demand remote screenshot — admin sends request to target client
   handle(IPC_CHANNELS.admin.REQUEST_SCREENSHOT, ({ peerId }) => {

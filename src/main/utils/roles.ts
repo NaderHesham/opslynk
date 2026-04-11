@@ -42,6 +42,9 @@ export function peerToSafe(peer: PeerSession): {
   latestScreenshot: { capturedAt: number; name?: string | null; size?: number | null; mime?: string | null } | null;
   latestScreenshotRequestedAt: number | null;
   screenshotRequestPending: boolean;
+  remoteLockActive: boolean;
+  remoteVideoActive: boolean;
+  remoteControlUpdatedAt: number | null;
 } {
   return {
     id: peer.id,
@@ -66,7 +69,10 @@ export function peerToSafe(peer: PeerSession): {
     activityEvents: Array.isArray(peer.activityEvents) ? peer.activityEvents.slice(-24) : [],
     latestScreenshot: peer.latestScreenshot || null,
     latestScreenshotRequestedAt: peer.latestScreenshotRequestedAt || null,
-    screenshotRequestPending: !!peer.screenshotRequestPending
+    screenshotRequestPending: !!peer.screenshotRequestPending,
+    remoteLockActive: !!peer.remoteLockActive,
+    remoteVideoActive: !!peer.remoteVideoActive,
+    remoteControlUpdatedAt: Number(peer.remoteControlUpdatedAt || 0) || null
   };
 }
 

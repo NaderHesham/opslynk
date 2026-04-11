@@ -16,6 +16,11 @@ export interface HelloPayload {
     title?: string;
     avatar?: string | null;
     systemInfo?: Record<string, unknown> | null;
+    controlState?: {
+      lockActive: boolean;
+      videoActive: boolean;
+      updatedAt?: number | null;
+    };
   };
 }
 

@@ -37,6 +37,11 @@ export interface PeerIdentity {
   title?: string;
   avatar?: string | null;
   systemInfo?: Record<string, unknown> | null;
+  controlState?: {
+    lockActive: boolean;
+    videoActive: boolean;
+    updatedAt?: number | null;
+  };
 }
 
 export interface PeerSession extends PeerIdentity {
@@ -62,6 +67,9 @@ export interface PeerSession extends PeerIdentity {
   latestScreenshot?: ScreenshotPreviewMeta | null;
   latestScreenshotRequestedAt?: number | null;
   screenshotRequestPending?: boolean;
+  remoteLockActive?: boolean;
+  remoteVideoActive?: boolean;
+  remoteControlUpdatedAt?: number | null;
 }
 
 export interface FileTransferMetadata {
@@ -119,10 +127,28 @@ export interface AppRuntimeState {
   overlayState: { mode: string; data: unknown; broadcastId?: string } | null;
   lockWindow: BrowserWindow | null;
   screenLocked: boolean;
+  enforcedLock: {
+    locked: boolean;
+    message: string;
+    lockedAt: string | null;
+    byPeerId: string | null;
+  };
+  enforcedVideo: {
+    active: boolean;
+    fromId: string | null;
+    fromName: string;
+    videoB64: string;
+    mime: string;
+    fileName: string;
+    label: string;
+    broadcastId: string | null;
+    timestamp: string | null;
+  };
   forcedVideoWindow: BrowserWindow | null;
   forcedVideoActive: boolean;
   normalBroadcastWindows: Set<BrowserWindow>;
   helpPopupWindows: Map<string, BrowserWindow>;
+  chatPopupWindows: Map<string, BrowserWindow>;
 }
 
 export type WindowRuntimeState = Pick<
@@ -136,6 +162,7 @@ export type WindowRuntimeState = Pick<
   | 'forcedVideoActive'
   | 'normalBroadcastWindows'
   | 'helpPopupWindows'
+  | 'chatPopupWindows'
   | 'isQuitting'
 >;
 
@@ -156,6 +183,8 @@ export type RecordsRuntimeState = Pick<
   | 'pendingOutgoingHelpRequests'
   | 'pendingReliableMessages'
   | 'userGroups'
+  | 'enforcedLock'
+  | 'enforcedVideo'
 >;
 
 export type AdminRuntimeState = Pick<
@@ -174,6 +203,9 @@ export type NetworkRuntimeState = Pick<
   | 'chatHistory'
   | 'soundEnabled'
   | 'helpRequests'
+  | 'userGroups'
+  | 'enforcedLock'
+  | 'enforcedVideo'
 >;
 
 export type IpcRuntimeState = Pick<
@@ -210,6 +242,7 @@ export interface WindowManagerApi {
   showMainWindow(): void;
   closeOverlayWindow(force?: boolean): void;
   showNormalBroadcastPopup(data: unknown): void;
+  showChatMessagePopup(data: { peerId: string; username?: string; text?: string; timestamp?: string }): void;
   showUrgentOverlay(data: { broadcastId?: string } & Record<string, unknown>): void;
   showHelpRequestPopup(req: unknown): void;
   showLockScreen(message: string): void;

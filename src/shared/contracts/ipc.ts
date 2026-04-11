@@ -27,7 +27,8 @@ export const IPC_CHANNELS = {
   help: {
     SEND_HELP_REQUEST: 'send-help-request',
     CAPTURE_SCREENSHOT_PREVIEW: 'capture-screenshot-preview',
-    ACK_HELP: 'ack-help'
+    ACK_HELP: 'ack-help',
+    CLEAR_HELP_REQUESTS: 'clear-help-requests'
   },
   admin: {
     EXPORT_PEER_SPECS: 'export-peer-specs',
@@ -231,6 +232,7 @@ export interface IpcChannelMap {
   };
   [IPC_CHANNELS.chat.SELECT_AVATAR]: { request: void; response: SelectAvatarResponse };
   [IPC_CHANNELS.help.ACK_HELP]: { request: { peerId: string; reqId: string }; response: unknown };
+  [IPC_CHANNELS.help.CLEAR_HELP_REQUESTS]: { request: void; response: { success: boolean; cleared?: number; error?: string } };
   [IPC_CHANNELS.admin.EXPORT_PEER_SPECS]: { request: { peerId: string; format?: 'txt' | 'json' }; response: unknown };
   [IPC_CHANNELS.admin.SAVE_USER_GROUP]: {
     request: { id?: string; name: string; memberIds: string[] };

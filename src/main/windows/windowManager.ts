@@ -186,6 +186,35 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
     popup.on('closed', () => state.normalBroadcastWindows.delete(popup));
   }
 
+  function showChatMessagePopup(data: { peerId: string; username?: string; text?: string; timestamp?: string }): void {
+    if (!data?.peerId) return;
+    const existing = state.chatPopupWindows.get(data.peerId);
+    if (existing && !existing.isDestroyed()) existing.close();
+    state.chatPopupWindows.delete(data.peerId);
+
+    const { workArea } = screen.getPrimaryDisplay();
+    const width = 380;
+    const height = 160;
+    const gap = 14;
+    const x = Math.round(workArea.x + workArea.width - width - 18);
+    const y = Math.round(workArea.y + workArea.height - height - 18 - state.chatPopupWindows.size * (height + gap));
+    const popup = new BrowserWindow({
+      width, height, x, y,
+      frame: false, resizable: false, movable: false,
+      minimizable: false, maximizable: false, fullscreenable: false,
+      skipTaskbar: true, alwaysOnTop: true, show: false,
+      transparent: true, backgroundColor: '#00000000',
+      webPreferences: { nodeIntegration: false, contextIsolation: true, preload: preloadPath }
+    });
+    state.chatPopupWindows.set(data.peerId, popup);
+    popup.loadFile(path.join(rendererDir, 'chat-popup.html'));
+    popup.once('ready-to-show', () => {
+      popup.showInactive();
+      popup.webContents.send('chat-popup-data', data);
+    });
+    popup.on('closed', () => state.chatPopupWindows.delete(data.peerId));
+  }
+
   function showUrgentOverlay(data: { broadcastId?: string } & Record<string, unknown>): void {
     console.log('[TIMING] urgent command received:', Date.now());
     if (state.overlayWindow) closeOverlayWindow(true);
@@ -461,6 +490,7 @@ export function createWindowManager({ state, getWindowModeConfig, appSourceDir, 
     showMainWindow,
     closeOverlayWindow,
     showNormalBroadcastPopup,
+    showChatMessagePopup,
     showUrgentOverlay,
     showHelpRequestPopup,
     showLockScreen,

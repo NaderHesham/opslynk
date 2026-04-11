@@ -63,4 +63,12 @@ export function registerHelpHandlers({
   });
 
   handle(IPC_CHANNELS.help.ACK_HELP, (payload) => adminModule.run(adminModule.COMMANDS.ACK_HELP, payload));
+
+  handle(IPC_CHANNELS.help.CLEAR_HELP_REQUESTS, () => {
+    if (!hasAdminAccess(state.myProfile?.role)) return { success: false, error: 'Admin only.' };
+    const cleared = state.helpRequests.length;
+    state.helpRequests = [];
+    doSaveState();
+    return { success: true, cleared };
+  });
 }

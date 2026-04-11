@@ -130,12 +130,14 @@
   gap: 5px;
   flex-wrap: nowrap;
   min-width: 0;
-  letter-spacing: -.01em
+  letter-spacing: -.01em;
+  justify-content: space-between
 }
 
 .pi .pname-text {
   min-width: 0;
   flex: 1 1 auto;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis
@@ -232,7 +234,8 @@
   font-size: 7px;
   letter-spacing: .08em;
   flex-shrink: 0;
-  white-space: nowrap
+  white-space: nowrap;
+  margin-left: 4px
 }
 
 .pi .av {

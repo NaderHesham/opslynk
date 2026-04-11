@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('OpsLynk', {
   // ── HELP ───────────────────────────────────────────────────────────────────
   sendHelpRequest: (data) => ipcRenderer.invoke('send-help-request', data),
   ackHelp:         (data) => ipcRenderer.invoke('ack-help', data),
+  clearHelpRequests: ()   => ipcRenderer.invoke('clear-help-requests'),
   exportPeerSpecs: (data) => ipcRenderer.invoke('export-peer-specs', data),
   executePeerDeviceAction: (data) => ipcRenderer.invoke('execute-peer-device-action', data),
 
@@ -57,6 +58,9 @@ contextBridge.exposeInMainWorld('OpsLynk', {
   setMainWindow:        ()    => ipcRenderer.invoke('window-set-main-mode'),
   setSound:             (val) => ipcRenderer.invoke('set-sound', val),
   dismissBroadcastPopup:()    => ipcRenderer.invoke('broadcast-popup-close'),
+  dismissChatPopup:     ()    => ipcRenderer.invoke('chat-popup-dismiss'),
+  chatPopupReplyIntent: (data) => ipcRenderer.invoke('chat-popup-reply-intent', data),
+  chatPopupOpenChat:    (data) => ipcRenderer.invoke('chat-popup-open-chat', data),
 
   // ── URGENT OVERLAY ─────────────────────────────────────────────────────────
   urgentAck:   (data) => ipcRenderer.send('urgent-ack', data),
@@ -67,6 +71,7 @@ contextBridge.exposeInMainWorld('OpsLynk', {
     isFirstRun:     ()     => ipcRenderer.invoke('auth:is-first-run'),
     setup:          (data) => ipcRenderer.invoke('auth:setup', data),
     login:          (data) => ipcRenderer.invoke('auth:login', data),
+    verifyPassword: (data) => ipcRenderer.invoke('auth:verify-password', data),
     logout:         ()     => ipcRenderer.invoke('auth:logout'),
     createUser:     (data) => ipcRenderer.invoke('auth:create-user', data),
     updateSelfProfile: (data) => ipcRenderer.invoke('auth:update-self-profile', data),

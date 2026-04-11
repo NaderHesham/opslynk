@@ -582,11 +582,15 @@
                 <div class="inline-setting">
                   <label for="groupname">Group Name</label>
                   <input id="groupname" type="text" placeholder="e.g. Finance PCs">
-                  <span>Names must be unique</span>
+                  <span>Create only. Add or remove members from Edit Members.</span>
                 </div>
-                <div class="member-checks" id="groupmembers"></div>
-                <div class="mactions" style="margin-top:10px;justify-content:flex-start;">
-                  <button class="btnp" onclick="saveGroup()">Save Group</button>
+                <div class="mactions group-create-actions" style="margin-top:10px;justify-content:flex-start;">
+                  <button class="btnp" onclick="saveGroup()">Create Group</button>
+                  <select id="groupDeleteSelect" class="group-delete-select">
+                    <option value="">Select group to delete</option>
+                  </select>
+                  <input id="groupDeletePassword" class="group-delete-password" type="password" placeholder="Admin password">
+                  <button class="btnd" onclick="deleteSelectedGroupWithPassword()">Delete Group</button>
                 </div>
               </div>
               <div class="group-list" id="grouplist"></div>
@@ -666,9 +670,10 @@
               <option value="low">Low</option>
             </select>
             <div class="filter-pills">
-              <button class="filter-pill active" id="helpFilterOpen" onclick="setHelpFilter('open')">Open</button>
-              <button class="filter-pill" id="helpFilterAllState" onclick="setHelpFilter('all')">All</button>
+              <button class="filter-pill" id="helpFilterOpen" onclick="setHelpFilter('open')">Open</button>
+              <button class="filter-pill active" id="helpFilterAllState" onclick="setHelpFilter('all')">All</button>
               <button class="filter-pill" id="helpFilterAcked" onclick="setHelpFilter('acked')">Acknowledged</button>
+              <button class="filter-pill" id="helpClearBtn" onclick="clearHelpRequests()">Clear</button>
             </div>
           </div>
           <div id="helplist">
@@ -808,13 +813,11 @@
   <div class="moverlay" id="profmodal">
       <div class="mbox">
         <h3>✏️ Edit Profile</h3>
-      <div
-        style="display:flex;align-items:center;gap:11px;margin-bottom:16px;padding:11px;background:var(--input);border-radius:9px;">
+      <div class="profile-preview-shell">
         <div class="av s44" id="profprev"></div>
-        <div>
-          <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"
-            id="profprevname">-</div>
-          <div style="font-size:10px;color:var(--txt2);" id="profprevtitle">-</div>
+        <div class="profile-preview-meta">
+          <div class="mname" id="profprevname">-</div>
+          <div class="mtitle" id="profprevtitle">-</div>
         </div>
       </div>
       <div class="mfield">
@@ -837,7 +840,7 @@
         <div class="mfield"><label>Avatar Color</label>
           <div class="swatches" id="swatches"></div>
         </div>
-      <div class="admin-note">
+      <div class="admin-note" data-admin-only>
         <div>
           <strong id="admin-note-title">Control Mode</strong>
           <span id="admin-note-text">This workstation opens directly in control mode while account features are paused.</span>
@@ -1020,6 +1023,53 @@
       <div class="mactions">
         <button class="btng" type="button" onclick="closeRunScriptModal()">Cancel</button>
         <button class="btnp" type="button" onclick="submitRunScriptAction()">Run Script</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="moverlay" id="groupMembersModal" onclick="if(event.target===this) closeGroupMembersModal()">
+    <div class="mbox" style="width:min(880px, calc(100vw - 28px));max-width:calc(100vw - 28px);">
+      <h3 id="groupMembersTitle">Edit Members</h3>
+      <div class="member-checks" id="groupMembersList"></div>
+      <div class="mactions">
+        <button class="btng" type="button" onclick="closeGroupMembersModal()">Cancel</button>
+        <button class="btnp" type="button" onclick="applyGroupMembers()">Apply Members</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="moverlay" id="groupActionsModal" onclick="if(event.target===this) closeGroupActionsModal()">
+    <div class="mbox user-actions-modal">
+      <h3 id="groupActionsTitle">Group Actions</h3>
+      <div class="psub" id="groupActionsSub" style="margin-bottom:10px;">Apply action to this group only.</div>
+      <div class="user-actions-grid">
+        <button class="ubtn" type="button" onclick="executeGroupAction('restart_device')">Restart</button>
+        <button class="ubtn" type="button" onclick="executeGroupAction('shutdown_device')">Shutdown</button>
+        <button class="ubtn" type="button" onclick="executeGroupAction('signout_device')">Signout</button>
+        <button class="ubtn" type="button" onclick="executeGroupAction('clean_temp')">Clean Temp</button>
+        <button class="ubtn" type="button" onclick="executeGroupAction('flush_dns')">Flush DNS</button>
+        <button class="ubtn" type="button" onclick="executeGroupAction('run_script')">Run Script</button>
+      </div>
+      <div class="mactions">
+        <button class="btng" type="button" onclick="closeGroupActionsModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="moverlay" id="groupVideoModal" onclick="if(event.target===this) closeGroupVideoModal()">
+    <div class="mbox" style="width:min(720px, calc(100vw - 28px));max-width:calc(100vw - 28px);">
+      <h3 id="groupVideoTitle">Force Video</h3>
+      <div class="psub" id="groupVideoMeta" style="margin-bottom:10px;">Apply to this group only.</div>
+      <div class="group-video-file" id="groupVideoFile">No video selected.</div>
+      <div class="mfield" style="margin-top:10px;">
+        <label for="groupVideoLabel">Label (Optional)</label>
+        <input id="groupVideoLabel" type="text" placeholder="e.g. Security Update">
+      </div>
+      <div class="mactions">
+        <button class="btng" type="button" onclick="pickGroupVideoFile()">Choose Video</button>
+        <button class="btng" type="button" onclick="closeGroupVideoModal()">Close</button>
+        <button class="btns" type="button" onclick="stopGroupVideo()">Stop</button>
+        <button class="btnp" type="button" onclick="startGroupVideo()">Start</button>
       </div>
     </div>
   </div>

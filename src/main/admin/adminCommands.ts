@@ -174,7 +174,7 @@ export function createAdminCommands(deps: AdminCommandDeps): {
       const memberIds = [...new Set(rawMemberIds.filter(Boolean) as string[])];
       if (!name) return { success: false, error: 'Group name is required.' };
       const duplicate = state.userGroups.find((item) => item.name.toLowerCase() === name.toLowerCase() && item.id !== payload?.id);
-      if (duplicate) return { success: false, error: 'A group with this name already exists.' };
+      if (duplicate) return { success: false, error: 'A group with this name already exists.', groups: state.userGroups };
       const id = String(payload?.id || uuidv4());
       const next = { id, name, memberIds };
       const idx = state.userGroups.findIndex((item) => item.id === id);
@@ -182,6 +182,13 @@ export function createAdminCommands(deps: AdminCommandDeps): {
       else state.userGroups.push(next);
       state.userGroups.sort((a, b) => a.name.localeCompare(b.name));
       doSaveState();
+      broadcastToPeers({
+        type: 'group-sync',
+        fromId: state.myProfile?.id,
+        groups: state.userGroups,
+        timestamp: new Date().toISOString(),
+        origin: buildCommandOrigin('group-sync')
+      });
       return { success: true, groups: state.userGroups };
     }
 
@@ -189,6 +196,13 @@ export function createAdminCommands(deps: AdminCommandDeps): {
       const id = String(payload.id || '');
       state.userGroups = state.userGroups.filter((group) => group.id !== id);
       doSaveState();
+      broadcastToPeers({
+        type: 'group-sync',
+        fromId: state.myProfile?.id,
+        groups: state.userGroups,
+        timestamp: new Date().toISOString(),
+        origin: buildCommandOrigin('group-sync')
+      });
       return { success: true, groups: state.userGroups };
     }
 

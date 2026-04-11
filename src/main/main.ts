@@ -1,4 +1,4 @@
-import { app, ipcMain, Notification, dialog, BrowserWindow } from 'electron';
+import { app, ipcMain, dialog, BrowserWindow } from 'electron';
 import path from 'path';
 import os from 'os';
 import fs from 'fs';
@@ -185,11 +185,9 @@ const trayManager = createTrayManager({
 });
 
 function showNotification(title: string, body: string): void {
-  if (/\[[A-Z]+\]\s.+@.+/.test(String(title || ''))) return;
-  if (!Notification.isSupported()) return;
-  const n = new Notification({ title, body, silent: !state.soundEnabled });
-  n.on('click', windowManager.showMainWindow);
-  n.show();
+  void title;
+  void body;
+  // Windows/system notifications are intentionally disabled.
 }
 
 const { handleP2PMessage } = createMessageRouter({
@@ -205,6 +203,8 @@ const { handleP2PMessage } = createMessageRouter({
   doSaveHistory,
   flushPendingHelpRequests,
   showNotification,
+  showChatMessagePopup: windowManager.showChatMessagePopup,
+  shouldShowChatPopup: () => !(state.mainWindow && !state.mainWindow.isDestroyed() && state.mainWindow.isVisible() && state.mainWindow.isFocused()),
   showUrgentOverlay: windowManager.showUrgentOverlay,
   showNormalBroadcastPopup: windowManager.showNormalBroadcastPopup,
   showHelpRequestPopup: windowManager.showHelpRequestPopup,
@@ -377,6 +377,8 @@ registerLifecycle({
   startPeerSession: peerSession.start,
   createMainWindow: windowManager.createMainWindow,
   initPreloadedWindows: windowManager.initPreloadedWindows,
+  restorePersistentLock: windowManager.showLockScreen,
+  restorePersistentForcedVideo: windowManager.showForcedVideoWindow,
   createTray: trayManager.createTray,
   bus,
   setRendererBridge: (bridge: (event: string, data: unknown) => void) => bus.setRendererBridge(bridge),

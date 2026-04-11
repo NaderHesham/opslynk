@@ -1,5 +1,33 @@
+function updateRepliesBadgeState() {
+      const rb = document.querySelector('[data-tab="replies"]');
+      if (!rb) return;
+      const hasItems = !!document.querySelector('#replieslist .rcard');
+      const badge = rb.querySelector('.tbadge');
+      if (hasItems && !badge) rb.insertAdjacentHTML('beforeend', '<span class="tbadge">!</span>');
+      if (!hasItems && badge) badge.remove();
+    }
+
+function openReplyConversation(peerId, replyText, cardEl) {
+      if (!peerId) return;
+      pendingReplyQuoteByPeer[peerId] = String(replyText || '').trim();
+      cardEl?.remove();
+      updateRepliesBadgeState();
+      openChat(peerId);
+    }
+
+function openReplyConversationFromCard(buttonEl, peerId) {
+      const card = buttonEl?.closest('.rcard');
+      const replyText = card?.querySelector('.rtxt')?.textContent || '';
+      openReplyConversation(peerId, replyText, card);
+    }
+
 function setupEvents() {
       IPC.on('system:deviceUpdated', p => { const prev = peers[p.id]; peers[p.id] = { ...prev, ...p }; renderPeerList(); renderUsersTab(); renderMonitorTab(); renderGroupUI(); updateActivePeerStatus(); if (p.id === activePeerId) renderActiveChatContext(); updateConnPill(); const nameChanged = prev && prev.username !== p.username; const wentOnline = prev && !prev.online && p.online; if (nameChanged || wentOnline) addDashboardActivity('system', `${p.username || 'Peer'} updated`, 'Profile details changed.', p.online ? 'Online now' : (getPeerConnectionMeta(p).label || 'Status refreshed')); });
+      IPC.on('system:userGroupsUpdated', ({ groups }) => {
+        userGroups = Array.isArray(groups) ? groups : [];
+        renderGroupUI();
+        renderMonitorTab();
+      });
       IPC.on('system:deviceJoined', p => { peers[p.id] = { ...peers[p.id], ...p, online: true, restoredFromState: false, connectionState: p.connectionState || 'connected', activityState: p.activityState || 'active' }; renderPeerList(); renderUsersTab(); renderMonitorTab(); renderGroupUI(); updateActivePeerStatus(); if (p.id === activePeerId) renderActiveChatContext(); updateConnPill(); addDashboardActivity('system', `${p.username || 'Peer'} came online`, 'A reachable endpoint joined the LAN session.', p.title || 'Ready'); });
       IPC.on('system:deviceLeft', ({ id }) => { if (peers[id]) { peers[id].online = false; peers[id].activityState = 'offline'; peers[id].connectionState = peers[id].connectionState === 'offline' ? 'offline' : 'degraded'; peers[id].lastStateChangeAt = Date.now(); renderPeerList(); renderUsersTab(); renderMonitorTab(); renderGroupUI(); updateActivePeerStatus(); if (id === activePeerId) renderActiveChatContext(); addDashboardActivity('system', `${peers[id].username || 'Peer'} went offline`, 'This endpoint is temporarily unavailable for admin actions.', getPeerConnectionMeta(peers[id]).label); } updateConnPill(); });
 
@@ -130,9 +158,10 @@ function setupEvents() {
       IPC.on('network:broadcastReply', ({ fromId, text, broadcastId, username }) => {
         const rl = document.getElementById('replieslist'); const re = rl.querySelector('.empty'); if (re) re.remove();
         const c = document.createElement('div'); c.className = 'rcard';
-        c.innerHTML = `<div class="reply-card-head"><div><div class="rfrom">${esc(username || '?')}</div><div class="reply-card-sub">Broadcast response</div></div><div class="rts">${new Date().toLocaleTimeString()}</div></div><div class="rtxt">${esc(text)}</div><div class="reply-card-actions"><button class="ubtn" onclick="openChat('${fromId}')">Open Chat</button><button class="ubtn" onclick="openLatestHelpForPeer('${fromId}')">View Ticket</button><button class="ubtn" onclick="openSpecsModal('${fromId}')">View Specs</button></div>`;
+        c.dataset.fromid = String(fromId || '');
+        c.innerHTML = `<div class="reply-card-head"><div><div class="rfrom">${esc(username || '?')}</div><div class="reply-card-sub">Broadcast response</div></div><div class="rts">${new Date().toLocaleTimeString()}</div></div><div class="rtxt">${esc(text)}</div><div class="reply-card-actions"><button class="ubtn" onclick="openReplyConversationFromCard(this,'${fromId}')">Open Chat</button><button class="ubtn" onclick="openLatestHelpForPeer('${fromId}')">View Ticket</button><button class="ubtn" onclick="openSpecsModal('${fromId}')">View Specs</button></div>`;
         rl.prepend(c);
-        const rb = document.querySelector('[data-tab="replies"]'); if (rb && !rb.querySelector('.tbadge')) rb.insertAdjacentHTML('beforeend', '<span class="tbadge">!</span>');
+        updateRepliesBadgeState();
         beep(440, 0.12);
       });
 
@@ -186,6 +215,11 @@ function setupEvents() {
       IPC.on('user:helpAcked', () => showToast('Admin Responded', 'Your help request was acknowledged!'));
 
       IPC.on('ui:focusHelpRequest', ({ reqId }) => { switchTab('help'); setTimeout(() => focusHelpRequest(reqId), 60); });
+      IPC.on('ui:openChatPeer', ({ peerId, replyText }) => {
+        if (!peerId) return;
+        if (replyText) pendingReplyQuoteByPeer[peerId] = String(replyText);
+        openChat(peerId);
+      });
       IPC.on('ui:playSound', ({ type }) => { if (type === 'message') beep(660, 0.1); else if (type === 'broadcast') beep(520, 0.18); else if (type === 'help') { beep(330, 0.25); setTimeout(() => beep(440, 0.25), 220); } });
       IPC.on('ui:gotoTab', tab => switchTab(tab));
 

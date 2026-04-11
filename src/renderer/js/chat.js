@@ -63,8 +63,12 @@ function openChat(peerId) {
       renderActiveChatContext();
       const msgs = document.getElementById('msgs'); msgs.innerHTML = '';
       (history[peerId] || []).forEach(m => appendBubble(m, null, false));
-      renderPeerList(); switchTab('chat'); ensureChatLayout();
-      document.getElementById('msginput').focus();
+      renderPeerList(); switchTab('chat', { keepSelection: true }); ensureChatLayout();
+      const msgInput = document.getElementById('msginput');
+      if (msgInput && pendingReplyQuoteByPeer[peerId]) {
+        msgInput.value = `↩ ${pendingReplyQuoteByPeer[peerId]}\n`;
+      }
+      msgInput?.focus();
       setTimeout(() => { msgs.scrollTop = msgs.scrollHeight; }, 60);
     }
 
@@ -106,11 +110,18 @@ async function sendMsg() {
       const text = inp.value.trim();
       if (!text) return;
       if (!activePeerId) return;
-      const r = await IPC.sendChat({ peerId: activePeerId, text, emoji: '' });
+      const replyQuote = pendingReplyQuoteByPeer[activePeerId];
+      const outgoingText = replyQuote ? `↩ ${replyQuote}\n${text}` : text;
+      const r = await IPC.sendChat({ peerId: activePeerId, text: outgoingText, emoji: '' });
       if (r.success) {
         if (!history[activePeerId]) history[activePeerId] = [];
         history[activePeerId].push(r.message);
         appendBubble(r.message, null, true);
+        if (replyQuote) {
+          delete pendingReplyQuoteByPeer[activePeerId];
+          document.querySelectorAll(`#replieslist .rcard[data-fromid="${activePeerId}"]`).forEach(card => card.remove());
+          updateRepliesBadgeState();
+        }
       }
       inp.value = '';
       inp.focus();

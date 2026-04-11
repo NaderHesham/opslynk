@@ -32,6 +32,11 @@ export function registerAuthHandlers({ ipcMain, authService, onLoginSuccess }: A
     return result;
   });
 
+  ipcMain.handle('auth:verify-password', async (_e, { username, password }: { username: string; password: string }) => {
+    const result = await authService.login(username, password);
+    return { success: !!result.success, error: result.success ? undefined : (result.error || 'Invalid username or password') };
+  });
+
   ipcMain.handle('auth:create-user',     async (_e, p: { username: string; password: string; role: string }) =>
     authService.createUser(p.username, p.password, p.role));
 

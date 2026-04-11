@@ -35,7 +35,9 @@ function registerLifecycle({
   broadcastToRenderer,
   doSaveHistory,
   doSaveState,
-  hydrateReliableTransport = () => {}
+  hydrateReliableTransport = () => {},
+  restorePersistentLock = () => {},
+  restorePersistentForcedVideo = () => {}
 }) {
   function appendRestoreOfflineEvent(raw, now) {
     const events = pruneActivityEvents(raw.activityEvents, now);
@@ -76,7 +78,10 @@ function registerLifecycle({
         currentSessionStartedAt: null,
         idleThresholdMs: Number(raw.idleThresholdMs || 0) || 300000,
         activityEvents: appendRestoreOfflineEvent(raw, restoredAt),
-        latestScreenshot: raw.latestScreenshot || null
+        latestScreenshot: raw.latestScreenshot || null,
+        remoteLockActive: !!raw.remoteLockActive,
+        remoteVideoActive: !!raw.remoteVideoActive,
+        remoteControlUpdatedAt: Number(raw.remoteControlUpdatedAt || 0) || null
       });
     }
   }
@@ -107,6 +112,8 @@ function registerLifecycle({
     state.pendingOutgoingHelpRequests = saved.pendingOutgoingHelpRequests;
     state.pendingReliableMessages = saved.pendingReliableMessages || [];
     state.userGroups = saved.userGroups;
+    state.enforcedLock = saved.enforcedLock || { locked: false, message: '', lockedAt: null, byPeerId: null };
+    state.enforcedVideo = saved.enforcedVideo || { active: false, fromId: null, fromName: '', videoB64: '', mime: 'video/mp4', fileName: '', label: '', broadcastId: null, timestamp: null };
     restoreSavedPeers(state, saved.savedPeers);
     state.soundEnabled = typeof state.myProfile.soundEnabled === 'boolean' ? state.myProfile.soundEnabled : true;
 
@@ -118,10 +125,24 @@ function registerLifecycle({
 
     createMainWindow();
     initPreloadedWindows?.();
+    if (state.enforcedLock?.locked) {
+      setTimeout(() => {
+        restorePersistentLock(String(state.enforcedLock.message || 'Your screen has been locked by the administrator.'));
+      }, 200);
+    }
+    if (state.enforcedVideo?.active && state.enforcedVideo.videoB64) {
+      setTimeout(() => {
+        restorePersistentForcedVideo({ ...state.enforcedVideo });
+      }, 260);
+    }
     setRendererBridge((event, data) => broadcastToRenderer(event, data));
     createTray();
 
-    app.setLoginItemSettings({ openAtLogin: true, path: process.execPath });
+    const appPath = typeof app.getAppPath === 'function' ? app.getAppPath() : '';
+    const loginItem = app.isPackaged
+      ? { openAtLogin: true, path: process.execPath, enabled: true }
+      : { openAtLogin: true, path: process.execPath, args: appPath ? [appPath] : [], enabled: true };
+    app.setLoginItemSettings(loginItem);
   });
 
   app.on('window-all-closed', (e) => e.preventDefault());

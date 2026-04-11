@@ -25,10 +25,28 @@ export function createAppState(chatPortBase: number): AppRuntimeState {
     overlayState: null,
     lockWindow: null,
     screenLocked: false,
+    enforcedLock: {
+      locked: false,
+      message: '',
+      lockedAt: null,
+      byPeerId: null
+    },
+    enforcedVideo: {
+      active: false,
+      fromId: null,
+      fromName: '',
+      videoB64: '',
+      mime: 'video/mp4',
+      fileName: '',
+      label: '',
+      broadcastId: null,
+      timestamp: null
+    },
     forcedVideoWindow: null,
     forcedVideoActive: false,
     normalBroadcastWindows: new Set(),
-    helpPopupWindows: new Map()
+    helpPopupWindows: new Map(),
+    chatPopupWindows: new Map()
   };
 }
 

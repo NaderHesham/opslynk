@@ -34,6 +34,8 @@ interface RouterDeps {
   doSaveHistory: () => void;
   flushPendingHelpRequests: (peerId?: string) => void;
   showNotification: (title: string, body: string) => void;
+  showChatMessagePopup?: (payload: { peerId: string; username?: string; text?: string; timestamp?: string }) => void;
+  shouldShowChatPopup?: () => boolean;
   showUrgentOverlay: (data: Record<string, unknown>) => void;
   showNormalBroadcastPopup: (data: Record<string, unknown>) => void;
   showHelpRequestPopup: (req: unknown) => void;
@@ -72,6 +74,8 @@ export function createMessageRouter({
   doSaveHistory,
   flushPendingHelpRequests,
   showNotification,
+  showChatMessagePopup,
+  shouldShowChatPopup,
   showUrgentOverlay,
   showNormalBroadcastPopup,
   showHelpRequestPopup,
@@ -214,6 +218,43 @@ export function createMessageRouter({
     return decision.trusted;
   };
 
+  const buildLocalControlState = (): { lockActive: boolean; videoActive: boolean; updatedAt: number } => ({
+    lockActive: !!state.enforcedLock?.locked,
+    videoActive: !!state.enforcedVideo?.active,
+    updatedAt: Date.now()
+  });
+
+  const applyPeerControlState = (peer: PeerSession, raw: unknown): boolean => {
+    const data = raw as { lockActive?: unknown; videoActive?: unknown; updatedAt?: unknown } | null | undefined;
+    if (!data || typeof data !== 'object') return false;
+    const nextLock = !!data.lockActive;
+    const nextVideo = !!data.videoActive;
+    const nextUpdatedAt = Number(data.updatedAt || Date.now()) || Date.now();
+    const changed = (
+      !!peer.remoteLockActive !== nextLock
+      || !!peer.remoteVideoActive !== nextVideo
+      || Number(peer.remoteControlUpdatedAt || 0) !== nextUpdatedAt
+    );
+    peer.remoteLockActive = nextLock;
+    peer.remoteVideoActive = nextVideo;
+    peer.remoteControlUpdatedAt = nextUpdatedAt;
+    return changed;
+  };
+
+  const broadcastLocalControlStateToAdmins = (): void => {
+    const payload = {
+      type: 'control-state',
+      fromId: state.myProfile?.id,
+      controlState: buildLocalControlState()
+    };
+    for (const [, peer] of state.peers) {
+      if (!peer?.online || !hasAdminAccess(peer.role)) continue;
+      const ws = peer.ws as { readyState?: number } | null | undefined;
+      if (!ws || ws.readyState !== 1) continue;
+      wsNet.safeSend(ws, payload);
+    }
+  };
+
   function handleP2PMessage(ws: unknown, msg: Record<string, unknown>, remoteIp: string): void {
     const type = String(msg.type || '');
     debugLog('[ACK-DEBUG] type:', type, 'msgId:', msg.msgId);
@@ -325,11 +366,18 @@ export function createMessageRouter({
       if (!peer) return;
       markPeerOnline(peer, Date.now(), 'hello');
       applyActivitySnapshot(peer, (p as unknown as { activity?: unknown }).activity, Date.now(), 'hello');
+      applyPeerControlState(peer, (p as unknown as { controlState?: unknown }).controlState);
       bus.emit(wasOnline ? EVENTS.DEVICE_UPDATED : EVENTS.DEVICE_JOINED, peerToSafe(peer));
       if (!wasOnline) emitPeerActivity(peer, 'online', Date.now(), 'hello');
       updateTrayMenu();
       if (type === 'hello') {
-        wsNet.safeSend(ws, { type: 'hello-ack', from: buildSignedPeerIdentity(state.myProfile as unknown as Record<string, unknown>, state.myPortRef.value) });
+        wsNet.safeSend(ws, {
+          type: 'hello-ack',
+          from: {
+            ...buildSignedPeerIdentity(state.myProfile as unknown as Record<string, unknown>, state.myPortRef.value),
+            controlState: buildLocalControlState()
+          }
+        });
       }
       if (onTrustDecision) {
         onTrustDecision({
@@ -369,7 +417,7 @@ export function createMessageRouter({
 
     if (type === 'forced-video-broadcast') {
       if (!checkSensitiveTrust(msg, 'forced-video-broadcast')) return;
-      showForcedVideoWindow({
+      const payload = {
         fromId: msg.fromId,
         fromName: msg.fromName || 'Admin',
         videoB64: msg.videoB64,
@@ -378,13 +426,40 @@ export function createMessageRouter({
         label: msg.label || '',
         broadcastId: msg.broadcastId,
         timestamp: msg.timestamp
-      });
+      };
+      showForcedVideoWindow(payload);
+      state.enforcedVideo = {
+        active: true,
+        fromId: typeof payload.fromId === 'string' ? payload.fromId : null,
+        fromName: String(payload.fromName || 'Admin'),
+        videoB64: String(payload.videoB64 || ''),
+        mime: String(payload.mime || 'video/mp4'),
+        fileName: String(payload.fileName || 'broadcast-video'),
+        label: String(payload.label || ''),
+        broadcastId: typeof payload.broadcastId === 'string' ? payload.broadcastId : null,
+        timestamp: typeof payload.timestamp === 'string' ? payload.timestamp : null
+      };
+      doSaveState();
+      broadcastLocalControlStateToAdmins();
       return;
     }
 
     if (type === 'forced-video-broadcast-stop') {
       if (!checkSensitiveTrust(msg, 'forced-video-broadcast-stop')) return;
       closeForcedVideoWindow(true);
+      state.enforcedVideo = {
+        active: false,
+        fromId: null,
+        fromName: '',
+        videoB64: '',
+        mime: 'video/mp4',
+        fileName: '',
+        label: '',
+        broadcastId: null,
+        timestamp: null
+      };
+      doSaveState();
+      broadcastLocalControlStateToAdmins();
       return;
     }
 
@@ -392,7 +467,16 @@ export function createMessageRouter({
       if (!checkSensitiveTrust(msg, 'screen-lock')) return;
       const sender = state.peers.get(String(msg.fromId || ''));
       if (!sender || !hasAdminAccess(sender.role)) return;
-      showLockScreen(String(msg.message || ''));
+      const lockMessage = String(msg.message || 'Your screen has been locked by the administrator.');
+      showLockScreen(lockMessage);
+      state.enforcedLock = {
+        locked: true,
+        message: lockMessage,
+        lockedAt: new Date().toISOString(),
+        byPeerId: String(msg.fromId || '') || null
+      };
+      doSaveState();
+      broadcastLocalControlStateToAdmins();
       bus.emit(EVENTS.SCREEN_LOCKED, { fromId: msg.fromId, message: msg.message });
       return;
     }
@@ -402,6 +486,14 @@ export function createMessageRouter({
       const sender = state.peers.get(String(msg.fromId || ''));
       if (!sender || !hasAdminAccess(sender.role)) return;
       unlockScreen();
+      state.enforcedLock = {
+        locked: false,
+        message: '',
+        lockedAt: null,
+        byPeerId: null
+      };
+      doSaveState();
+      broadcastLocalControlStateToAdmins();
       bus.emit(EVENTS.SCREEN_UNLOCKED, { fromId: msg.fromId });
       return;
     }
@@ -416,11 +508,28 @@ export function createMessageRouter({
       void (async () => {
         let result: { success: boolean; message: string };
         if (action === 'lock_device') {
-          showLockScreen('Your screen has been locked by the administrator.');
+          const lockMessage = 'Your screen has been locked by the administrator.';
+          showLockScreen(lockMessage);
+          state.enforcedLock = {
+            locked: true,
+            message: lockMessage,
+            lockedAt: new Date().toISOString(),
+            byPeerId: String(msg.fromId || '') || null
+          };
+          doSaveState();
+          broadcastLocalControlStateToAdmins();
           bus.emit(EVENTS.SCREEN_LOCKED, { fromId: msg.fromId, message: 'Locked by admin action.' });
           result = { success: true, message: 'Device locked.' };
         } else if (action === 'unlock_device') {
           unlockScreen();
+          state.enforcedLock = {
+            locked: false,
+            message: '',
+            lockedAt: null,
+            byPeerId: null
+          };
+          doSaveState();
+          broadcastLocalControlStateToAdmins();
           bus.emit(EVENTS.SCREEN_UNLOCKED, { fromId: msg.fromId });
           result = { success: true, message: 'Device unlocked.' };
         } else {
@@ -461,7 +570,14 @@ export function createMessageRouter({
       doSaveHistory();
       bus.emit(EVENTS.NETWORK_MESSAGE, { peerId: fromId, message: entry });
       if (state.soundEnabled) bus.emit(EVENTS.PLAY_SOUND, { type: 'message' });
-      showNotification(`${peer.username}`, String(msg.text || msg.emoji || ''));
+      if (!shouldShowChatPopup || shouldShowChatPopup()) {
+        showChatMessagePopup?.({
+          peerId: fromId,
+          username: peer.username,
+          text: String(msg.text || msg.emoji || ''),
+          timestamp: String(msg.timestamp || new Date().toISOString())
+        });
+      }
       return;
     }
 
@@ -476,7 +592,14 @@ export function createMessageRouter({
       doSaveHistory();
       bus.emit(EVENTS.NETWORK_MESSAGE, { peerId: fromId, message: entry });
       if (state.soundEnabled) bus.emit(EVENTS.PLAY_SOUND, { type: 'message' });
-      showNotification(`File from ${peer.username}`, String(attachment.name));
+      if (!shouldShowChatPopup || shouldShowChatPopup()) {
+        showChatMessagePopup?.({
+          peerId: fromId,
+          username: peer.username,
+          text: `File: ${String(attachment.name)}`,
+          timestamp: String(msg.timestamp || new Date().toISOString())
+        });
+      }
       return;
     }
 
@@ -548,6 +671,7 @@ export function createMessageRouter({
         if (msg.liveMetrics) peer.liveMetrics = msg.liveMetrics as PeerSession['liveMetrics'];
         markPeerOnline(peer, heartbeatAt, 'heartbeat');
         applyActivitySnapshot(peer, msg.activity, heartbeatAt, 'heartbeat');
+        applyPeerControlState(peer, msg.controlState);
         if (!wasOnline) {
           bus.emit(EVENTS.DEVICE_JOINED, peerToSafe(peer));
           emitPeerActivity(peer, 'online', heartbeatAt, 'heartbeat');
@@ -665,6 +789,40 @@ export function createMessageRouter({
       }
       bus.emit(EVENTS.DEVICE_UPDATED, peerToSafe(peer));
       updateTrayMenu();
+      return;
+    }
+
+    if (type === 'control-state') {
+      const fromId = String(msg.fromId || '');
+      const peer = state.peers.get(fromId);
+      if (!peer) return;
+      const changed = applyPeerControlState(peer, msg.controlState);
+      if (changed) bus.emit(EVENTS.DEVICE_UPDATED, peerToSafe(peer));
+      return;
+    }
+
+    if (type === 'group-sync') {
+      if (!checkSensitiveTrust(msg, 'group-sync')) return;
+      if (!hasAdminAccess(state.myProfile?.role)) return;
+      const sender = state.peers.get(String(msg.fromId || ''));
+      if (!sender || !hasAdminAccess(sender.role)) return;
+      const incoming = Array.isArray(msg.groups) ? msg.groups : [];
+      const sanitized = incoming
+        .map((item) => {
+          const group = item as { id?: unknown; name?: unknown; memberIds?: unknown };
+          const id = typeof group.id === 'string' ? group.id.trim() : '';
+          const name = typeof group.name === 'string' ? group.name.trim() : '';
+          const memberIds = Array.isArray(group.memberIds)
+            ? [...new Set(group.memberIds.filter((x): x is string => typeof x === 'string' && x.trim().length > 0))]
+            : [];
+          if (!id || !name) return null;
+          return { id, name, memberIds };
+        })
+        .filter((group): group is { id: string; name: string; memberIds: string[] } => !!group);
+      state.userGroups = sanitized.sort((a, b) => a.name.localeCompare(b.name));
+      doSaveState();
+      bus.emit(EVENTS.USER_GROUPS_UPDATED, { groups: state.userGroups });
+      return;
     }
   }
 

@@ -85,6 +85,11 @@ function createPeerSession({
         systemInfo: state.myProfile?.systemInfo,
         liveMetrics: getLiveMetrics(),
         activity: state.localActivity,
+        controlState: {
+          lockActive: !!state.enforcedLock?.locked,
+          videoActive: !!state.enforcedVideo?.active,
+          updatedAt: Date.now()
+        },
         timestamp: Date.now()
       });
     }, HEARTBEAT_INTERVAL);
@@ -179,6 +184,11 @@ function createPeerSession({
       myProfile: () => state.myProfile,
       myPortRef: state.myPortRef,
       buildSignedPeerIdentity,
+      getControlState: () => ({
+        lockActive: !!state.enforcedLock?.locked,
+        videoActive: !!state.enforcedVideo?.active,
+        updatedAt: Date.now()
+      }),
       onMessage: handleP2PMessage,
       onPeerOnline: emitPeerJoined,
       onPeerOffline: emitPeerLeft,

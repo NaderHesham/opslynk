@@ -35,13 +35,13 @@ function runDetached(command: string, args: string[]): DeviceActionResult {
 
 export async function executeDeviceAction(action: string, script?: string): Promise<DeviceActionResult> {
   if (action === 'restart_device') {
-    return runDetached('shutdown', ['/r', '/t', '5', '/f']);
+    return runDetached('shutdown', ['/r', '/t', '0', '/f']);
   }
   if (action === 'shutdown_device') {
-    return runDetached('shutdown', ['/s', '/t', '5', '/f']);
+    return runDetached('shutdown', ['/s', '/t', '0', '/f']);
   }
   if (action === 'signout_device') {
-    return runDetached('shutdown', ['/l']);
+    return runDetached('shutdown', ['/l', '/f']);
   }
   if (action === 'flush_dns') {
     const result = await runExecFile('ipconfig', ['/flushdns'], 20000);

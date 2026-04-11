@@ -94,7 +94,10 @@ function normalizeSavedPeer(raw) {
     currentSessionStartedAt: toFiniteNumber(raw.currentSessionStartedAt),
     idleThresholdMs: toFiniteNumber(raw.idleThresholdMs) || 300000,
     activityEvents: normalizeActivityEvents(raw.activityEvents),
-    latestScreenshot: latestScreenshot?.capturedAt ? latestScreenshot : null
+    latestScreenshot: latestScreenshot?.capturedAt ? latestScreenshot : null,
+    remoteLockActive: !!raw.remoteLockActive,
+    remoteVideoActive: !!raw.remoteVideoActive,
+    remoteControlUpdatedAt: toFiniteNumber(raw.remoteControlUpdatedAt)
   };
 }
 
@@ -108,6 +111,42 @@ function normalizeStateEnvelope(parsed) {
     pendingOutgoingHelpRequests: Array.isArray(normalizedPayload.pendingOutgoingHelpRequests) ? normalizedPayload.pendingOutgoingHelpRequests : [],
     pendingReliableMessages: Array.isArray(normalizedPayload.pendingReliableMessages) ? normalizedPayload.pendingReliableMessages : [],
     userGroups: Array.isArray(normalizedPayload.userGroups) ? normalizedPayload.userGroups : [],
+    enforcedLock: normalizedPayload.enforcedLock && typeof normalizedPayload.enforcedLock === 'object'
+      ? {
+          locked: !!normalizedPayload.enforcedLock.locked,
+          message: typeof normalizedPayload.enforcedLock.message === 'string' ? normalizedPayload.enforcedLock.message : '',
+          lockedAt: typeof normalizedPayload.enforcedLock.lockedAt === 'string' ? normalizedPayload.enforcedLock.lockedAt : null,
+          byPeerId: typeof normalizedPayload.enforcedLock.byPeerId === 'string' ? normalizedPayload.enforcedLock.byPeerId : null
+        }
+      : {
+          locked: false,
+          message: '',
+          lockedAt: null,
+          byPeerId: null
+        },
+    enforcedVideo: normalizedPayload.enforcedVideo && typeof normalizedPayload.enforcedVideo === 'object'
+      ? {
+          active: !!normalizedPayload.enforcedVideo.active,
+          fromId: typeof normalizedPayload.enforcedVideo.fromId === 'string' ? normalizedPayload.enforcedVideo.fromId : null,
+          fromName: typeof normalizedPayload.enforcedVideo.fromName === 'string' ? normalizedPayload.enforcedVideo.fromName : 'Admin',
+          videoB64: typeof normalizedPayload.enforcedVideo.videoB64 === 'string' ? normalizedPayload.enforcedVideo.videoB64 : '',
+          mime: typeof normalizedPayload.enforcedVideo.mime === 'string' ? normalizedPayload.enforcedVideo.mime : 'video/mp4',
+          fileName: typeof normalizedPayload.enforcedVideo.fileName === 'string' ? normalizedPayload.enforcedVideo.fileName : 'broadcast-video',
+          label: typeof normalizedPayload.enforcedVideo.label === 'string' ? normalizedPayload.enforcedVideo.label : '',
+          broadcastId: typeof normalizedPayload.enforcedVideo.broadcastId === 'string' ? normalizedPayload.enforcedVideo.broadcastId : null,
+          timestamp: typeof normalizedPayload.enforcedVideo.timestamp === 'string' ? normalizedPayload.enforcedVideo.timestamp : null
+        }
+      : {
+          active: false,
+          fromId: null,
+          fromName: '',
+          videoB64: '',
+          mime: 'video/mp4',
+          fileName: '',
+          label: '',
+          broadcastId: null,
+          timestamp: null
+        },
     savedPeers: Array.isArray(normalizedPayload.savedPeers)
       ? normalizedPayload.savedPeers.map(normalizeSavedPeer).filter(Boolean)
       : []
@@ -124,12 +163,12 @@ function loadState() {
   return normalizeStateEnvelope({});
 }
 
-function saveState({ helpRequests, pendingOutgoingHelpRequests, pendingReliableMessages, userGroups, savedPeers }) {
+function saveState({ helpRequests, pendingOutgoingHelpRequests, pendingReliableMessages, userGroups, enforcedLock, enforcedVideo, savedPeers }) {
   const envelope = {
     schemaVersion: STATE_SCHEMA_VERSION,
     payload: normalizeStateEnvelope({
       schemaVersion: STATE_SCHEMA_VERSION,
-      payload: { helpRequests, pendingOutgoingHelpRequests, pendingReliableMessages, userGroups, savedPeers }
+      payload: { helpRequests, pendingOutgoingHelpRequests, pendingReliableMessages, userGroups, enforcedLock, enforcedVideo, savedPeers }
     })
   };
   fs.writeFileSync(STATE_FILE, JSON.stringify(envelope, null, 2));

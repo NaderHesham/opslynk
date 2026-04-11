@@ -117,6 +117,7 @@ async function handleUnlockAll() {
 
 function setLockUi(locked) {
       _screensLocked = locked;
+      persistAdminActionState();
       const status = document.getElementById('lockStatus');
       const btnLock = document.getElementById('btnLockAll');
       const btnUnlock = document.getElementById('btnUnlockAll');
@@ -177,6 +178,7 @@ async function vbcPickFile() {
       }
       vbcSelectedVideo = result;
       vbcActive = false;
+      persistAdminActionState();
       vbcRenderSelectedVideo();
       vbcSetStatus('Video loaded. Start playback when you are ready.');
     }
@@ -184,6 +186,7 @@ async function vbcPickFile() {
 function vbcClearSelection() {
       vbcSelectedVideo = null;
       vbcActive = false;
+      persistAdminActionState();
       const video = document.getElementById('vbc-video');
       if (video) {
         video.pause();
@@ -213,6 +216,7 @@ function vbcBroadcast() {
           return;
         }
         vbcActive = true;
+        persistAdminActionState();
         vbcRenderSelectedVideo();
         vbcSetStatus(`Forced playback started for ${result.targetCount} user${result.targetCount !== 1 ? 's' : ''}.`);
       }).catch(err => {
@@ -223,12 +227,40 @@ function vbcBroadcast() {
 function vbcStop() {
       IPC.stopForcedVideoBroadcast().finally(() => {
         vbcActive = false;
+        persistAdminActionState();
         vbcRenderSelectedVideo();
         vbcSetStatus('Forced playback stopped.');
       });
     }
 
+function restoreAdminActionUiState() {
+      loadAdminActionState();
+      setLockUi(_screensLocked);
+      vbcRenderSelectedVideo();
+    }
+
 function setUserFilter(next) {
       userFilter = next;
       renderUsersTab();
+    }
+const ADMIN_ACTION_STATE_KEY = 'opslynk.adminActionState.v1';
+
+function loadAdminActionState() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(ADMIN_ACTION_STATE_KEY) || '{}');
+        _screensLocked = !!parsed.screensLocked;
+        vbcActive = !!parsed.vbcActive;
+      } catch {
+        _screensLocked = false;
+        vbcActive = false;
+      }
+    }
+
+function persistAdminActionState() {
+      try {
+        localStorage.setItem(ADMIN_ACTION_STATE_KEY, JSON.stringify({
+          screensLocked: !!_screensLocked,
+          vbcActive: !!vbcActive
+        }));
+      } catch {}
     }

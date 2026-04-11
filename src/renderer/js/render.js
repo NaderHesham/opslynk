@@ -664,6 +664,10 @@ function renderMyProfile() {
       document.getElementById('mytitle').textContent = getPeerDisplayTitle(me);
       const isSuper = _appMode !== 'client' && isSuperAdminRole(me.role);
       document.getElementById('admin-badge').textContent = isSuper ? 'CONTROL' : 'READY';
+      const adminNote = document.querySelector('.admin-note');
+      const adminBadge = document.getElementById('admin-badge');
+      if (adminNote) adminNote.style.display = _appMode === 'client' ? 'none' : '';
+      if (adminBadge) adminBadge.style.display = _appMode === 'client' ? 'none' : '';
       const lockCard = document.querySelector('.lock-card');
       const lockNote = document.getElementById('lockCardNote');
       if (lockCard) lockCard.classList.toggle('disabled', !isSuper);
@@ -956,6 +960,7 @@ function closeRunScriptModal() {
       if (!modal) return;
       modal.classList.remove('show');
       modal.dataset.peerId = '';
+      modal.dataset.groupId = '';
       if (input) input.value = '';
 }
 
@@ -963,14 +968,20 @@ function submitRunScriptAction() {
       const modal = document.getElementById('runScriptModal');
       const input = document.getElementById('runScriptInput');
       const peerId = String(modal?.dataset?.peerId || '');
+      const groupId = String(modal?.dataset?.groupId || '');
       const script = String(input?.value || '').trim();
-      if (!peerId) return;
       if (!script) {
         showToast('Script required', 'Please enter PowerShell script.', 'warn');
         return;
       }
       closeRunScriptModal();
-      void executePeerDeviceAction(peerId, 'run_script', script);
+      if (groupId && typeof executeGroupDeviceAction === 'function') {
+        void executeGroupDeviceAction(groupId, 'run_script', script);
+        return;
+      }
+      if (peerId) {
+        void executePeerDeviceAction(peerId, 'run_script', script);
+      }
 }
 
 function executeActiveUserAction(action) {

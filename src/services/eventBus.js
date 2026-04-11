@@ -39,6 +39,7 @@ const EVENTS = {
   // UI navigation
   GOTO_TAB         : 'ui:gotoTab',
   FOCUS_HELP       : 'ui:focusHelpRequest',
+  OPEN_CHAT_PEER   : 'ui:openChatPeer',
 
   // Sound
   PLAY_SOUND       : 'ui:playSound',
@@ -53,6 +54,7 @@ const EVENTS = {
 
   // Profile
   PROFILE_UPDATED  : 'system:profileUpdated',
+  USER_GROUPS_UPDATED: 'system:userGroupsUpdated',
 };
 
 // ── BUS INSTANCE ──────────────────────────────────────────────────────────────

@@ -13,6 +13,7 @@ let _peers            = null;
 let _myProfile        = null;
 let _myPortRef        = null;
 let _buildSignedPeerIdentity = null;
+let _getControlState   = null;
 let _onMessage        = null;
 let _onPeerOnline     = null;
 let _onPeerOffline    = null;
@@ -35,6 +36,7 @@ function init(deps) {
   _myProfile         = deps.myProfile;
   _myPortRef         = deps.myPortRef;
   _buildSignedPeerIdentity = deps.buildSignedPeerIdentity;
+  _getControlState    = deps.getControlState;
   _onMessage         = deps.onMessage;
   _onPeerOnline      = deps.onPeerOnline;
   _onPeerOffline     = deps.onPeerOffline;
@@ -80,8 +82,12 @@ function cleanupSocket(ws) {
 
 function buildHelloIdentity() {
   const profile = _myProfile();
-  if (_buildSignedPeerIdentity) return _buildSignedPeerIdentity(profile, _myPortRef.value);
-  return { ...profile, port: _myPortRef.value };
+  const controlState = typeof _getControlState === 'function' ? _getControlState() : null;
+  if (_buildSignedPeerIdentity) {
+    const signed = _buildSignedPeerIdentity(profile, _myPortRef.value);
+    return controlState ? { ...signed, controlState } : signed;
+  }
+  return { ...profile, port: _myPortRef.value, ...(controlState ? { controlState } : {}) };
 }
 
 function handleIncomingWS(ws, req) {

@@ -35,7 +35,10 @@ export function registerAppHandlers({
       activityEvents: Array.isArray(p.activityEvents) ? p.activityEvents.slice(-24) : [],
       latestScreenshot: p.latestScreenshot || null,
       latestScreenshotRequestedAt: p.latestScreenshotRequestedAt || null,
-      screenshotRequestPending: !!p.screenshotRequestPending
+      screenshotRequestPending: !!p.screenshotRequestPending,
+      remoteLockActive: !!p.remoteLockActive,
+      remoteVideoActive: !!p.remoteVideoActive,
+      remoteControlUpdatedAt: Number(p.remoteControlUpdatedAt || 0) || null
     })),
     history: state.chatHistory,
     helpRequests: state.helpRequests,

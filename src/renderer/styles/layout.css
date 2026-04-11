@@ -1,6 +1,6 @@
 :root {
       --rail-w: 54px;
-      --sidebar-w: 256px;
+      --sidebar-w: 286px;
       --mono: 'Consolas', 'Cascadia Mono', 'Segoe UI Mono', monospace;
     }
 
@@ -369,7 +369,7 @@ body::after {
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 3px;
+      gap: 6px;
       flex-wrap: nowrap;
       min-width: 0
     }
@@ -377,9 +377,10 @@ body::after {
 #my-profile .mname-main {
       display: inline-flex;
       align-items: center;
-      gap: 3px;
+      gap: 4px;
       min-width: 0;
-      flex: 1;
+      flex: 0 1 auto;
+      max-width: calc(100% - 84px);
     }
 
 #my-profile .mname-text {
@@ -395,7 +396,8 @@ body::after {
       padding: 2px 6px;
       font-size: 7px;
       line-height: 1;
-      max-width: none
+      max-width: none;
+      margin-left: 2px
     }
 
 #my-profile > span:last-child {
