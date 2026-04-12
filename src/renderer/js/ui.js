@@ -25,6 +25,7 @@ function switchTab(t, options = {}) {
       if (targetTab === 'dashboard') renderDashboard();
       if (targetTab === 'monitor') renderMonitorTab();
       if (targetTab === 'users' && (workspaceTab === 'accounts' || t === 'accounts')) loadAccounts();
+      if (targetTab === 'client-tools') initClientTools();
     }
 
 function setUsersWorkspaceTab(tab) {

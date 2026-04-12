@@ -725,7 +725,7 @@ function renderPeerList() {
         el.innerHTML = `
       ${avatarHTML(p, 's32')}
       <div class="pmeta">
-        <div class="pname"><span class="pname-text">${esc(p.username)}</span>${verifiedIcon}${roleBadge}</div>
+        <div class="pname"><span class="pname-text" title="${esc(p.username)}">${esc(p.username)}</span>${verifiedIcon}${roleBadge}</div>
         <div class="psub">
           <span class="psubtitle">${subtitle}</span>
           <span class="psubtitle trust-line ${trust.key}">${trust.label}</span>

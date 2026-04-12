@@ -80,6 +80,8 @@ contextBridge.exposeInMainWorld('OpsLynk', {
     listUsers:      ()     => ipcRenderer.invoke('auth:list-users'),
   },
 
+  getClientToolData: (toolId) => ipcRenderer.invoke('client-tool-data', toolId),
+
   // ── EVENTS FROM MAIN ───────────────────────────────────────────────────────
   on:   (event, cb) => {
     ipcRenderer.on(event, (_, data) => cb(data));

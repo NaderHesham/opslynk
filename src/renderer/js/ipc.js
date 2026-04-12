@@ -41,6 +41,7 @@ const IPC = {
     changePassword: data => window.OpsLynk.auth.changePassword(data),
     deleteUser: data => window.OpsLynk.auth.deleteUser(data)
   },
+  getClientToolData: (toolId) => window.OpsLynk.getClientToolData?.(toolId) ?? Promise.resolve({ output: 'Not available.' }),
   on: (channel, handler) => window.OpsLynk.on(channel, handler),
   once: (channel, handler) => window.OpsLynk.once(channel, handler)
 };

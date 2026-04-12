@@ -46,6 +46,7 @@ function renderActiveChatContext() {
     }
 
 function openChat(peerId) {
+      if (activePeerId !== peerId) clearReplyContext();
       activePeerId = peerId; unread[peerId] = 0;
       const peer = peers[peerId]; if (!peer) return;
       const explicitHelp = getHelpCardByReqId(activeHelpRequestId);
@@ -78,19 +79,37 @@ function appendBubble(msg, prevSenderId, scroll = true) {
       const peer = peers[msg.fromId] || { username: '?', color: '#666' };
       const showSender = !mine && msg.fromId !== prevSenderId;
       const ts = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+      // Detect reply prefix in message text
+      let displayText = msg.text || '';
+      let replyQuoteHTML = '';
+      if (!msg.attachment && !msg.emoji && displayText.startsWith('↩ ')) {
+        const newlineIdx = displayText.indexOf('\n');
+        if (newlineIdx > 0) {
+          const quoteLine = displayText.slice(2, newlineIdx); // strip "↩ "
+          displayText = displayText.slice(newlineIdx + 1);
+          replyQuoteHTML = `<span class="reply-quote">${esc(quoteLine)}</span>`;
+        }
+      }
+
       const content = msg.attachment
         ? `<div style="display:flex;flex-direction:column;gap:6px;min-width:220px;">
          <div style="font-size:18px;">📎 ${esc(msg.attachment.name)}</div>
          <div style="font-size:11px;opacity:.8;">${fmtBytes(msg.attachment.size || 0)}</div>
          <a href="${attachmentUrl(msg.attachment)}" download="${esc(msg.attachment.name)}" style="color:inherit;text-decoration:underline;font-size:12px;">Download file</a>
        </div>`
-        : (msg.emoji ? `<span class="ebig">${msg.emoji}</span>${msg.text ? ' ' + esc(msg.text) : ''}` : esc(msg.text || ''));
+        : (msg.emoji ? `<span class="ebig">${msg.emoji}</span>${msg.text ? ' ' + esc(msg.text) : ''}` : replyQuoteHTML + esc(displayText));
+
       const last = msgs.querySelector('.mgroup:last-child');
       const cls = mine ? 'mine' : 'theirs';
       const statusSpan = mine && msg.id ? `<span class="msg-status" data-msgid="${msg.id}" title="Sent">✓</span>` : '';
       const bubbleAttr = mine && msg.id ? ` data-msgid="${msg.id}"` : '';
+      const senderName = mine ? (me?.username || 'Me') : esc(peer.username);
+      const rawText = msg.attachment ? (msg.attachment.name || 'File') : (msg.emoji || displayText);
+      const bubbleData = ` data-sender="${senderName}" data-text="${esc(rawText)}"`;
+
       if (last && last.classList.contains(cls) && !showSender) {
-        last.querySelector('.bubbles').insertAdjacentHTML('beforeend', `<div class="bubble ${mine ? 'm' : 't'}"${bubbleAttr}>${content}${statusSpan}<span class="ts">${ts}</span></div>`);
+        last.querySelector('.bubbles').insertAdjacentHTML('beforeend', `<div class="bubble ${mine ? 'm' : 't'}"${bubbleAttr}${bubbleData}>${content}${statusSpan}<span class="ts">${ts}</span></div>`);
       } else {
         const g = document.createElement('div');
         g.className = `mgroup ${cls}`;
@@ -98,11 +117,40 @@ function appendBubble(msg, prevSenderId, scroll = true) {
       ${!mine ? `<div class="avcol">${avatarHTML(peer, 's24')}</div>` : ''}
       <div class="bubbles">
         ${showSender ? `<div class="msender">${esc(peer.username)}</div>` : ''}
-        <div class="bubble ${mine ? 'm' : 't'}"${bubbleAttr}>${content}${statusSpan}<span class="ts">${ts}</span></div>
+        <div class="bubble ${mine ? 'm' : 't'}"${bubbleAttr}${bubbleData}>${content}${statusSpan}<span class="ts">${ts}</span></div>
       </div>`;
         msgs.appendChild(g);
       }
       if (scroll) msgs.scrollTop = msgs.scrollHeight;
+    }
+
+// Right-click to reply on any bubble
+document.addEventListener('contextmenu', (e) => {
+      const bubble = e.target.closest('.bubble');
+      if (!bubble) return;
+      e.preventDefault();
+      const sender = bubble.dataset.sender || '';
+      const text = bubble.dataset.text || '';
+      if (!sender || !text) return;
+      setReplyContext(sender, text);
+    });
+
+function setReplyContext(senderName, text) {
+      activeReplyTo = { sender: senderName, text };
+      const box = document.getElementById('reply-context');
+      const senderEl = document.getElementById('reply-sender');
+      const contentEl = document.getElementById('reply-content');
+      if (box) box.style.display = 'block';
+      if (senderEl) senderEl.textContent = senderName + ':';
+      if (contentEl) contentEl.textContent = text;
+      document.getElementById('msginput')?.focus();
+    }
+
+function clearReplyContext() {
+      activeReplyTo = null;
+      const box = document.getElementById('reply-context');
+      if (box) box.style.display = 'none';
+      document.getElementById('msginput')?.focus();
     }
 
 async function sendMsg() {
@@ -111,7 +159,8 @@ async function sendMsg() {
       if (!text) return;
       if (!activePeerId) return;
       const replyQuote = pendingReplyQuoteByPeer[activePeerId];
-      const outgoingText = replyQuote ? `↩ ${replyQuote}\n${text}` : text;
+      const replyPrefix = activeReplyTo ? `↩ ${activeReplyTo.sender}: ${activeReplyTo.text}\n` : '';
+      const outgoingText = replyQuote ? `↩ ${replyQuote}\n${text}` : (replyPrefix ? replyPrefix + text : text);
       const r = await IPC.sendChat({ peerId: activePeerId, text: outgoingText, emoji: '' });
       if (r.success) {
         if (!history[activePeerId]) history[activePeerId] = [];
@@ -122,6 +171,7 @@ async function sendMsg() {
           document.querySelectorAll(`#replieslist .rcard[data-fromid="${activePeerId}"]`).forEach(card => card.remove());
           updateRepliesBadgeState();
         }
+        // #8: Keep reply context after send — do NOT auto-clear
       }
       inp.value = '';
       inp.focus();

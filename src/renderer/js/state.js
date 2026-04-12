@@ -14,6 +14,7 @@ let modalAvatar = null;
 let selectedSpecPeerId = null;
 let activeHelpRequestId = null;
 let pendingReplyQuoteByPeer = Object.create(null);
+let activeReplyTo = null; // { sender, text }
 let userGroups = [];
 let dashboardActivity = [];
 let dashboardSeries = { presence: [], pressure: [] };

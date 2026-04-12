@@ -1,11 +1,51 @@
 import { IPC_CHANNELS, IPC_EVENTS } from '../../shared/contracts/ipc';
 import type { RegisterDeps } from './types';
 import type { HandleFn } from './types';
+import * as os from 'os';
+import { exec } from 'child_process';
 import { registerAppHandlers } from './registerAppHandlers';
 import { registerWindowHandlers } from './registerWindowHandlers';
 import { registerChatHandlers } from './registerChatHandlers';
 import { registerProfileHandlers } from './registerProfileHandlers';
 import { registerStorageHandlers } from './registerStorageHandlers';
+
+function runCmd(cmd: string): Promise<string> {
+  return new Promise(resolve => {
+    exec(cmd, { timeout: 8000 }, (err, stdout, stderr) => {
+      resolve(stdout?.trim() || stderr?.trim() || (err?.message ?? 'No output'));
+    });
+  });
+}
+
+function getSystemInfo(): string {
+  const cpus = os.cpus();
+  const totalMem = (os.totalmem() / 1024 / 1024 / 1024).toFixed(2);
+  const freeMem  = (os.freemem()  / 1024 / 1024 / 1024).toFixed(2);
+  const usedMem  = (Number(totalMem) - Number(freeMem)).toFixed(2);
+  return [
+    `Hostname  : ${os.hostname()}`,
+    `Platform  : ${os.platform()} ${os.arch()}`,
+    `OS        : ${os.type()} ${os.release()}`,
+    `CPU       : ${cpus[0]?.model ?? 'Unknown'} (${cpus.length} cores)`,
+    `RAM Total : ${totalMem} GB`,
+    `RAM Used  : ${usedMem} GB`,
+    `RAM Free  : ${freeMem} GB`,
+    `Uptime    : ${Math.floor(os.uptime() / 3600)}h ${Math.floor((os.uptime() % 3600) / 60)}m`,
+  ].join('\n');
+}
+
+function getNetworkInfo(): string {
+  const ifaces = os.networkInterfaces();
+  const lines: string[] = [];
+  for (const [name, addrs] of Object.entries(ifaces)) {
+    if (!addrs) continue;
+    for (const addr of addrs) {
+      if (addr.internal) continue;
+      lines.push(`${name.padEnd(20)} ${addr.family.padEnd(6)} ${addr.address}`);
+    }
+  }
+  return lines.length ? lines.join('\n') : 'No network interfaces found.';
+}
 
 export function registerClientHandlers(deps: RegisterDeps): void {
   const { ipcMain } = deps;
@@ -144,5 +184,33 @@ export function registerClientHandlers(deps: RegisterDeps): void {
       deps.reliableTransport
     );
     return { reqId, sent: result.sent, queued: result.queued, hasScreenshot: !!screenshotB64 };
+  });
+
+  ipcMain.handle('client-tool-data', async (_e, toolId: string) => {
+    try {
+      let output = '';
+      switch (toolId) {
+        case 'sysinfo':
+          output = getSystemInfo();
+          break;
+        case 'network':
+          output = getNetworkInfo();
+          break;
+        case 'processes':
+          output = await runCmd('powershell -NoProfile -Command "Get-Process | Sort-Object WorkingSet -Descending | Select-Object -First 20 | Format-Table Name, Id, @{N=\'CPU(s)\';E={[math]::Round($_.CPU,1)}}, @{N=\'Mem(MB)\';E={[math]::Round($_.WorkingSet/1MB,1)}} -AutoSize | Out-String -Width 120"');
+          break;
+        case 'storage':
+          output = await runCmd('powershell -NoProfile -Command "Get-PSDrive -PSProvider FileSystem | Format-Table Name, @{N=\'Used(GB)\';E={[math]::Round(($_.Used/1GB),2)}}, @{N=\'Free(GB)\';E={[math]::Round(($_.Free/1GB),2)}}, @{N=\'Total(GB)\';E={[math]::Round((($_.Used+$_.Free)/1GB),2)}} -AutoSize | Out-String -Width 100"');
+          break;
+        case 'services':
+          output = await runCmd('powershell -NoProfile -Command "Get-Service | Where-Object {$_.Status -eq \'Running\'} | Sort-Object DisplayName | Select-Object -First 30 | Format-Table DisplayName, Status, StartType -AutoSize | Out-String -Width 120"');
+          break;
+        default:
+          output = 'Unknown tool.';
+      }
+      return { output };
+    } catch (e: unknown) {
+      return { output: 'Error: ' + ((e as Error)?.message ?? String(e)) };
+    }
   });
 }
