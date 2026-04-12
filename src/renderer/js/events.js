@@ -231,7 +231,8 @@ function setupEvents() {
           if (action === 'unlock_device') peers[fromId].deviceLocked = false;
           const lockBtn = document.getElementById('userActionLockBtn');
           if (lockBtn && userActionPeerId === fromId) {
-            lockBtn.textContent = peers[fromId].deviceLocked ? 'Unlock Device' : 'Lock Device';
+            if (typeof updateUserActionLockButton === 'function') updateUserActionLockButton(peers[fromId]);
+            else lockBtn.textContent = peers[fromId].deviceLocked ? 'Unlock Screen' : 'Lock Screen';
           }
         }
         const labels = {

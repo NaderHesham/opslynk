@@ -163,11 +163,13 @@ function syncScreenshotPollingControls() {
         const enabled = Boolean(screenshotPolling.enabled);
         toggleBtn.textContent = enabled ? 'Pause' : 'Start';
         toggleBtn.classList.toggle('paused', !enabled);
+        toggleBtn.classList.toggle('running', enabled);
       }
       if (monitorToggleBtn) {
         const enabled = Boolean(screenshotPolling.enabled);
         monitorToggleBtn.textContent = enabled ? 'Pause' : 'Start';
         monitorToggleBtn.classList.toggle('active', enabled);
+        monitorToggleBtn.classList.toggle('running', enabled);
       }
       if (liveWallSub) {
         const enabled = Boolean(screenshotPolling.enabled);
@@ -924,11 +926,19 @@ function openUserActionsModal(peerId) {
       userActionPeerId = peerId;
       const title = document.getElementById('userActionsTitle');
       const sub = document.getElementById('userActionsSub');
-      const lockBtn = document.getElementById('userActionLockBtn');
       if (title) title.textContent = `${peer.username || 'User'} · Actions`;
       if (sub) sub.textContent = `${peer.systemInfo?.hostname || getPeerDisplayTitle(peer)} · ${peer.online ? 'Connected' : 'Offline'}`;
-      if (lockBtn) lockBtn.textContent = peer.deviceLocked ? 'Unlock Device' : 'Lock Device';
+      updateUserActionLockButton(peer);
       modal.classList.add('show');
+}
+
+function updateUserActionLockButton(peer) {
+      const lockBtn = document.getElementById('userActionLockBtn');
+      if (!lockBtn) return;
+      const locked = Boolean(peer?.deviceLocked);
+      lockBtn.textContent = locked ? 'Unlock Screen' : 'Lock Screen';
+      lockBtn.classList.toggle('lock-state-on', locked);
+      lockBtn.classList.toggle('lock-state-off', !locked);
 }
 
 function closeUserActionsModal() {
@@ -1042,8 +1052,7 @@ async function executePeerDeviceAction(peerId, action, scriptOverride = '') {
           showToast('Action sent', `${labels[action]} sent to ${peer.username || 'peer'}.`);
           if (action === 'lock_device') peers[peerId].deviceLocked = true;
           if (action === 'unlock_device') peers[peerId].deviceLocked = false;
-          const lockBtn = document.getElementById('userActionLockBtn');
-          if (lockBtn && userActionPeerId === peerId) lockBtn.textContent = peers[peerId].deviceLocked ? 'Unlock Device' : 'Lock Device';
+          if (userActionPeerId === peerId) updateUserActionLockButton(peers[peerId]);
           return;
         }
         showToast('Action failed', result?.error || 'Could not send action command.', 'warn');
@@ -1105,10 +1114,8 @@ function renderUsersTab() {
       </div>
 
       <div class="directory-actions compact">
-        <button class="ubtn" onclick="event.stopPropagation(); openChat('${p.id}')">Open Chat</button>
-        <div class="spec-action-stack">
-          <button class="ubtn" onclick="event.stopPropagation(); openSpecsModal('${p.id}')">View Specs</button>
-        </div>
+        <button class="ubtn" onclick="event.stopPropagation(); openChat('${p.id}')">Chat</button>
+        <button class="ubtn" onclick="event.stopPropagation(); openSpecsModal('${p.id}')">Specs</button>
         <button class="ubtn" onclick="event.stopPropagation(); openUserStatsModal('${p.id}')">View Stats</button>
         <button class="ubtn" onclick="event.stopPropagation(); openUserActionsModal('${p.id}')">Actions</button>
       </div>

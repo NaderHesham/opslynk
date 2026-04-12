@@ -41,7 +41,7 @@ export function createScreenshotPollingManager({
   getSnapshot: () => ScreenshotPollingSnapshot;
 } {
   let timer: NodeJS.Timeout | null = null;
-  let enabled = true;
+  let enabled = false;
   let mode: ScreenshotPollingMode = 'normal';
 
   function getSnapshot(): ScreenshotPollingSnapshot {

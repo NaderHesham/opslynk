@@ -160,7 +160,7 @@
                 <div class="dash-section-header">
                   <div>
                     <div class="dash-section-title">Live Wall</div>
-                    <div class="dash-section-sub" id="dashLiveWallSub">Latest client previews with staggered refresh polling (default 5s)</div>
+                    <div class="dash-section-sub" id="dashLiveWallSub">Live wall mode: Paused</div>
                   </div>
                 </div>
                 <div class="dash-shot-toolbar">
@@ -168,7 +168,7 @@
                     <button class="dash-filter-pill" id="dashScreenshotMode-normal" type="button" onclick="setScreenshotPollingMode('normal')">Normal</button>
                     <button class="dash-filter-pill" id="dashScreenshotMode-fast" type="button" onclick="setScreenshotPollingMode('fast')">Fast</button>
                     <button class="dash-filter-pill" id="dashScreenshotMode-live" type="button" onclick="setScreenshotPollingMode('live')">Live</button>
-                    <button class="dash-filter-pill" id="dashScreenshotToggle" type="button" onclick="toggleScreenshotPolling()">Pause</button>
+                    <button class="dash-filter-pill" id="dashScreenshotToggle" type="button" onclick="toggleScreenshotPolling()">Start</button>
                   </div>
                 </div>
                 <div class="dash-screenshot-grid" id="dashScreenshotGrid">
@@ -699,7 +699,7 @@
       <div class="panel" id="tab-monitor" data-admin-only>
         <div class="pscroll ops-view ops-view-monitor">
           <div class="ptitle">🖥️ Monitor</div>
-          <div class="psub" id="monitorLiveWallSub" style="margin-bottom:10px;">Live wall mode: Normal (5s target refresh)</div>
+          <div class="psub" id="monitorLiveWallSub" style="margin-bottom:10px;">Live wall mode: Paused</div>
           <div class="filterbar">
             <select id="monitorGroupFilter" onchange="setMonitorGroupFilter(this.value)">
               <option value="all">All Devices</option>
@@ -708,7 +708,7 @@
               <button class="filter-pill active" id="monitorMode-normal" onclick="setScreenshotPollingMode('normal')">Normal</button>
               <button class="filter-pill" id="monitorMode-fast" onclick="setScreenshotPollingMode('fast')">Fast</button>
               <button class="filter-pill" id="monitorMode-live" onclick="setScreenshotPollingMode('live')">Live</button>
-              <button class="filter-pill" id="monitorMode-toggle" onclick="toggleScreenshotPolling()">Pause</button>
+              <button class="filter-pill" id="monitorMode-toggle" onclick="toggleScreenshotPolling()">Start</button>
             </div>
           </div>
           <div class="filterbar" style="margin-top:8px;">
@@ -1026,7 +1026,7 @@
         </div>
       </div>
       <div class="user-actions-grid">
-        <button class="ubtn" id="userActionLockBtn" onclick="executeActiveUserAction('lock_toggle')">Lock Device</button>
+        <button class="ubtn lock-state-off" id="userActionLockBtn" onclick="executeActiveUserAction('lock_toggle')">Lock Screen</button>
         <button class="ubtn" onclick="executeActiveUserAction('restart_device')">Restart Device</button>
         <button class="ubtn" onclick="executeActiveUserAction('shutdown_device')">Shutdown Device</button>
         <button class="ubtn" onclick="executeActiveUserAction('signout_device')">Signout Device</button>
