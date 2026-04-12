@@ -161,13 +161,13 @@ function syncScreenshotPollingControls() {
       if (monitorLiveBtn) monitorLiveBtn.classList.toggle('active', screenshotPolling.mode === 'live');
       if (toggleBtn) {
         const enabled = Boolean(screenshotPolling.enabled);
-        toggleBtn.textContent = enabled ? 'Pause' : 'Resume';
+        toggleBtn.textContent = enabled ? 'Pause' : 'Start';
         toggleBtn.classList.toggle('paused', !enabled);
       }
       if (monitorToggleBtn) {
         const enabled = Boolean(screenshotPolling.enabled);
-        monitorToggleBtn.textContent = enabled ? 'Pause' : 'Resume';
-        monitorToggleBtn.classList.toggle('active', !enabled);
+        monitorToggleBtn.textContent = enabled ? 'Pause' : 'Start';
+        monitorToggleBtn.classList.toggle('active', enabled);
       }
       if (liveWallSub) {
         const enabled = Boolean(screenshotPolling.enabled);

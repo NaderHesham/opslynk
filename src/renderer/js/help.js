@@ -190,14 +190,27 @@ async function clearHelpRequests() {
         okLabel: 'Clear'
       });
       if (!ok) return;
-      const result = await IPC.clearHelpRequests();
-      if (!result?.success) {
-        showToast('Clear failed', result?.error || 'Could not clear requests.', 'warn');
+      try {
+        const result = await IPC.clearHelpRequests();
+        if (!result?.success) {
+          showToast('Clear failed', result?.error || 'Could not clear requests.', 'warn');
+          console.error('[OpsLynk] Clear help requests failed:', result?.error);
+          return;
+        }
+      } catch (error) {
+        showToast('Clear failed', error?.message || 'Could not clear requests.', 'warn');
+        console.error('[OpsLynk] Clear help requests error:', error);
         return;
       }
       const list = document.getElementById('helplist');
       if (list) {
-        list.innerHTML = '<div class="empty-glass"><div class="ei">Tickets</div>No help requests match the current filters.</div>';
+        // Remove all help cards from DOM
+        document.querySelectorAll('#helplist .hcard').forEach(card => card.remove());
+        // Show empty state
+        const empty = document.createElement('div');
+        empty.className = 'empty-glass';
+        empty.innerHTML = '<div class="ei">Tickets</div>No help requests match the current filters.';
+        list.appendChild(empty);
       }
       activeHelpRequestId = null;
       helpBadge = 0;

@@ -150,23 +150,24 @@ function vbcRenderSelectedVideo() {
         if (badge) badge.style.display = 'none';
         if (uploadZone) uploadZone.classList.remove('is-ready');
         if (uploadIcon) uploadIcon.textContent = '↑';
-        if (uploadText) uploadText.innerHTML = '<strong>Click to upload</strong> or drag &amp; drop<br>MP4, WebM — max 500 MB';
+        if (uploadText) uploadText.innerHTML = '<strong>Click to upload</strong> or drag &amp; drop<br>MP4, WebM — max 40 MB';
         if (btnRow) btnRow.innerHTML = '<button class="broadcast-secondary-btn" id="vbc-pick-btn" onclick="vbcPickFile()">Upload video</button>';
         vbcSetStatus('No video selected.');
         return;
       }
       video.src = `data:${vbcSelectedVideo.mime};base64,${vbcSelectedVideo.data}`;
       preview.style.display = 'block';
-      labelRow.style.display = 'grid';
-      meta.style.display = 'block';
+      labelRow.style.display = vbcActive ? 'none' : 'grid';
+      meta.style.display = vbcActive ? 'none' : 'block';
       meta.textContent = `${vbcSelectedVideo.fileName} • ${fmtBytes(vbcSelectedVideo.size || 0)}`;
       badge.style.display = 'inline-flex';
       badge.textContent = vbcActive ? 'Playing' : 'Ready';
-      if (uploadZone) uploadZone.classList.add('is-ready');
+      if (uploadZone) uploadZone.classList.toggle('is-ready', !vbcActive);
+      if (uploadZone) uploadZone.style.pointerEvents = vbcActive ? 'none' : 'auto';
       if (uploadIcon) uploadIcon.textContent = '✓';
       if (uploadText) uploadText.innerHTML = `<strong>${esc(vbcSelectedVideo.fileName)}</strong><br>${fmtBytes(vbcSelectedVideo.size || 0)}`;
       btnRow.innerHTML = vbcActive
-        ? '<button class="broadcast-primary-btn danger" onclick="vbcStop()">Stop forced video</button>'
+        ? '<button class="broadcast-primary-btn danger" onclick="vbcStop()">⏹️ Stop Video</button>'
         : '<button class="broadcast-secondary-btn" onclick="vbcPickFile()">Change video</button><button class="broadcast-secondary-btn" onclick="vbcClearSelection()">Cancel</button><button class="broadcast-primary-btn" onclick="vbcBroadcast()">Play for everyone</button>';
     }
 

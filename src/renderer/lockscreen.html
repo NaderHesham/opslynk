@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline';" />
 <title>OpsLynk – Screen Locked</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; cursor: none !important; }
 
   html, body {
     width: 100vw; height: 100vh;
@@ -13,6 +13,7 @@
     background: #05070d;
     font-family: 'Segoe UI', system-ui, sans-serif;
     color: #e2e8f0;
+    cursor: none !important;
   }
 
   /* animated gradient background */
@@ -148,18 +149,70 @@
 </div>
 
 <script>
-  // Block all keyboard shortcuts
-  window.addEventListener('keydown', e => {
+  // Block ALL keyboard input
+  document.addEventListener('keydown', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     e.stopImmediatePropagation();
     return false;
   }, true);
 
-  // Block right-click context menu
-  window.addEventListener('contextmenu', e => e.preventDefault(), true);
+  document.addEventListener('keyup', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
 
-  // Block mouse wheel (just in case)
-  window.addEventListener('wheel', e => e.preventDefault(), { passive: false });
+  document.addEventListener('keypress', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+
+  // Block ALL mouse input
+  document.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+
+  document.addEventListener('mouseup', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+
+  document.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+
+  document.addEventListener('mousemove', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+
+  // Block scroll wheel
+  document.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    return false;
+  }, true);
+
+  // Block context menu (right-click)
+  document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    return false;
+  }, true);
 
   // Receive lock data from main process
   window.OpsLynk?.on('lockscreen-data', (data) => {

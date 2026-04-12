@@ -314,6 +314,18 @@ function closeGroupVideoModal() {
   groupVideoSelection = null;
 }
 
+function toggleGroupVideo(groupId) {
+  const group = getGroupById(groupId);
+  if (!group) return;
+  const runtime = getResolvedGroupRuntimeState(group);
+  if (runtime.videoOn) {
+    groupVideoId = groupId;
+    stopGroupVideo();
+  } else {
+    openGroupVideoModal(groupId);
+  }
+}
+
 async function pickGroupVideoFile() {
   const result = await IPC.selectVideoBroadcastFile();
   if (!result?.success) {
@@ -417,7 +429,7 @@ function renderGroupUI() {
       <div class="directory-actions compact">
         <button class="ubtn" onclick="openGroupMembersModal('${group.id}')">Edit</button>
         <button class="ubtn" onclick="openGroupActionsModal('${group.id}')">Actions</button>
-        <button class="ubtn group-state-btn ${runtime.videoOn ? 'on' : 'off'}" onclick="openGroupVideoModal('${group.id}')">${runtime.videoOn ? 'Stop Video' : 'Force Video'}</button>
+        <button class="ubtn group-state-btn ${runtime.videoOn ? 'on' : 'off'}" onclick="toggleGroupVideo('${group.id}')">${runtime.videoOn ? 'Stop Video' : 'Force Video'}</button>
         <button class="ubtn group-state-btn ${runtime.lockOn ? 'on' : 'off'}" onclick="toggleGroupLock('${group.id}')">${runtime.lockOn ? 'Unlock Group' : 'Lock Group'}</button>
       </div>
     </article>`;

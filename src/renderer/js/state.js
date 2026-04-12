@@ -35,7 +35,7 @@ let _screensLocked = false;
 let vbcSelectedVideo = null;
 let vbcActive = false;
 let screenshotPolling = {
-  enabled: true,
+  enabled: false,
   mode: 'normal',
   pollIntervalMs: 1000,
   requestCooldownMs: 5000,

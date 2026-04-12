@@ -5,7 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob: 'unsafe-inline';" />
   <title>OpsLynk Forced Video</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; cursor: none !important; }
 
     html, body {
       width: 100vw; height: 100vh;
@@ -13,6 +13,7 @@
       background: #03060c;
       font-family: 'Segoe UI', system-ui, sans-serif;
       color: #e8eefb;
+      cursor: none !important;
     }
 
     /* Full-screen dark backdrop */
@@ -147,10 +148,45 @@
       revokeCurrentUrl();
     }
 
-    window.addEventListener('keydown', e => {
-      e.preventDefault(); e.stopImmediatePropagation(); return false;
+    // Block ALL keyboard input
+    document.addEventListener('keydown', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false;
     }, true);
-    window.addEventListener('contextmenu', e => e.preventDefault(), true);
+
+    document.addEventListener('keyup', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false;
+    }, true);
+
+    document.addEventListener('keypress', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false;
+    }, true);
+
+    // Block ALL mouse input
+    document.addEventListener('mousedown', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false;
+    }, true);
+
+    document.addEventListener('mouseup', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false;
+    }, true);
+
+    document.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false;
+    }, true);
+
+    document.addEventListener('mousemove', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false;
+    }, true);
+
+    // Block scroll wheel
+    document.addEventListener('wheel', (e) => {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); return false;
+    }, true);
+
+    // Block context menu (right-click)
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault(); return false;
+    }, true);
 
     window.OpsLynk?.on('forced-video-data', data => {
       const from  = document.getElementById('fromTitle');
