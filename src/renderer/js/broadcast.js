@@ -5,24 +5,84 @@ async function sendBcast() {
       const targetGroup = userGroups.find(group => group.id === selectedGroupId);
       const peerIds = targetGroup ? targetGroup.memberIds : null;
       const durationSeconds = Math.min(120, Math.max(3, Number(durationInput?.value || 10) || 10));
+      const sendBtn = document.querySelector('#tab-broadcast .broadcast-send') || document.querySelector('#tab-broadcast .mactions .btnp');
+      if (sendBtn) sendBtn.disabled = true;
       if (durationInput) durationInput.value = durationSeconds;
-      IPC.sendBroadcast({ text, urgency: selUrg, durationSeconds, peerIds });
-      document.getElementById('bctext').value = '';
-      updateBroadcastCharCount();
-      ackCount = 0;
-      setBroadcastAckCount(0);
-      showBroadcastAckList(`<div class="ackitem"><span style="color:var(--txt2);font-size:11px;">Sent [${selUrg.toUpperCase()}] · ${new Date().toLocaleTimeString()}${selUrg === 'normal' ? ` · ${durationSeconds}s` : ''}</span></div>`);
-      addDashboardActivity('broadcast', 'Broadcast sent', text, peerIds?.length ? `${peerIds.length} targeted peer(s)` : 'All reachable users');
-      showToast(
-        '📡 Broadcast Sent',
-        selUrg === 'normal'
-          ? `Priority: NORMAL · Popup ${durationSeconds}s`
-          : selUrg === 'urgent'
-            ? 'Priority: URGENT · Requires ACK'
-            : 'Broadcast sent successfully.',
-        'warn'
-      );
+      try {
+        const result = await IPC.sendBroadcast({ text, urgency: selUrg, durationSeconds, peerIds });
+        if (!result || result.success === false) {
+          showToast('Broadcast failed', result?.error || 'Could not send broadcast.', 'warn');
+          return;
+        }
+        const targetCount = Number(result.targetCount || 0);
+        if (targetCount <= 0) {
+          showToast('No recipients', 'No reachable users matched the selected audience.', 'warn');
+          return;
+        }
+        document.getElementById('bctext').value = '';
+        updateBroadcastCharCount();
+        ackCount = 0;
+        setBroadcastAckCount(0);
+        showBroadcastAckList(`<div class="ackitem"><span style="color:var(--txt2);font-size:11px;">Sent [${selUrg.toUpperCase()}] · ${new Date().toLocaleTimeString()}${selUrg === 'normal' ? ` · ${durationSeconds}s` : ''} · ${targetCount} target${targetCount === 1 ? '' : 's'}</span></div>`);
+        addDashboardActivity('broadcast', 'Broadcast sent', text, peerIds?.length ? `${peerIds.length} targeted peer(s)` : `${targetCount} reachable user(s)`);
+        showToast(
+          '📡 Broadcast Sent',
+          selUrg === 'normal'
+            ? `Priority: NORMAL · Popup ${durationSeconds}s · ${targetCount} target${targetCount === 1 ? '' : 's'}`
+            : selUrg === 'urgent'
+              ? `Priority: URGENT · Requires ACK · ${targetCount} target${targetCount === 1 ? '' : 's'}`
+              : `Broadcast sent to ${targetCount} target${targetCount === 1 ? '' : 's'}.`,
+          'warn'
+        );
+      } catch (error) {
+        showToast('Broadcast failed', error?.message || 'Unexpected error while sending broadcast.', 'warn');
+      } finally {
+        if (sendBtn) sendBtn.disabled = false;
+      }
     }
+
+function bindBroadcastHandlers() {
+      const sendBtn = document.querySelector('#tab-broadcast .broadcast-send-btn');
+      if (sendBtn && !sendBtn.dataset.boundClick) {
+        sendBtn.dataset.boundClick = '1';
+        sendBtn.addEventListener('click', sendBcast);
+      }
+      const normalCard = document.getElementById('opt-normal');
+      if (normalCard && !normalCard.dataset.boundClick) {
+        normalCard.dataset.boundClick = '1';
+        normalCard.addEventListener('click', () => setUrg('normal'));
+      }
+      const urgentCard = document.getElementById('opt-urgent');
+      if (urgentCard && !urgentCard.dataset.boundClick) {
+        urgentCard.dataset.boundClick = '1';
+        urgentCard.addEventListener('click', () => setUrg('urgent'));
+      }
+      const lockAllBtn = document.getElementById('btnLockAll');
+      if (lockAllBtn && !lockAllBtn.dataset.boundClick) {
+        lockAllBtn.dataset.boundClick = '1';
+        lockAllBtn.addEventListener('click', handleLockAll);
+      }
+      const unlockAllBtn = document.getElementById('btnUnlockAll');
+      if (unlockAllBtn && !unlockAllBtn.dataset.boundClick) {
+        unlockAllBtn.dataset.boundClick = '1';
+        unlockAllBtn.addEventListener('click', handleUnlockAll);
+      }
+      const uploadZone = document.getElementById('vbc-upload-zone');
+      if (uploadZone && !uploadZone.dataset.boundClick) {
+        uploadZone.dataset.boundClick = '1';
+        uploadZone.addEventListener('click', vbcPickFile);
+      }
+      const pickBtn = document.getElementById('vbc-pick-btn');
+      if (pickBtn && !pickBtn.dataset.boundClick) {
+        pickBtn.dataset.boundClick = '1';
+        pickBtn.addEventListener('click', vbcPickFile);
+      }
+      const msgInput = document.getElementById('bctext');
+      if (msgInput && !msgInput.dataset.boundInput) {
+        msgInput.dataset.boundInput = '1';
+        msgInput.addEventListener('input', updateBroadcastCharCount);
+      }
+}
 
 function setUrg(v) {
       selUrg = v;
@@ -84,9 +144,14 @@ async function handleLockAll() {
       try {
         const result = await IPC.lockAllScreens({ message });
         if (result?.success) {
-          setLockUi(true);
-          const n = result.targetCount;
-          showToast('🔒 Screens Locked', `Locked ${n} user${n !== 1 ? 's' : ''}`);
+          const n = Number(result.targetCount || 0);
+          if (n > 0) {
+            setLockUi(true);
+            showToast('🔒 Screens Locked', `Locked ${n} user${n !== 1 ? 's' : ''}`);
+          } else {
+            if (btn) btn.disabled = false;
+            showToast('No users reachable', 'No connected users to lock. Try again when users are online.', 'warn');
+          }
         } else {
           if (btn) btn.disabled = false;
           showToast('❌ Lock Failed', result?.error || 'Unknown error');
@@ -94,6 +159,7 @@ async function handleLockAll() {
       } catch (err) {
         if (btn) btn.disabled = false;
         console.error('lockAllScreens error:', err);
+        showToast('❌ Lock Failed', err?.message || 'Unexpected error.');
       }
     }
 
@@ -112,6 +178,7 @@ async function handleUnlockAll() {
       } catch (err) {
         if (btn) btn.disabled = false;
         console.error('unlockAllScreens error:', err);
+        showToast('❌ Unlock Failed', err?.message || 'Unexpected error.');
       }
     }
 
@@ -150,7 +217,7 @@ function vbcRenderSelectedVideo() {
         if (badge) badge.style.display = 'none';
         if (uploadZone) uploadZone.classList.remove('is-ready');
         if (uploadIcon) uploadIcon.textContent = '↑';
-        if (uploadText) uploadText.innerHTML = '<strong>Click to upload</strong> or drag &amp; drop<br>MP4, WebM — max 40 MB';
+        if (uploadText) uploadText.innerHTML = '<strong>Click to upload</strong> or drag &amp; drop<br>MP4, WebM — max 30 MB';
         if (btnRow) btnRow.innerHTML = '<button class="broadcast-secondary-btn" id="vbc-pick-btn" onclick="vbcPickFile()">Upload video</button>';
         vbcSetStatus('No video selected.');
         return;
@@ -172,16 +239,20 @@ function vbcRenderSelectedVideo() {
     }
 
 async function vbcPickFile() {
-      const result = await IPC.selectVideoBroadcastFile();
-      if (!result?.success) {
-        if (!result?.canceled) vbcSetStatus(result?.error || 'Could not load video.');
-        return;
+      try {
+        const result = await IPC.selectVideoBroadcastFile();
+        if (!result?.success) {
+          if (!result?.canceled) vbcSetStatus(result?.error || 'Could not load video.');
+          return;
+        }
+        vbcSelectedVideo = result;
+        vbcActive = false;
+        persistAdminActionState();
+        vbcRenderSelectedVideo();
+        vbcSetStatus('Video loaded. Start playback when you are ready.');
+      } catch (error) {
+        vbcSetStatus(error?.message || 'Could not load video.');
       }
-      vbcSelectedVideo = result;
-      vbcActive = false;
-      persistAdminActionState();
-      vbcRenderSelectedVideo();
-      vbcSetStatus('Video loaded. Start playback when you are ready.');
     }
 
 function vbcClearSelection() {
@@ -216,10 +287,15 @@ function vbcBroadcast() {
           vbcSetStatus(result?.error || 'Broadcast failed.');
           return;
         }
-        vbcActive = true;
-        persistAdminActionState();
-        vbcRenderSelectedVideo();
-        vbcSetStatus(`Forced playback started for ${result.targetCount} user${result.targetCount !== 1 ? 's' : ''}.`);
+        const n = Number(result.targetCount || 0);
+        if (n > 0) {
+          vbcActive = true;
+          persistAdminActionState();
+          vbcRenderSelectedVideo();
+          vbcSetStatus(`Forced playback started for ${n} user${n !== 1 ? 's' : ''}.`);
+        } else {
+          vbcSetStatus('No connected users to send video to. Try again when users are online.');
+        }
       }).catch(err => {
         vbcSetStatus('Broadcast failed: ' + err.message);
       });
@@ -265,3 +341,20 @@ function persistAdminActionState() {
         }));
       } catch {}
     }
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bindBroadcastHandlers, { once: true });
+} else {
+  bindBroadcastHandlers();
+}
+
+window.sendBcast = sendBcast;
+window.setUrg = setUrg;
+window.updateBroadcastCharCount = updateBroadcastCharCount;
+window.sendBReply = sendBReply;
+window.handleLockAll = handleLockAll;
+window.handleUnlockAll = handleUnlockAll;
+window.vbcPickFile = vbcPickFile;
+window.vbcClearSelection = vbcClearSelection;
+window.vbcBroadcast = vbcBroadcast;
+window.vbcStop = vbcStop;

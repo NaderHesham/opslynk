@@ -574,13 +574,29 @@ function renderDashboard() {
       setText('metricActivityTrend', activityCount ? 'Timeline is live' : 'Live operations feed');
 
       animateCounter('signalPresenceValue', presencePercent, '%');
+      const presenceTier = total ? (presencePercent >= 75 ? 'good' : presencePercent >= 40 ? 'warn' : 'bad') : 'idle';
       setText('signalPresenceTag', total ? (presencePercent >= 75 ? 'Healthy' : presencePercent >= 40 ? 'Mixed' : 'Thin') : 'Idle');
       setText('signalPresenceCopy', total ? `${online} of ${total} discovered peers are currently reachable on the LAN.` : 'The percentage of discovered users currently online.');
 
       const pressureLabel = responsePressure >= 70 ? 'High' : responsePressure >= 30 ? 'Medium' : 'Low';
+      const pressureTier = responsePressure >= 70 ? 'bad' : responsePressure >= 30 ? 'warn' : 'good';
       setText('signalPressureValue', pressureLabel);
       setText('signalPressureTag', openHelp ? `${openHelp} open` : 'Stable');
       setText('signalPressureCopy', openHelp ? `${openHelp} pending help request(s) spread across ${Math.max(online, 1)} reachable users.` : 'Measures help queue load against available online users.');
+      const signalPresenceTag = document.getElementById('signalPresenceTag');
+      if (signalPresenceTag) {
+        signalPresenceTag.classList.remove('good', 'warn', 'bad', 'idle');
+        signalPresenceTag.classList.add(presenceTier);
+      }
+      const signalPressureTag = document.getElementById('signalPressureTag');
+      if (signalPressureTag) {
+        signalPressureTag.classList.remove('good', 'warn', 'bad', 'idle');
+        signalPressureTag.classList.add(openHelp ? pressureTier : 'good');
+      }
+      const presenceSignal = document.getElementById('signalPresenceValue')?.closest('.db-signal');
+      if (presenceSignal) presenceSignal.style.setProperty('--signal-level', `${Math.max(10, presencePercent)}%`);
+      const pressureSignal = document.getElementById('signalPressureValue')?.closest('.db-signal');
+      if (pressureSignal) pressureSignal.style.setProperty('--signal-level', `${Math.max(10, responsePressure)}%`);
 
       const statusDot = document.getElementById('dashStatusDot');
       if (statusDot) statusDot.classList.toggle('off', !(networkReady && networkOnline));
@@ -592,6 +608,8 @@ function renderDashboard() {
 
       const ring = document.getElementById('presenceRing');
       if (ring) ring.style.setProperty('--ring-angle', `${Math.max(8, Math.round((presencePercent / 100) * 360))}deg`);
+      const ringArc = document.getElementById('ringArc');
+      if (ringArc) { const c = 163.36; ringArc.setAttribute('stroke-dasharray', `${Math.round((presencePercent / 100) * c * 10) / 10} ${c}`); }
       animateCounter('ringValue', presencePercent, '%');
       setText('ringHeadline', total ? `${online} reachable endpoint${online === 1 ? '' : 's'} across your LAN` : 'No active network coverage yet');
       setText('ringCopy', total
